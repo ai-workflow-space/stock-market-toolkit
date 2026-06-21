@@ -1,0 +1,28 @@
+import os
+from functools import lru_cache
+
+def _get_env(key: str, default: str) -> str:
+    return os.getenv(key, default)
+
+class Settings:
+    DATABASE_URL: str = _get_env(
+        "DATABASE_URL",
+        "sqlite+aiosqlite:///./stocktoolkit.db"  # SQLite for local dev
+    )
+    SECRET_KEY: str = _get_env(
+        "SECRET_KEY",
+        "dev-secret-stocktoolkit-change-in-production-use-openssl-rand-hex-64"
+    )
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+    ]
+    LOG_LEVEL: str = _get_env("LOG_LEVEL", "INFO")
+    IS_DOCKER: bool = _get_env("IS_DOCKER", "false").lower() == "true"
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

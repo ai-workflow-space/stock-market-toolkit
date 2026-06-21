@@ -27,22 +27,21 @@ export interface Indicators extends StockData {
 
 export interface StockInfo {
   symbol: string;
-  company_name: string;
-  exchange: string;
-  sector: string;
-  industry: string;
+  short_name: string;
+  long_name?: string;
+  exchange?: string;
+  sector?: string;
+  industry?: string;
+  price: number;
+  currency?: string;
   market_cap: number | null;
-  pe_ratio: number | null;
+  trailing_pe: number | null;
+  forward_pe: number | null;
   dividend_yield: number | null;
-  week52_high: number | null;
-  week52_low: number | null;
-  week52_change: number | null;
-  avg_volume: number | null;
-  current_price: number | null;
-  prev_close: number | null;
-  open_price: number | null;
   beta: number | null;
-  description: string;
+  week_52_high: number | null;
+  week_52_low: number | null;
+  avg_volume: number | null;
 }
 
 export const TIMEFRAMES = [
