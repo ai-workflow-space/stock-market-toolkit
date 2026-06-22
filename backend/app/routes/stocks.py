@@ -35,13 +35,16 @@ async def get_stock(
 ):
     if period not in ("1d","5d","1w","1mo","3mo","6mo","1y","2y","5y","max"):
         raise HTTPException(status_code=400, detail="Invalid period")
-    
+
     ticker = yf.Ticker(symbol.upper())
-    df = ticker.history(period=period, auto_adjust=True)
-    
+    # Use intraday intervals for short periods (yfinance daily data has too few rows)
+    interval_map = {"1d": "5m", "5d": "15m"}
+    interval = interval_map.get(period, "1d")
+    df = ticker.history(period=period, interval=interval, auto_adjust=True)
+
     if df.empty:
         raise HTTPException(status_code=404, detail=f"No data for {symbol}")
-    
+
     return StockDataResponse(
         symbol=symbol.upper(),
         period=period,
@@ -60,41 +63,56 @@ async def get_indicators(
     current_user: User = Depends(get_current_user),
 ):
     ticker = yf.Ticker(symbol.upper())
-    df = ticker.history(period=period, auto_adjust=True)
-    
-    if len(df) < 5:
-        raise HTTPException(status_code=404, detail=f"Insufficient data for {symbol}")
-    
+    interval_map = {"1d": "5m", "5d": "15m"}
+    interval = interval_map.get(period, "1d")
+    df = ticker.history(period=period, interval=interval, auto_adjust=True)
+
+    if len(df) < 2:
+        raise HTTPException(status_code=404, detail=f"No data for {symbol} ({period})")
+
     close = df["Close"]
-    
-    macd_df = None
-    bbands_df = None
-    try:
-        macd_df = ta.macd(close)
-    except Exception:
-        pass
-    try:
-        bbands_df = ta.bbands(close, length=20, std=2)
-    except Exception:
-        pass
-    
+
+    def _safe_ta_series(fn, *args, **kwargs):
+        """Call a ta function, return Series.tolist() or [None]*n on failure."""
+        n = len(close)
+        try:
+            result = fn(*args, **kwargs)
+            if result is None:
+                return [None] * n
+            if hasattr(result, "tolist"):
+                return result.tolist()
+            return list(result)
+        except Exception:
+            return [None] * n
+
+    def _df_col(df, col):
+        """Extract a column from DataFrame, or return [None]*n if unavailable."""
+        n = len(close)
+        if df is None or not hasattr(df, "columns") or col not in df.columns:
+            return [None] * n
+        return df[col].tolist()
+
+    macd_df = _safe_ta_series(ta.macd, close)
+    rsi_vals = _safe_ta_series(ta.rsi, close, length=14)
+    bbands_df = _safe_ta_series(ta.bbands, close, length=20, std=2)
+
     return IndicatorsResponse(
         symbol=symbol.upper(),
         period=period,
         timestamp=df.index.strftime("%Y-%m-%dT%H:%M:%S").tolist(),
-        sma20=_clean_list(ta.sma(close, length=20).tolist()) if len(close) >= 20 else [],
-        sma50=_clean_list(ta.sma(close, length=50).tolist()) if len(close) >= 50 else [],
-        sma200=_clean_list(ta.sma(close, length=200).tolist()) if len(close) >= 200 else [],
-        ema12=_clean_list(ta.ema(close, length=12).tolist()) if len(close) >= 12 else [],
-        ema26=_clean_list(ta.ema(close, length=26).tolist()) if len(close) >= 26 else [],
-        rsi=_clean_list(ta.rsi(close, length=14).tolist()),
-        macd=_clean_list(macd_df["MACD_12_26_9"].tolist()) if macd_df is not None else [],
-        macd_signal=_clean_list(macd_df["MACDs_12_26_9"].tolist()) if macd_df is not None else [],
-        macd_hist=_clean_list(macd_df["MACDh_12_26_9"].tolist()) if macd_df is not None else [],
-        bb_upper=_clean_list(bbands_df["BBU_20_2.0_2.0"].tolist()) if bbands_df is not None else [],
-        bb_middle=_clean_list(bbands_df["BBM_20_2.0_2.0"].tolist()) if bbands_df is not None else [],
-        bb_lower=_clean_list(bbands_df["BBL_20_2.0_2.0"].tolist()) if bbands_df is not None else [],
-        atr=_clean_list(ta.atr(df["High"], df["Low"], df["Close"], length=14).tolist()),
+        sma20=_clean_list(_safe_ta_series(ta.sma, close, length=20)),
+        sma50=_clean_list(_safe_ta_series(ta.sma, close, length=50) if len(close) >= 50 else [None] * len(close)),
+        sma200=_clean_list(_safe_ta_series(ta.sma, close, length=200) if len(close) >= 200 else [None] * len(close)),
+        ema12=_clean_list(_safe_ta_series(ta.ema, close, length=12)),
+        ema26=_clean_list(_safe_ta_series(ta.ema, close, length=26)),
+        rsi=_clean_list(rsi_vals.tolist() if hasattr(rsi_vals, 'tolist') else list(rsi_vals)),
+        macd=_clean_list(_df_col(macd_df, "MACD_12_26_9")),
+        macd_signal=_clean_list(_df_col(macd_df, "MACDs_12_26_9")),
+        macd_hist=_clean_list(_df_col(macd_df, "MACDh_12_26_9")),
+        bb_upper=_clean_list(_df_col(bbands_df, "BBU_20_2.0_2.0")),
+        bb_middle=_clean_list(_df_col(bbands_df, "BBM_20_2.0_2.0")),
+        bb_lower=_clean_list(_df_col(bbands_df, "BBL_20_2.0_2.0")),
+        atr=_clean_list(_safe_ta_series(ta.atr, df["High"], df["Low"], df["Close"], length=14)),
     )
 
 @router.get("/stock/{symbol}/info", response_model=StockInfoResponse)
@@ -130,9 +148,11 @@ async def compare_stocks(
     current_user: User = Depends(get_current_user),
 ):
     stocks = []
+    interval_map = {"1d": "5m", "5d": "15m"}
+    int_interval = interval_map.get(data.period, "1d")
     for symbol in data.symbols:
         ticker = yf.Ticker(symbol.upper())
-        df = ticker.history(period=data.period, auto_adjust=True)
+        df = ticker.history(period=data.period, interval=int_interval, auto_adjust=True)
         
         if df.empty:
             raise HTTPException(status_code=404, detail=f"No data for {symbol}")
