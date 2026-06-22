@@ -45,6 +45,5 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/stock-market-toolkit:pr-${{ github.event.pull_request.number }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/stock-market-toolkit:feat-${{ github.head_ref }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
