@@ -42,14 +42,8 @@ jobs:
           RELEASE_URL: https://github.com/${{ github.repository }}/releases/tag/${{ steps.release.outputs.tag_name }}
         run: |
           if [ -n "$DISCORD_WEBHOOK" ]; then
-            # Properly escape content for JSON using jq
-            BODY=$(jq -nc \
-              --arg msg "🚀 New release: $(git log -1 --format='%s' | tr '\n' ' ')" \
-              --arg url "$RELEASE_URL" \
-              '{"content": "\($msg)\n\($url)"}')
             curl -s -o /dev/null -w "%{http_code}" \
               -H "Content-Type: application/json" \
-              -d "$BODY" \
+              -d "{\"content\": \"🚀 *New release ${{ steps.release.outputs.tag_name }}!*\\nhttps://github.com/${{ github.repository }}/releases/tag/${{ steps.release.outputs.tag_name }}\"}" \
               "$DISCORD_WEBHOOK"
-            echo "Discord webhook response: $BODY"
           fi
