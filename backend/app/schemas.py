@@ -96,3 +96,72 @@ class CompareStockData(BaseModel):
 
 class CompareResponse(BaseModel):
     stocks: list[CompareStockData]
+
+# ─── Alert schemas ───
+class AlertCreate(BaseModel):
+    symbol: str = Field(..., min_length=1, max_length=20)
+    condition_type: str = Field(..., pattern="^(above|below|pct_change_up|pct_change_down)$")
+    threshold: float = Field(..., description="Price threshold or percentage change threshold")
+    period: str = Field(default="1h", pattern="^(5m|15m|30m|1h|4h|1d)$")
+    
+    @field_validator("symbol")
+    @classmethod
+    def symbol_upper(cls, v: str) -> str:
+        return v.upper()
+
+class AlertUpdate(BaseModel):
+    symbol: Optional[str] = Field(None, min_length=1, max_length=20)
+    condition_type: Optional[str] = Field(None, pattern="^(above|below|pct_change_up|pct_change_down)$")
+    threshold: Optional[float] = None
+    period: Optional[str] = Field(None, pattern="^(5m|15m|30m|1h|4h|1d)$")
+    enabled: Optional[bool] = None
+
+class AlertResponse(BaseModel):
+    id: int
+    user_id: str
+    symbol: str
+    condition_type: str
+    threshold: float
+    period: str
+    enabled: bool
+    cooldown_until: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class TriggeredAlertResponse(BaseModel):
+    id: int
+    alert_id: Optional[int]
+    user_id: str
+    symbol: str
+    condition_type: str
+    trigger_price: float
+    threshold_value: float
+    triggered_at: datetime
+    notified: bool
+    read: bool
+
+    class Config:
+        from_attributes = True
+
+class NotificationSettingsResponse(BaseModel):
+    user_id: str
+    discord_webhook_url: Optional[str] = None
+    email_address: Optional[str] = None
+    email_enabled: bool
+    discord_enabled: bool
+    default_period: str
+    timezone: str
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class NotificationSettingsUpdate(BaseModel):
+    discord_webhook_url: Optional[str] = None
+    email_address: Optional[EmailStr] = None
+    email_enabled: bool = False
+    discord_enabled: bool = True
+    default_period: str = Field(default="1h", pattern="^(5m|15m|30m|1h|4h|1d)$")
+    timezone: str = "UTC"
