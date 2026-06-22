@@ -75,7 +75,7 @@ function SearchBar({ onSearch, loading }: { onSearch: (s: string) => void; loadi
     const v = e.target.value;
     setVal(v);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (v.trim().length < 1) { setResults([]); setShowDropdown(false); expectingShowRef.current = false; return; }
+    if (v.trim().length < 3) { setResults([]); setShowDropdown(false); expectingShowRef.current = false; return; }
     debounceRef.current = setTimeout(async () => {
       expectingShowRef.current = true;
       setSearching(true);
@@ -446,21 +446,69 @@ function Dashboard() {
 
 /* ─── Compare Page ─── */
 function ComparePage() {
-  const [input, setInput] = useState("AAPL, TSLA, MSFT");
+  const [tickers, setTickers] = useState<string[]>([]);
+  const [tickerInput, setTickerInput] = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [period, setPeriod] = useState("1mo");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const tickerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tickerContainerRef = useRef<HTMLDivElement>(null);
+  const expectingShowRef = useRef(false);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (expectingShowRef.current) return;
+      if (tickerContainerRef.current && !tickerContainerRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleTickerInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    setTickerInput(v);
+    if (tickerDebounceRef.current) clearTimeout(tickerDebounceRef.current);
+    if (v.trim().length < 3) { setResults([]); setShowDropdown(false); expectingShowRef.current = false; return; }
+    tickerDebounceRef.current = setTimeout(async () => {
+      expectingShowRef.current = true;
+      setSearching(true);
+      try {
+        const data = await searchSymbols(v.trim());
+        setResults(data.slice(0, 8));
+        setShowDropdown(true);
+      } catch { setResults([]); }
+      finally { setSearching(false); expectingShowRef.current = false; }
+    }, 300);
+  };
+
+  const addTicker = (r: SearchResult) => {
+    if (tickers.includes(r.symbol)) return;
+    if (tickers.length >= 5) return;
+    setTickers([...tickers, r.symbol]);
+    setTickerInput("");
+    setResults([]);
+    setShowDropdown(false);
+  };
+
+  const removeTicker = (sym: string) => {
+    setTickers(tickers.filter(t => t !== sym));
+  };
 
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
-    const syms = input.split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
-    if (syms.length < 2) { setError("Enter at least 2 tickers separated by commas"); return; }
-    if (syms.length > 5) { setError("Max 5 tickers"); return; }
+    if (tickers.length < 2) { setError("Add at least 2 tickers"); return; }
+    if (tickers.length > 5) { setError("Max 5 tickers"); return; }
     setError("");
     setLoading(true);
     try {
-      const result = await compareStocks(syms, period);
+      const result = await compareStocks(tickers, period);
       setData(result.stocks);
     } catch (e: unknown) {
       setError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Compare failed");
@@ -488,10 +536,51 @@ function ComparePage() {
         <div className="container">
           <h2 style={{ color: "#e2e8f0", marginBottom: "1.5rem" }}>Compare Stocks</h2>
           <form onSubmit={handle} style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-            <input className="search-input" style={{ maxWidth: 400 }} value={input} onChange={e => setInput(e.target.value)} placeholder="AAPL, TSLA, MSFT" />
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center", position: "relative" }} ref={tickerContainerRef}>
+              {tickers.map(sym => (
+                <span key={sym} className="compare-ticker-tag">
+                  {sym}
+                  <button type="button" onClick={() => removeTicker(sym)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "0 0 0 4px", fontSize: "0.75rem" }}>×</button>
+                </span>
+              ))}
+              {tickers.length < 5 && (
+                <div style={{ position: "relative" }}>
+                  <input
+                    className="search-input"
+                    style={{ maxWidth: 160 }}
+                    value={tickerInput}
+                    onChange={handleTickerInput}
+                    onFocus={() => results.length > 0 && setShowDropdown(true)}
+                    placeholder="Add ticker…"
+                    autoComplete="off"
+                  />
+                  {showDropdown && results.length > 0 && (
+                    <div className="search-dropdown">
+                      {results.map(r => (
+                        <button
+                          key={r.symbol}
+                          type="button"
+                          className="search-dropdown-item"
+                          onClick={() => addTicker(r)}
+                        >
+                          <span className="dropdown-symbol">{r.symbol}</span>
+                          <span className="dropdown-name">{r.name}</span>
+                          {r.exchange && <span className="dropdown-exchange">{r.exchange}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {showDropdown && searching && (
+                    <div className="search-dropdown">
+                      <div className="search-dropdown-item searching">Searching…</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             <TimeframeSelector value={period} onChange={setPeriod} />
-            <button className="search-btn" type="submit" disabled={loading}>{loading ? "Loading…" : "Compare"}</button>
-            <button className="search-btn" style={{ background: "#334155" }} type="button" onClick={() => setData(null)}>Edit</button>
+            <button className="search-btn" type="submit" disabled={loading || tickers.length < 2}>{loading ? "Loading…" : "Compare"}</button>
+            <button className="search-btn" style={{ background: "#334155" }} type="button" onClick={() => { setData(null); setTickers([]); }}>Edit</button>
           </form>
 
           <div className="card">
@@ -536,14 +625,53 @@ function ComparePage() {
       <div className="container">
         <h2 style={{ color: "#e2e8f0", marginBottom: "1.5rem" }}>Compare Stocks</h2>
         <form onSubmit={handle}>
-          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }}>
-            <input className="search-input" style={{ maxWidth: 400 }} value={input} onChange={e => setInput(e.target.value)} placeholder="AAPL, TSLA, MSFT, GOOGL, NVDA" />
+          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center", position: "relative" }} ref={tickerContainerRef}>
+            {tickers.map(sym => (
+              <span key={sym} className="compare-ticker-tag">
+                {sym}
+                <button type="button" onClick={() => removeTicker(sym)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "0 0 0 4px", fontSize: "0.75rem" }}>×</button>
+              </span>
+            ))}
+            {tickers.length < 5 && (
+              <div style={{ position: "relative" }}>
+                <input
+                  className="search-input"
+                  style={{ maxWidth: 160 }}
+                  value={tickerInput}
+                  onChange={handleTickerInput}
+                  onFocus={() => results.length > 0 && setShowDropdown(true)}
+                  placeholder="Add ticker…"
+                  autoComplete="off"
+                />
+                {showDropdown && results.length > 0 && (
+                  <div className="search-dropdown">
+                    {results.map(r => (
+                      <button
+                        key={r.symbol}
+                        type="button"
+                        className="search-dropdown-item"
+                        onClick={() => addTicker(r)}
+                      >
+                        <span className="dropdown-symbol">{r.symbol}</span>
+                        <span className="dropdown-name">{r.name}</span>
+                        {r.exchange && <span className="dropdown-exchange">{r.exchange}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {showDropdown && searching && (
+                  <div className="search-dropdown">
+                    <div className="search-dropdown-item searching">Searching…</div>
+                  </div>
+                )}
+              </div>
+            )}
             <TimeframeSelector value={period} onChange={setPeriod} />
-            <button className="search-btn" type="submit" disabled={loading}>{loading ? "Loading…" : "Compare"}</button>
+            <button className="search-btn" type="submit" disabled={loading || tickers.length < 2}>{loading ? "Loading…" : "Compare"}</button>
           </div>
         </form>
         {error && <div className="error-banner">{error}</div>}
-        <div style={{ color: "#475569", fontSize: "0.9rem", marginTop: "1rem" }}>Enter 2–5 tickers separated by commas</div>
+        <div style={{ color: "#475569", fontSize: "0.9rem", marginTop: "1rem" }}>Add 2–5 tickers to compare</div>
       </div>
     </div>
   );

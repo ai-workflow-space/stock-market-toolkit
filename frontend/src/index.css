@@ -267,6 +267,20 @@ body {
 .dropdown-name { color: var(--text-dim); font-size: 0.8rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dropdown-exchange { font-size: 0.72rem; color: #475569; background: rgba(255,255,255,0.05); padding: 0.1rem 0.4rem; border-radius: 4px; }
 
+/* ─── Compare Ticker Tags ─── */
+.compare-ticker-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(59,130,246,0.15);
+  border: 1px solid rgba(59,130,246,0.3);
+  color: #93c5fd;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
 /* ─── Timeframe ─── */
 .timeframe-bar { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
 .tf-btn {
