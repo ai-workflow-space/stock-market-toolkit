@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend, Area } from "recharts";
-import { getStock, getIndicators, getStockInfo, compareStocks } from "./api/stockApi";
+import { getStock, getIndicators, getStockInfo, compareStocks, searchSymbols } from "./api/stockApi";
 import type { StockData, Indicators, StockInfo } from "./types";
 import { TIMEFRAMES } from "./types";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -46,20 +46,92 @@ function Navbar() {
 }
 
 /* ─── SearchBar ─── */
+type SearchResult = { symbol: string; name: string; exchange: string };
+
 function SearchBar({ onSearch, loading }: { onSearch: (s: string) => void; loading: boolean }) {
   const [val, setVal] = useState("");
-  const handle = (e: React.FormEvent) => {
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    setVal(v);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (v.trim().length < 1) { setResults([]); setShowDropdown(false); return; }
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const data = await searchSymbols(v.trim());
+        setResults(data.slice(0, 8));
+        setShowDropdown(true);
+      } catch { setResults([]); }
+      finally { setSearching(false); }
+    }, 300);
+  };
+
+  const selectResult = (r: SearchResult) => {
+    setVal(r.symbol);
+    setShowDropdown(false);
+    setResults([]);
+    onSearch(r.symbol);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const s = val.trim().toUpperCase();
     if (!s) return;
+    setShowDropdown(false);
     onSearch(s);
   };
+
   return (
     <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "2rem" }}>
-      <form onSubmit={handle} style={{ display: "flex", gap: "0.5rem", flex: 1, maxWidth: 480 }}>
-        <div className="search-container" style={{ flex: 1 }}>
+      <form onSubmit={handleSubmit} style={{ display: "flex", gap: "0.5rem", flex: 1, maxWidth: 480, position: "relative" }}>
+        <div className="search-container" style={{ flex: 1 }} ref={containerRef}>
           <span className="search-icon">🔍</span>
-          <input className="search-input" placeholder="Search ticker… AAPL, TSLA, MSFT" value={val} onChange={e => setVal(e.target.value)} />
+          <input
+            className="search-input"
+            placeholder="Search ticker… AAPL, TSLA, 0050"
+            value={val}
+            onChange={handleInput}
+            onFocus={() => results.length > 0 && setShowDropdown(true)}
+            autoComplete="off"
+          />
+          {showDropdown && results.length > 0 && (
+            <div className="search-dropdown">
+              {results.map(r => (
+                <button
+                  key={r.symbol}
+                  type="button"
+                  className="search-dropdown-item"
+                  onClick={() => selectResult(r)}
+                >
+                  <span className="dropdown-symbol">{r.symbol}</span>
+                  <span className="dropdown-name">{r.name}</span>
+                  {r.exchange && <span className="dropdown-exchange">{r.exchange}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+          {showDropdown && searching && (
+            <div className="search-dropdown">
+              <div className="search-dropdown-item searching">Searching…</div>
+            </div>
+          )}
         </div>
         <button className="search-btn" type="submit" disabled={loading}>{loading ? "Loading…" : "Analyze"}</button>
       </form>
