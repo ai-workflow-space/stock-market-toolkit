@@ -14,6 +14,9 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # watchlists = relationship("Watchlist", back_populates="user")
+    alerts = relationship("Alert", back_populates="user", cascade="all, delete-orphan")
+    notification_settings = relationship("NotificationSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    triggered_alerts = relationship("TriggeredAlert", back_populates="user", cascade="all, delete-orphan")
 
 class Watchlist(Base):
     __tablename__ = "watchlists"
@@ -22,3 +25,53 @@ class Watchlist(Base):
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     symbol = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Alert(Base):
+    __tablename__ = "alerts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    symbol = Column(String, nullable=False)
+    condition_type = Column(String, nullable=False)  # above, below, pct_change_up, pct_change_down
+    threshold = Column(Float, nullable=False)
+    period = Column(String, nullable=False, default="1h")  # 5m, 15m, 30m, 1h, 4h, 1d
+    enabled = Column(Boolean, default=True)
+    cooldown_until = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="alerts")
+    triggered = relationship("TriggeredAlert", back_populates="alert", cascade="all, delete-orphan")
+
+
+class NotificationSettings(Base):
+    __tablename__ = "notification_settings"
+
+    user_id = Column(String, ForeignKey("users.id"), primary_key=True)
+    discord_webhook_url = Column(Text, nullable=True)
+    email_address = Column(String, nullable=True)
+    email_enabled = Column(Boolean, default=False)
+    discord_enabled = Column(Boolean, default=True)
+    default_period = Column(String, default="1h")
+    timezone = Column(String, default="UTC")
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User", back_populates="notification_settings")
+
+
+class TriggeredAlert(Base):
+    __tablename__ = "triggered_alerts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    alert_id = Column(Integer, ForeignKey("alerts.id"), nullable=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    symbol = Column(String, nullable=False)
+    condition_type = Column(String, nullable=False)
+    trigger_price = Column(Float, nullable=False)
+    threshold_value = Column(Float, nullable=False)
+    triggered_at = Column(DateTime(timezone=True), server_default=func.now())
+    notified = Column(Boolean, default=False)
+    read = Column(Boolean, default=False)
+
+    user = relationship("User", back_populates="triggered_alerts")
+    alert = relationship("Alert", back_populates="triggered")

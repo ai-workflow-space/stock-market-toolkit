@@ -13,7 +13,7 @@ import logging
 
 from app.config import get_settings
 from app.database import init_db
-from app.routes import auth, stocks
+from app.routes import auth, stocks, alerts
 
 settings = get_settings()
 log = logging.getLogger(__name__)
@@ -55,6 +55,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # ─── Routes ───
 app.include_router(auth.router)
 app.include_router(stocks.router)
+app.include_router(alerts.router)
 
 @app.get("/health")
 async def health():
@@ -75,3 +76,10 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"detail": "Internal server error"},
     )
+
+@app.post("/cron/check-alerts")
+async def cron_check_alerts():
+    """Cron endpoint to check all price alerts. Called every 15 minutes by external scheduler."""
+    from app.services.alert_checker import check_alerts
+    await check_alerts()
+    return {"status": "ok", "message": "Alerts checked"}

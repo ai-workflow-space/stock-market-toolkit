@@ -7,6 +7,7 @@ import { TIMEFRAMES } from "./types";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import AlertsPage from "./pages/AlertsPage";
 import "./index.css";
 
 /* ─── helpers ─── */
@@ -34,6 +35,7 @@ function Navbar() {
       <div className="nav-links">
         <Link to="/" className="nav-link">Dashboard</Link>
         <Link to="/compare" className="nav-link">Compare</Link>
+        <Link to="/alerts" className="nav-link">🔔 Alerts</Link>
         {user && (
           <div className="nav-user">
             <span className="nav-username">{user.username}</span>
@@ -559,6 +561,7 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/" element={<ProtectedRoute><><Navbar /><Dashboard /></></ProtectedRoute>} />
           <Route path="/compare" element={<ProtectedRoute><><Navbar /><ComparePage /></></ProtectedRoute>} />
+          <Route path="/alerts" element={<ProtectedRoute><><Navbar /><AlertsPage /></></ProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
