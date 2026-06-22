@@ -34,16 +34,3 @@ jobs:
             --package-name=stock-market-toolkit \
             --include-component-in-tag=false
 
-      - name: Discord Release Notification
-        if: steps.release.outputs.releases_created == 'true'
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          TAG_NAME: ${{ steps.release.outputs.tag_name }}
-          RELEASE_URL: https://github.com/${{ github.repository }}/releases/tag/${{ steps.release.outputs.tag_name }}
-        run: |
-          if [ -n "$DISCORD_WEBHOOK" ]; then
-            curl -s -o /dev/null -w "%{http_code}" \
-              -H "Content-Type: application/json" \
-              -d "{\"content\": \"🚀 *New release ${{ steps.release.outputs.tag_name }}!*\\nhttps://github.com/${{ github.repository }}/releases/tag/${{ steps.release.outputs.tag_name }}\"}" \
-              "$DISCORD_WEBHOOK"
-          fi
