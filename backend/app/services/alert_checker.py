@@ -2,10 +2,8 @@
 Alert checker service - runs periodically to check price alerts and send notifications.
 """
 import yfinance as yf
-import pandas as pd
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 import math
 import httpx
@@ -157,7 +155,7 @@ async def check_alerts():
         result = await db.execute(
             select(Alert, NotificationSettings)
             .join(NotificationSettings, Alert.user_id == NotificationSettings.user_id, isouter=True)
-            .where(Alert.enabled == True)
+            .where(Alert.enabled)
         )
         rows = result.all()
 
@@ -257,7 +255,6 @@ async def check_alerts():
 
 async def check_alerts_endpoint():
     """Synchronous wrapper for calling check_alerts from an API endpoint."""
-    import asyncio
     await check_alerts()
     return {"status": "ok", "message": "Alerts checked"}
 
