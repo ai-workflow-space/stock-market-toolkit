@@ -27,38 +27,73 @@ jobs:
         run: pip install opencode httpx
 
       - name: Get changed files
-        id: files
         run: |
           git diff --name-only origin/${{ github.base_ref }}...HEAD > /tmp/changed_files.txt
-          echo "CONTENTS<<EOF" >> $GITHUB_OUTPUT
-          cat /tmp/changed_files.txt >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "CHANGED_FILES=$(cat /tmp/changed_files.txt | tr '\n' ' ')" >> $GITHUB_ENV
 
       - name: Run OpenCode Review
-        id: review
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           OPENCODE_BASE_URL: ${{ secrets.OPENCODE_BASE_URL }}
+          CHANGED_FILES: ${{ env.CHANGED_FILES }}
         run: |
           REVIEW_OUTPUT=$(opencode review \
             --model "minimax/MiniMax-M2.7" \
             --no-auto-commits \
-            --context "You are reviewing a PR for the Stock Market Toolkit (FastAPI + React, Docker). Check for: code quality, security, Docker build, API correctness. Be concise and actionable. Focus on the actual changes, not the whole codebase." \
-            ./backend ./frontend 2>&1 || echo "Review completed with some notes")
+            --context "You are reviewing a PR for the Stock Market Toolkit (FastAPI + React, Docker). Check for: code quality, security, Docker build, API correctness. Be concise and actionable. Focus on the actual changes." \
+            ./backend ./frontend 2>&1 || echo "Review completed with notes")
+          echo "REVIEW_OUTPUT=$REVIEW_OUTPUT" >> $GITHUB_ENV
+          echo "REVIEW_OUTPUT" >> $GITHUB_OUTPUT
+          echo "$REVIEW_OUTPUT" >> $GITHUB_OUTPUT
           echo "REVIEW_OUTPUT<<EOF" >> $GITHUB_OUTPUT
           echo "$REVIEW_OUTPUT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Post review comment
-        if: steps.review.outputs.REVIEW_OUTPUT != ''
         uses: actions/github-script@v7
         with:
-          script-path: .github/workflows/scripts/post-review.js
-          env:
-            REVIEW_OUTPUT: ${{ steps.review.outputs.REVIEW_OUTPUT }}
-            CONTENTS: ${{ steps.files.outputs.CONTENTS }}
-            PR_NUMBER: ${{ github.event.pull_request.number }}
-            REPO_OWNER: ${{ github.repository_owner }}
-            REPO_NAME: ${{ env.GITHUB_REPOSITORY }}
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const output = process.env.REVIEW_OUTPUT || '';
+            const files = fs.readFileSync('/tmp/changed_files.txt', 'utf8') || '';
+            const prNumber = context.payload.pull_request.number;
+
+            const body = [
+              '## Code Review',
+              '',
+              '### Changed Files',
+              '```',
+              files.trim(),
+              '```',
+              '',
+              '### Review Results',
+              '',
+              output.slice(0, 5000)
+            ].join('\n');
+
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+
+            const existing = comments.data.find(
+              c => c.user.login === 'github-actions[bot]' && c.body.includes('## Code Review')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+            }
