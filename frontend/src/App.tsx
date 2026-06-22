@@ -55,10 +55,14 @@ function SearchBar({ onSearch, loading }: { onSearch: (s: string) => void; loadi
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Track when debounce is pending to prevent click-outside race
+  const expectingShowRef = useRef(false);
 
   // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
+      // Don't close if we're waiting for search results to show dropdown
+      if (expectingShowRef.current) return;
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setShowDropdown(false);
       }
@@ -71,15 +75,16 @@ function SearchBar({ onSearch, loading }: { onSearch: (s: string) => void; loadi
     const v = e.target.value;
     setVal(v);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (v.trim().length < 1) { setResults([]); setShowDropdown(false); return; }
+    if (v.trim().length < 1) { setResults([]); setShowDropdown(false); expectingShowRef.current = false; return; }
     debounceRef.current = setTimeout(async () => {
+      expectingShowRef.current = true;
       setSearching(true);
       try {
         const data = await searchSymbols(v.trim());
         setResults(data.slice(0, 8));
         setShowDropdown(true);
       } catch { setResults([]); }
-      finally { setSearching(false); }
+      finally { setSearching(false); expectingShowRef.current = false; }
     }, 300);
   };
 
