@@ -4,7 +4,8 @@ import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Respons
 import { getStock, getIndicators, getStockInfo, compareStocks, searchSymbols } from "./api/stockApi";
 import type { StockData, Indicators, StockInfo } from "./types";
 import { TIMEFRAMES } from "./types";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AuthProvider } from "./context/AuthContext";
+import { useAuth } from "./hooks/useAuth";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import "./index.css";
@@ -75,7 +76,7 @@ function SearchBar({ onSearch, loading }: { onSearch: (s: string) => void; loadi
     const v = e.target.value;
     setVal(v);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (v.trim().length < 1) { setResults([]); setShowDropdown(false); expectingShowRef.current = false; return; }
+    if (v.trim().length < 3) { setResults([]); setShowDropdown(false); expectingShowRef.current = false; return; }
     debounceRef.current = setTimeout(async () => {
       expectingShowRef.current = true;
       setSearching(true);
