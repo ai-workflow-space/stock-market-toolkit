@@ -4,7 +4,14 @@ import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Respons
 import { getStock, getIndicators, getStockInfo, compareStocks, searchSymbols } from "./api/stockApi";
 import type { StockData, Indicators, StockInfo } from "./types";
 import { TIMEFRAMES } from "./types";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+
+interface CompareStock {
+  symbol: string;
+  close: number[];
+  timestamp: string[];
+}
+import { AuthProvider } from "./context/AuthContext";
+import { useAuth } from "./hooks/useAuth";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import "./index.css";
@@ -367,7 +374,11 @@ function Dashboard() {
   const toggleInd = useCallback((key: string) => {
     setActiveInds(prev => {
       const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
       return next;
     });
   }, []);
@@ -392,6 +403,7 @@ function Dashboard() {
     }
   }, [period]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(symbol); }, [symbol, period, load]);
 
   const chartData: ChartData[] = stock ? stock.close.map((close, i) => ({
@@ -452,7 +464,7 @@ function ComparePage() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [searching, setSearching] = useState(false);
   const [period, setPeriod] = useState("1mo");
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<CompareStock[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const tickerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -521,10 +533,10 @@ function ComparePage() {
 
   if (data) {
     // Build unified chart data
-    const maxLen = Math.max(...data.map((s: any) => s.close.length));
+    const maxLen = Math.max(...data.map((s: CompareStock) => s.close.length));
     const chartData = Array.from({ length: maxLen }, (_, i) => {
-      const row: any = { date: "" };
-      data.forEach((s: any) => {
+      const row: Record<string, string | number> = { date: "" };
+      data.forEach((s: CompareStock) => {
         row[s.symbol] = s.close[i];
         if (i === 0) row.date = new Date(s.timestamp[i]).toLocaleDateString("en-US", { month: "short", day: "numeric" });
       });
@@ -599,7 +611,7 @@ function ComparePage() {
                   );
                 }} />
                 <Legend wrapperStyle={{ fontSize: "0.8rem", color: "#94a3b8" }} />
-                {data.map((s: any, i: number) => (
+                {data.map((s: CompareStock, i: number) => (
                   <Line key={s.symbol} type="monotone" dataKey={s.symbol} stroke={colors[i % colors.length]} strokeWidth={2} dot={false} />
                 ))}
               </ComposedChart>
@@ -607,7 +619,7 @@ function ComparePage() {
           </div>
 
           <div className="compare-table">
-            {data.map((s: any, i: number) => (
+            {data.map((s: CompareStock, i: number) => (
               <div key={s.symbol} className="compare-stock-card">
                 <div className="compare-symbol" style={{ color: colors[i % colors.length] }}>{s.symbol}</div>
                 <div className="compare-price">${fmt(s.close[s.close.length - 1])}</div>
