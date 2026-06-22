@@ -183,7 +183,7 @@ function IndicatorToggles({ active, onToggle }: { active: Set<string>; onToggle:
 /* ─── PriceChart ─── */
 type ChartData = { date: string; close: number; sma20?: number | null; sma50?: number | null; sma200?: number | null; ema12?: number | null; ema26?: number | null; bb_upper?: number | null; bb_middle?: number | null; bb_lower?: number | null; };
 
-function PriceChart({ data, indicators, showBB }: { data: StockData; indicators: Indicators; showBB: boolean }) {
+function PriceChart({ data, indicators, showBB, active }: { data: StockData; indicators: Indicators; showBB: boolean; active?: Set<string> }) {
   const chartData: ChartData[] = data.close.map((close, i) => ({
     date: new Date(data.timestamp[i]).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
     close: close ?? 0,
@@ -214,11 +214,11 @@ function PriceChart({ data, indicators, showBB }: { data: StockData; indicators:
         {showBB && <Area yAxisId="price" dataKey="bb_middle" stroke="#6366f1" fill="none" strokeWidth={1} dot={false} name="BB Middle" />}
         {showBB && <Area yAxisId="price" dataKey="bb_lower" stroke="#6366f1" fill="rgba(99,102,241,0.1)" strokeWidth={1} strokeDasharray="3 3" dot={false} name="BB Lower" />}
         <Line yAxisId="price" type="monotone" dataKey="close" stroke="#3b82f6" strokeWidth={2} dot={false} name="Price" />
-        <Line yAxisId="price" type="monotone" dataKey="sma20" stroke="#f59e0b" strokeWidth={1} dot={false} name="SMA 20" />
-        <Line yAxisId="price" type="monotone" dataKey="sma50" stroke="#10b981" strokeWidth={1} dot={false} name="SMA 50" />
-        <Line yAxisId="price" type="monotone" dataKey="sma200" stroke="#ef4444" strokeWidth={1} dot={false} name="SMA 200" />
-        <Line yAxisId="price" type="monotone" dataKey="ema12" stroke="#8b5cf6" strokeWidth={1} dot={false} name="EMA 12" />
-        <Line yAxisId="price" type="monotone" dataKey="ema26" stroke="#ec4899" strokeWidth={1} dot={false} name="EMA 26" />
+        <Line yAxisId="price" type="monotone" dataKey="sma20" stroke="#f59e0b" strokeWidth={1} dot={false} name="SMA 20" hide={!active?.has("sma20")} />
+        <Line yAxisId="price" type="monotone" dataKey="sma50" stroke="#10b981" strokeWidth={1} dot={false} name="SMA 50" hide={!active?.has("sma50")} />
+        <Line yAxisId="price" type="monotone" dataKey="sma200" stroke="#ef4444" strokeWidth={1} dot={false} name="SMA 200" hide={!active?.has("sma200")} />
+        <Line yAxisId="price" type="monotone" dataKey="ema12" stroke="#8b5cf6" strokeWidth={1} dot={false} name="EMA 12" hide={!active?.has("ema12")} />
+        <Line yAxisId="price" type="monotone" dataKey="ema26" stroke="#ec4899" strokeWidth={1} dot={false} name="EMA 26" hide={!active?.has("ema26")} />
         <Legend wrapperStyle={{ fontSize: "0.75rem", color: "#94a3b8" }} />
       </ComposedChart>
     </ResponsiveContainer>
@@ -226,7 +226,7 @@ function PriceChart({ data, indicators, showBB }: { data: StockData; indicators:
 }
 
 /* ─── RSIChart ─── */
-function RSIChart({ data, rsi }: { data: ChartData[]; rsi: (number | null)[] }) {
+function RSIChart({ data, rsi, active }: { data: ChartData[]; rsi: (number | null)[]; active?: Set<string> }) {
   const rsiData = data.map((d, i) => ({ date: d.date, rsi: rsi[i] }));
   return (
     <ResponsiveContainer width="100%" height={120}>
@@ -243,14 +243,14 @@ function RSIChart({ data, rsi }: { data: ChartData[]; rsi: (number | null)[] }) 
             <div style={{ color: "#fbbf24" }}>RSI: {fmt(payload[0]?.value as number)}</div>
           </div>;
         }} />
-        <Line yAxisId="rsi" type="monotone" dataKey="rsi" stroke="#fbbf24" strokeWidth={1.5} dot={false} />
+        <Line yAxisId="rsi" type="monotone" dataKey="rsi" stroke="#fbbf24" strokeWidth={1.5} dot={false} hide={!active?.has("rsi")} />
       </ComposedChart>
     </ResponsiveContainer>
   );
 }
 
 /* ─── MACDChart ─── */
-function MACDChart({ data, macd, signal, hist }: { data: ChartData[]; macd: (number | null)[]; signal: (number | null)[]; hist: (number | null)[] }) {
+function MACDChart({ data, macd, signal, hist, active }: { data: ChartData[]; macd: (number | null)[]; signal: (number | null)[]; hist: (number | null)[]; active?: Set<string> }) {
   const macdData = data.map((d, i) => ({ date: d.date, macd: macd[i], signal: signal[i], hist: hist[i] }));
   return (
     <ResponsiveContainer width="100%" height={120}>
@@ -265,9 +265,9 @@ function MACDChart({ data, macd, signal, hist }: { data: ChartData[]; macd: (num
             {payload.map((p, i) => <div key={i} style={{ color: p.color }}>{String(p.dataKey)}: {fmt(p.value as number)}</div>)}
           </div>;
         }} />
-        <Bar yAxisId="m" dataKey="hist" fill="#6366f1" opacity={0.5} name="Histogram" maxBarSize={6} />
-        <Line yAxisId="m" type="monotone" dataKey="macd" stroke="#3b82f6" strokeWidth={1.5} dot={false} name="MACD" />
-        <Line yAxisId="m" type="monotone" dataKey="signal" stroke="#f97316" strokeWidth={1.5} dot={false} name="Signal" />
+        <Bar yAxisId="m" dataKey="hist" fill="#6366f1" opacity={0.5} name="Histogram" maxBarSize={6} hide={!active?.has("macd")} />
+        <Line yAxisId="m" type="monotone" dataKey="macd" stroke="#3b82f6" strokeWidth={1.5} dot={false} name="MACD" hide={!active?.has("macd")} />
+        <Line yAxisId="m" type="monotone" dataKey="signal" stroke="#f97316" strokeWidth={1.5} dot={false} name="Signal" hide={!active?.has("macd")} />
       </ComposedChart>
     </ResponsiveContainer>
   );
@@ -430,17 +430,17 @@ function Dashboard() {
           <div className="charts-grid">
             <div className="card">
               <div className="card-title">{stock.symbol} — {period.toUpperCase()}</div>
-              <PriceChart data={stock} indicators={indicators} showBB={activeInds.has("bb")} />
+              <PriceChart data={stock} indicators={indicators} showBB={activeInds.has("bb")} active={activeInds} />
             </div>
 
             <div className="card">
               <div className="card-title">RSI (14)</div>
-              <RSIChart data={chartData} rsi={indicators.rsi} />
+              <RSIChart data={chartData} rsi={indicators.rsi} active={activeInds} />
             </div>
 
             <div className="card">
               <div className="card-title">MACD (12, 26, 9)</div>
-              <MACDChart data={chartData} macd={indicators.macd} signal={indicators.macd_signal} hist={indicators.macd_hist} />
+              <MACDChart data={chartData} macd={indicators.macd} signal={indicators.macd_signal} hist={indicators.macd_hist} active={activeInds} />
             </div>
 
             <StockInfoCard info={info} stock={stock} />
