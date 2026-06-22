@@ -319,7 +319,7 @@ export default function AlertsPage() {
               <div className="card" style={{ textAlign: "center", padding: "3rem" }}>
                 <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔔</div>
                 <div style={{ color: "#94a3b8", marginBottom: "1rem" }}>No alerts yet</div>
-                <button className="search-btn" onClick={() => setShowCreate(true)}>Create your first alert</button>
+                <button className="search-btn" onClick={() => setShowCreate(true)}>+ New Alert</button>
               </div>
             ) : (
               <div className="alerts-list">
