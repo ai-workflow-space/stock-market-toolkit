@@ -87,13 +87,57 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading signals
-    const timer = setTimeout(() => {
-      setSignals(generateMockSignals(["AAPL", "TSLA", "MSFT", "GOOGL", "AMZN", "NVDA"]));
-      setLoading(false);
-    }, 500);
-    
-    return () => clearTimeout(timer);
+    const symbols = ["AAPL", "TSLA", "MSFT", "GOOGL", "AMZN", "NVDA"];
+    const token = localStorage.getItem("access_token");
+
+    async function fetchSignals() {
+      try {
+        const results: Signal[] = await Promise.all(
+          symbols.map(async (symbol) => {
+            const res = await fetch(
+              `${import.meta.env.VITE_API_URL || ""}/api/analysis/${symbol}?period=1mo`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (!res.ok) throw new Error(`${symbol} failed`);
+            const data = await res.json();
+
+            const directionMap: Record<string, Signal["direction"]> = {
+              BUY: "bullish",
+              SELL: "bearish",
+              NEUTRAL: "neutral",
+            };
+            const direction = directionMap[data.signal] ?? "neutral";
+            const confidence = data.confidence ?? 0.5;
+            const reasons = (data.reasons ?? []).join("; ");
+
+            // Map best-four-point indicators to signal_type
+            const { indicators } = data;
+            let signal_type: Signal["signal_type"] = "macd_cross";
+            if (indicators?.bias < -3 || indicators?.bias > 3) signal_type = "bb_touch";
+            else if (indicators?.volume_ratio > 1.3) signal_type = "volume_spike";
+
+            return {
+              id: `sig-${symbol}`,
+              symbol,
+              direction,
+              signal_type,
+              price: data.price ?? 0,
+              timestamp: data.timestamp ?? new Date().toISOString(),
+              strength: Math.round(confidence * 100),
+              description: `[${data.signal}] ${reasons} — confidence ${(confidence * 100).toFixed(0)}%`,
+            } satisfies Signal;
+          })
+        );
+        setSignals(results);
+      } catch {
+        // Fall back to mock data on error so page still renders
+        setSignals(generateMockSignals(symbols));
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchSignals();
   }, []);
 
   const handleDismissSignal = useCallback((id: string) => {
