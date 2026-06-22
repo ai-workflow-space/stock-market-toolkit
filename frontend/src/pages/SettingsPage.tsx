@@ -22,8 +22,9 @@ export default function SettingsPage() {
               onClick={toggleTheme}
               aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
             >
-              <span className="theme-toggle-icon">{theme === "dark" ? "☀️" : "🌙"}</span>
-              <span className="theme-toggle-label">{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+              <span className="theme-toggle-label">
+                {theme === "dark" ? "Switch to Light" : "Switch to Dark"}
+              </span>
             </button>
           </div>
         </div>
