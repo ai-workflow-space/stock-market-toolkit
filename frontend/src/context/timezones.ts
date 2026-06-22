@@ -1,0 +1,15 @@
+export const COMMON_TIMEZONES = [
+  { label: "UTC", value: "UTC" },
+  { label: "New York (EST/EDT)", value: "America/New_York" },
+  { label: "Los Angeles (PST/PDT)", value: "America/Los_Angeles" },
+  { label: "Chicago (CST/CDT)", value: "America/Chicago" },
+  { label: "London (GMT/BST)", value: "Europe/London" },
+  { label: "Paris (CET/CEST)", value: "Europe/Paris" },
+  { label: "Berlin (CET/CEST)", value: "Europe/Berlin" },
+  { label: "Tokyo (JST)", value: "Asia/Tokyo" },
+  { label: "Shanghai (CST)", value: "Asia/Shanghai" },
+  { label: "Hong Kong (HKT)", value: "Asia/Hong_Kong" },
+  { label: "Singapore (SGT)", value: "Asia/Singapore" },
+  { label: "Sydney (AEST/AEDT)", value: "Australia/Sydney" },
+  { label: "Taipei (CST)", value: "Asia/Taipei" },
+];

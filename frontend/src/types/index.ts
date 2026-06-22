@@ -55,3 +55,24 @@ export const TIMEFRAMES = [
   { label: "5Y", value: "5y" },
   { label: "Max", value: "max" },
 ];
+
+export type SignalDirection = "bullish" | "bearish" | "neutral";
+
+export type SignalType = 
+  | "rsi_oversold" 
+  | "rsi_overbought" 
+  | "macd_cross" 
+  | "sma_cross" 
+  | "bb_touch" 
+  | "volume_spike";
+
+export interface Signal {
+  id: string;
+  symbol: string;
+  direction: SignalDirection;
+  signal_type: SignalType;
+  price: number;
+  timestamp: string;
+  strength: number; // 0-100
+  description: string;
+}

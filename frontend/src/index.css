@@ -16,6 +16,20 @@
   --warn: #f59e0b;
 }
 
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-dim: #64748b;
+  --primary: #3b82f6;
+  --accent: #6366f1;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warn: #d97706;
+}
+
 html { font-size: 16px; }
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -187,7 +201,7 @@ body {
 
 /* ─── Layout ─── */
 .page { padding: 2rem 0; }
-.container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+.container { max-width: 100%; margin: 0 auto; padding: 0 1.5rem; }
 .page-header { margin-bottom: 2rem; }
 
 /* ─── Search ─── */
@@ -211,6 +225,33 @@ body {
 }
 .search-input:focus { border-color: var(--primary); }
 .search-input::placeholder { color: var(--text-dim); }
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.theme-toggle:hover {
+  background: var(--card);
+  border-color: var(--primary);
+}
+.theme-toggle-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+.theme-toggle-label {
+  color: var(--text);
+}
+
 .search-btn {
   background: var(--primary);
   color: white;
@@ -360,8 +401,30 @@ body {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.25rem;
+  min-height: 0;
+  /* Height driven by content, grid item expands with it */
+  height: auto;
+  display: flex;
+  flex-direction: column;
 }
+
+/* Each card type sets its own min-height to match content exactly */
+.card:has(.recharts-responsive-container) { min-height: 150px; }
+.card:has(.info-grid) { min-height: 1174px; }
+.card:has(.price-table) { min-height: 450px; }
 .card-title { font-size: 0.8rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
+
+/* ─── Signals Grid (responsive) ─── */
+.signals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+@media (max-width: 640px) {
+  .signals-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* ─── Error ─── */
 .error-banner { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.875rem; margin-bottom: 1.25rem; }

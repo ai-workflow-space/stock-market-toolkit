@@ -13,7 +13,7 @@ import logging
 
 from app.config import get_settings
 from app.database import init_db
-from app.routes import auth, stocks, alerts
+from app.routes import auth, stocks, alerts, mcp, analysis
 
 settings = get_settings()
 log = logging.getLogger(__name__)
@@ -35,6 +35,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    redirect_slashes=False,
     lifespan=lifespan,
 )
 
@@ -56,6 +57,8 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.include_router(auth.router)
 app.include_router(stocks.router)
 app.include_router(alerts.router)
+app.include_router(mcp.router)
+app.include_router(analysis.router)
 
 @app.get("/health")
 async def health():

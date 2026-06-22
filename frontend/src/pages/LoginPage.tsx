@@ -27,6 +27,10 @@ export default function LoginPage() {
 
   return (
     <div className="auth-page">
+      <div className="auth-hero">
+        <h1 className="auth-hero-title">AI-powered technical analysis for serious investors</h1>
+        <p className="auth-hero-subtitle">Advanced charting, real-time alerts, and portfolio tracking in one powerful platform.</p>
+      </div>
       <div className="auth-card">
         <div className="auth-logo">📈 Stock Toolkit</div>
         <h1 className="auth-title">Welcome back</h1>

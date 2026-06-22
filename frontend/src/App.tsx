@@ -5,11 +5,17 @@ import { getStock, getIndicators, getStockInfo, compareStocks, searchSymbols } f
 import type { StockData, Indicators, StockInfo } from "./types";
 import { TIMEFRAMES } from "./types";
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import { useAuth } from "./hooks/useAuth";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AlertsPage from "./pages/AlertsPage";
+import SettingsPage from "./pages/SettingsPage";
+import DashboardPage from "./pages/DashboardPage";
 import "./index.css";
+import GridLayout, { type LayoutItem, useContainerWidth } from 'react-grid-layout';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
 
 /* ─── helpers ─── */
 const fmt = (n: number | null | undefined) =>
@@ -27,16 +33,28 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 /* ─── Navbar ─── */
+const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "1.0.0";
+
 function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   return (
     <nav className="navbar">
-      <Link to="/" className="nav-logo">Stock Toolkit</Link>
+      <Link to="/" className="nav-logo">
+        <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: "0.5rem", verticalAlign: "middle" }}>
+          <rect width="32" height="32" rx="6" fill="#0f172a"/>
+          <polyline points="4,22 10,14 16,18 22,8 28,12" stroke="#3b82f6" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+          <circle cx="28" cy="12" r="2" fill="#22c55e"/>
+        </svg>
+        Stock Toolkit
+      </Link>
+      <span style={{ fontSize: "0.65rem", background: "#1e293b", color: "#64748b", borderRadius: "4px", padding: "1px 5px", marginLeft: "0.25rem", verticalAlign: "middle" }}>v{APP_VERSION}</span>
       <div className="nav-links">
         <Link to="/" className="nav-link">Dashboard</Link>
+        <Link to="/signals" className="nav-link">Signals</Link>
         <Link to="/compare" className="nav-link">Compare</Link>
         <Link to="/alerts" className="nav-link">Alerts</Link>
+        <Link to="/settings" className="nav-link">Settings</Link>
         {user && (
           <div className="nav-user">
             <span className="nav-username">{user.username}</span>
@@ -57,7 +75,7 @@ function SearchBar({ onSearch, loading }: { onSearch: (s: string) => void; loadi
   const [showDropdown, setShowDropdown] = useState(false);
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
   // Track when debounce is pending to prevent click-outside race
   const expectingShowRef = useRef(false);
 
@@ -66,7 +84,7 @@ function SearchBar({ onSearch, loading }: { onSearch: (s: string) => void; loadi
     const handler = (e: MouseEvent) => {
       // Don't close if we're waiting for search results to show dropdown
       if (expectingShowRef.current) return;
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setShowDropdown(false);
       }
     };
@@ -109,7 +127,7 @@ function SearchBar({ onSearch, loading }: { onSearch: (s: string) => void; loadi
   return (
     <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "2rem" }}>
       <form onSubmit={handleSubmit} style={{ display: "flex", gap: "0.5rem", flex: 1, maxWidth: 480, position: "relative" }}>
-        <div className="search-container" style={{ flex: 1 }} ref={containerRef}>
+        <div className="search-container" style={{ flex: 1 }} ref={searchRef}>
           <span className="search-icon"></span>
           <input
             className="search-input"
@@ -415,9 +433,36 @@ function Dashboard() {
     bb_lower: indicators?.bb_lower[i],
   })) : [];
 
+  // Build dynamic layout for react-grid-layout
+  const cols = 12;
+  let y = 0;
+  const layout: LayoutItem[] = [];
+
+  // PriceChart: 12 cols, 3 rows (360px for 300px chart + padding)
+  layout.push({ i: "price", x: 0, y, w: 12, h: 3, minW: 6 });
+  y += 3;
+
+  if (activeInds.has("rsi")) {
+    // RSI: 6 cols, 1 row (120px for chart)
+    layout.push({ i: "rsi", x: 0, y, w: 6, h: 1, minW: 4 });
+  }
+  if (activeInds.has("macd")) {
+    // MACD: 6 cols, 1 row (120px for chart, to the right of RSI if shown, else left)
+    const macdX = activeInds.has("rsi") ? 6 : 0;
+    layout.push({ i: "macd", x: macdX, y, w: 6, h: 1, minW: 4 });
+  }
+  if (activeInds.has("rsi") || activeInds.has("macd")) y += 1;
+
+  // StockInfoCard: 4 cols, 10 rows (1200px for 1174px content)
+  layout.push({ i: "info", x: 0, y, w: 4, h: 10, minW: 3 });
+  // DataTable: 8 cols, 6 rows (720px for 676px content)
+  layout.push({ i: "table", x: 4, y, w: 8, h: 6, minW: 4 });
+
+  const { containerRef, width: chartWidth } = useContainerWidth();
+
   return (
     <div className="page">
-      <div className="container">
+      <div className="container" ref={containerRef}>
         <div className="page-header">
           <SearchBar onSearch={setSymbol} loading={loading} />
           <TimeframeSelector value={period} onChange={setPeriod} />
@@ -427,29 +472,41 @@ function Dashboard() {
         {error && <div className="error-banner">{error}</div>}
 
         {stock && indicators && info && (
-          <div className="charts-grid">
-            <div className="card">
+          <GridLayout
+            className="charts-grid"
+            layout={layout}
+            width={chartWidth}
+            gridConfig={{
+              cols: cols,
+              rowHeight: 120,
+              margin: [16, 16] as const,
+            }}
+            dragConfig={{ enabled: true }}
+            resizeConfig={{ enabled: true }}
+          >
+            <div className="card" key="price">
               <div className="card-title">{stock.symbol} — {period.toUpperCase()}</div>
               <PriceChart data={stock} indicators={indicators} showBB={activeInds.has("bb")} active={activeInds} />
             </div>
-
             {activeInds.has("rsi") && (
-              <div className="card">
+              <div className="card" key="rsi">
                 <div className="card-title">RSI (14)</div>
                 <RSIChart data={chartData} rsi={indicators.rsi} active={activeInds} />
               </div>
             )}
-
             {activeInds.has("macd") && (
-              <div className="card">
+              <div className="card" key="macd">
                 <div className="card-title">MACD (12, 26, 9)</div>
                 <MACDChart data={chartData} macd={indicators.macd} signal={indicators.macd_signal} hist={indicators.macd_hist} active={activeInds} />
               </div>
             )}
-
-            <StockInfoCard info={info} stock={stock} />
-            <DataTable stock={stock} />
-          </div>
+            <div className="card" key="info">
+              <StockInfoCard info={info} stock={stock} />
+            </div>
+            <div className="card" key="table">
+              <DataTable stock={stock} />
+            </div>
+          </GridLayout>
         )}
       </div>
     </div>
@@ -467,9 +524,21 @@ function ComparePage() {
   const [data, setData] = useState<StockData[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [activeSMAs, setActiveSMAs] = useState<Set<string>>(new Set());
+  const [showNormalized, setShowNormalized] = useState(false);
+  const [indicatorsData, setIndicatorsData] = useState<Record<string, Indicators>>({});
   const tickerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tickerContainerRef = useRef<HTMLDivElement>(null);
   const expectingShowRef = useRef(false);
+
+  const toggleSMA = useCallback((key: string) => {
+    setActiveSMAs(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -542,9 +611,20 @@ function ComparePage() {
     if (tickers.length > 5) { setError("Max 5 tickers"); return; }
     setError("");
     setLoading(true);
+    setActiveSMAs(new Set());
     try {
       const result = await compareStocks(tickers, period);
       setData(result.stocks);
+      // Fetch indicators for each ticker
+      const indResults: Record<string, Indicators> = {};
+      await Promise.all(
+        tickers.map(async (sym) => {
+          try {
+            indResults[sym] = await getIndicators(sym, period);
+          } catch { /* ignore indicator failures */ }
+        })
+      );
+      setIndicatorsData(indResults);
     } catch (e: unknown) {
       setError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Compare failed");
     } finally {
@@ -552,16 +632,80 @@ function ComparePage() {
     }
   };
 
+  const exportCSV = () => {
+    if (!data || data.length === 0) return;
+    const headers = ["Date", ...data.map(s => s.symbol)];
+    const rows: string[][] = [headers];
+    const maxLen = Math.max(...data.map(s => s.close.length));
+    for (let i = 0; i < maxLen; i++) {
+      const row = [new Date(data[0].timestamp[i]).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })];
+      data.forEach(s => {
+        row.push(data[0].timestamp[i] ? String(s.close[i] ?? "") : "");
+      });
+      rows.push(row);
+    }
+    const csv = rows.map(r => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `compare_${tickers.join("_")}_${period}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const colors = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6"];
 
   if (data) {
     // Build unified chart data
     const maxLen = Math.max(...data.map((s) => s.close.length));
+
+    // Calculate performance for each stock
+    const performances = data.map(s => ({
+      symbol: s.symbol,
+      pctChange: ((s.close[s.close.length - 1] - s.close[0]) / s.close[0]) * 100,
+      color: colors[data.indexOf(s) % colors.length],
+    }));
+    const sortedByPerf = [...performances].sort((a, b) => b.pctChange - a.pctChange);
+    const bestPerf = sortedByPerf[0];
+    const worstPerf = sortedByPerf[sortedByPerf.length - 1];
+    const avgPerf = performances.reduce((sum, p) => sum + p.pctChange, 0) / performances.length;
+
     const chartData: Record<string, string | number>[] = Array.from({ length: maxLen }, (_, i) => {
       const row: Record<string, string | number> = { date: "" };
       data.forEach((s) => {
         row[s.symbol] = s.close[i];
         if (i === 0) row.date = new Date(s.timestamp[i]).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      });
+      return row;
+    });
+
+    // Normalized chart data (base 100)
+    const normChartData: Record<string, string | number>[] = Array.from({ length: maxLen }, (_, i) => {
+      const row: Record<string, string | number> = { date: "" };
+      data.forEach((s) => {
+        const basePrice = s.close[0] || 1;
+        row[s.symbol] = showNormalized ? ((s.close[i] / basePrice) * 100) : s.close[i];
+        if (i === 0) row.date = new Date(s.timestamp[i]).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      });
+      return row;
+    });
+
+    // Build SMA chart data
+    const smaKeys = ["sma20", "sma50", "sma200"] as const;
+    const smaColors = { sma20: "#f59e0b", sma50: "#10b981", sma200: "#ef4444" };
+    const smaLabels = { sma20: "SMA 20", sma50: "SMA 50", sma200: "SMA 200" };
+    const smaChartData: Record<string, string | number>[] = Array.from({ length: maxLen }, (_, i) => {
+      const row: Record<string, string | number> = { date: "" };
+      data.forEach((s) => {
+        row[s.symbol] = s.close[i];
+        if (i === 0) row.date = new Date(s.timestamp[i]).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        smaKeys.forEach(key => {
+          const ind = indicatorsData[s.symbol];
+          if (ind && ind[key] && ind[key]![i] != null) {
+            row[`${s.symbol}_${key}`] = ind[key]![i];
+          }
+        });
       });
       return row;
     });
@@ -623,18 +767,69 @@ function ComparePage() {
             <button className="search-btn" style={{ background: "#334155" }} type="button" onClick={() => { setData(null); setTickers([]); }}>Edit</button>
           </form>
 
-          <div className="card">
+          {/* Performance Cards */}
+          <div className="compare-table" style={{ marginBottom: "1.5rem" }}>
+            <div className="compare-stock-card">
+              <div className="compare-symbol" style={{ color: bestPerf.color }}>🏆 {bestPerf.symbol}</div>
+              <div className="compare-change" style={{ color: bestPerf.pctChange >= 0 ? "#22c55e" : "#ef4444" }}>
+                {pct(bestPerf.pctChange)}
+              </div>
+              <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "0.25rem" }}>Best Performer</div>
+            </div>
+            <div className="compare-stock-card">
+              <div className="compare-symbol" style={{ color: worstPerf.color }}>📉 {worstPerf.symbol}</div>
+              <div className="compare-change" style={{ color: worstPerf.pctChange >= 0 ? "#22c55e" : "#ef4444" }}>
+                {pct(worstPerf.pctChange)}
+              </div>
+              <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "0.25rem" }}>Worst Performer</div>
+            </div>
+            <div className="compare-stock-card">
+              <div className="compare-symbol" style={{ color: "#94a3b8" }}>📊 Average</div>
+              <div className="compare-change" style={{ color: avgPerf >= 0 ? "#22c55e" : "#ef4444" }}>
+                {pct(avgPerf)}
+              </div>
+              <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "0.25rem" }}>Avg Performance</div>
+            </div>
+          </div>
+
+          {/* SMA Toggle Row */}
+          <div className="indicator-bar" style={{ marginBottom: "1rem" }}>
+            {(["sma20", "sma50", "sma200"] as const).map(key => (
+              <button
+                key={key}
+                className={`ind-btn ${activeSMAs.has(key) ? "active" : ""}`}
+                onClick={() => toggleSMA(key)}
+                style={activeSMAs.has(key) ? { background: smaColors[key], borderColor: smaColors[key] } : {}}
+              >
+                {smaLabels[key]}
+              </button>
+            ))}
+            <button
+              className={`ind-btn ${showNormalized ? "active" : ""}`}
+              onClick={() => setShowNormalized(!showNormalized)}
+              style={showNormalized ? { background: "#6366f1", borderColor: "#6366f1" } : {}}
+            >
+              Normalized
+            </button>
+            <button className="search-btn" onClick={exportCSV} style={{ marginLeft: "auto", background: "#22c55e" }}>
+              Export CSV
+            </button>
+          </div>
+
+          {/* Main Price Chart */}
+          <div className="card" style={{ marginBottom: "1rem" }}>
+            <div className="card-title">{showNormalized ? "Normalized Price (Base 100)" : "Price Comparison"}</div>
             <ResponsiveContainer width="100%" height={350}>
-              <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <ComposedChart data={showNormalized ? normChartData : chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                 <XAxis dataKey="date" tick={{ fill: "#475569", fontSize: 11 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fill: "#475569", fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => `$${v.toFixed(0)}`} />
+                <YAxis tick={{ fill: "#475569", fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => showNormalized ? `${(v as number).toFixed(0)}` : `$${(v as number).toFixed(0)}`} />
                 <Tooltip content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null;
                   return (
                     <div style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 10, padding: "0.75rem 1rem", fontSize: "0.82rem" }}>
                       <div style={{ color: "#94a3b8", marginBottom: "0.4rem" }}>{String(label)}</div>
-                      {payload.map((p, i) => <div key={i} style={{ color: p.color }}>{String(p.dataKey)}: ${fmt(p.value as number)}</div>)}
+                      {payload.map((p, i) => <div key={i} style={{ color: p.color }}>{String(p.dataKey)}: {showNormalized ? (p.value as number).toFixed(2) : `$${fmt(p.value as number)}`}</div>)}
                     </div>
                   );
                 }} />
@@ -645,6 +840,47 @@ function ComparePage() {
               </ComposedChart>
             </ResponsiveContainer>
           </div>
+
+          {/* SMA Chart Overlay */}
+          {activeSMAs.size > 0 && (
+            <div className="card" style={{ marginBottom: "1rem" }}>
+              <div className="card-title">SMA Overlay</div>
+              <ResponsiveContainer width="100%" height={250}>
+                <ComposedChart data={smaChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                  <XAxis dataKey="date" tick={{ fill: "#475569", fontSize: 11 }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fill: "#475569", fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => `$${(v as number).toFixed(0)}`} />
+                  <Tooltip content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null;
+                    return (
+                      <div style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 10, padding: "0.75rem 1rem", fontSize: "0.82rem" }}>
+                        <div style={{ color: "#94a3b8", marginBottom: "0.4rem" }}>{String(label)}</div>
+                        {payload.map((p, i) => <div key={i} style={{ color: p.color }}>{String(p.dataKey)}: ${fmt(p.value as number)}</div>)}
+                      </div>
+                    );
+                  }} />
+                  <Legend wrapperStyle={{ fontSize: "0.8rem", color: "#94a3b8" }} />
+                  {data.map((s, i: number) => (
+                    <Line key={s.symbol} type="monotone" dataKey={s.symbol} stroke={colors[i % colors.length]} strokeWidth={2} dot={false} />
+                  ))}
+                  {data.map((s) =>
+                    smaKeys.filter(key => activeSMAs.has(key)).map(key => (
+                      <Line
+                        key={`${s.symbol}_${key}`}
+                        type="monotone"
+                        dataKey={`${s.symbol}_${key}`}
+                        stroke={smaColors[key]}
+                        strokeWidth={1.5}
+                        strokeDasharray={key === "sma200" ? "5 5" : undefined}
+                        dot={false}
+                        name={`${s.symbol} ${smaLabels[key]}`}
+                      />
+                    ))
+                  )}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
           <div className="compare-table">
             {data.map((s, i: number) => (
@@ -728,7 +964,7 @@ function Footer() {
   const buildTime = import.meta.env.VITE_BUILD_TIME as string || '';
   return (
     <footer className="app-footer">
-      <span>v1.0.0</span>
+      <span>v{APP_VERSION}</span>
       {sha && <span className="footer-sha">@{sha}</span>}
       {buildTime && <span className="footer-time">built {buildTime}</span>}
     </footer>
@@ -740,13 +976,17 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/" element={<ProtectedRoute><><Navbar /><Dashboard /><Footer /></></ProtectedRoute>} />
-          <Route path="/compare" element={<ProtectedRoute><><Navbar /><ComparePage /><Footer /></></ProtectedRoute>} />
-          <Route path="/alerts" element={<ProtectedRoute><><Navbar /><AlertsPage /><Footer /></></ProtectedRoute>} />
-        </Routes>
+        <ThemeProvider>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/" element={<ProtectedRoute><><Navbar /><Dashboard /><Footer /></></ProtectedRoute>} />
+            <Route path="/signals" element={<ProtectedRoute><><Navbar /><DashboardPage /><Footer /></></ProtectedRoute>} />
+            <Route path="/compare" element={<ProtectedRoute><><Navbar /><ComparePage /><Footer /></></ProtectedRoute>} />
+            <Route path="/alerts" element={<ProtectedRoute><><Navbar /><AlertsPage /><Footer /></></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><><Navbar /><SettingsPage /><Footer /></></ProtectedRoute>} />
+          </Routes>
+        </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
   );

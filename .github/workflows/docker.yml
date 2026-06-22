@@ -44,6 +44,12 @@ jobs:
         id: short_sha
         run: echo "sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
 
+      - name: Get version tag
+        id: version_tag
+        run: |
+          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Build and push backend
         uses: docker/build-push-action@v5
         with:
@@ -55,6 +61,7 @@ jobs:
           tags: |
             kyleckw/stock-market-toolkit-backend:latest
             kyleckw/stock-market-toolkit-backend:${{ steps.short_sha.outputs.sha }}
+            kyleckw/stock-market-toolkit-backend:${{ steps.version_tag.outputs.version }}
 
       - name: Build and push frontend
         uses: docker/build-push-action@v5
@@ -67,6 +74,8 @@ jobs:
           build-args: |
             VITE_GIT_SHA=${{ steps.short_sha.outputs.sha }}
             VITE_BUILD_TIME=${{ github.event.head_commit.timestamp }}
+            VITE_APP_VERSION=${{ steps.version_tag.outputs.version }}
           tags: |
             kyleckw/stock-market-toolkit-frontend:latest
             kyleckw/stock-market-toolkit-frontend:${{ steps.short_sha.outputs.sha }}
+            kyleckw/stock-market-toolkit-frontend:${{ steps.version_tag.outputs.version }}
