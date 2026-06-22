@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.1.0...v0.2.0) (2026-06-22)
+
+
+### Features
+
+* v0.2.0 release — 8 new features ([#20](https://github.com/ai-workflow-space/stock-market-toolkit/issues/20)) ([a8522bb](https://github.com/ai-workflow-space/stock-market-toolkit/commit/a8522bba9307826efd4d0097b47d189f868ac86e))
+
 ## 0.1.0 (2026-06-22)
 
 
