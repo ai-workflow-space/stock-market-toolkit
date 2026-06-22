@@ -434,7 +434,7 @@ function Dashboard() {
   })) : [];
 
   // Build dynamic layout for react-grid-layout
-  const rowHeight = 80;
+  const rowHeight = 160;
   const cols = 12;
   let y = 0;
   const layout: LayoutItem[] = [];
@@ -965,7 +965,7 @@ function Footer() {
   const buildTime = import.meta.env.VITE_BUILD_TIME as string || '';
   return (
     <footer className="app-footer">
-      <span>v1.0.0</span>
+      <span>v{APP_VERSION}</span>
       {sha && <span className="footer-sha">@{sha}</span>}
       {buildTime && <span className="footer-time">built {buildTime}</span>}
     </footer>
