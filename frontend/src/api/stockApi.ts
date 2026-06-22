@@ -47,7 +47,6 @@ export async function compareStocks(symbols: string[], period: string) {
 export async function searchSymbols(q: string) {
   const res = await axios.get(`${API}/api/search`, {
     params: { q },
-    headers: authHeaders(),
   });
   const data = res.data;
   return Array.isArray(data) ? data : (data.suggestions || []);
