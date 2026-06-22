@@ -4,9 +4,25 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'Dockerfile*'
+      - 'docker-compose*.yml'
+      - 'requirements.txt'
+      - 'package.json'
+      - 'package-lock.json'
   pull_request:
     branches:
       - main
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'Dockerfile*'
+      - 'docker-compose*.yml'
+      - 'requirements.txt'
+      - 'package.json'
+      - 'package-lock.json'
 
 jobs:
   build-and-push:
@@ -34,6 +50,8 @@ jobs:
           context: ./backend
           push: ${{ github.event_name == 'push' }}
           platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             kyleckw/stock-market-toolkit-backend:latest
             kyleckw/stock-market-toolkit-backend:${{ steps.short_sha.outputs.sha }}
@@ -44,6 +62,8 @@ jobs:
           context: ./frontend
           push: ${{ github.event_name == 'push' }}
           platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
             VITE_GIT_SHA=${{ steps.short_sha.outputs.sha }}
             VITE_BUILD_TIME=${{ github.event.head_commit.timestamp }}
