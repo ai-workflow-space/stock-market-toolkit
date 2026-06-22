@@ -56,14 +56,10 @@ async def get_analysis(
 
     try:
         macd_df = ta.macd(close, fast=12, slow=26, signal=9)
-        bbands_df = ta.bbands(close, length=20, std=2)
     except Exception:
         macd_df = None
-        bbands_df = None
 
     rsi_vals = _safe_ta_series(ta.rsi, close, length=14)
-    sma20 = _safe_ta_series(ta.sma, close, length=20)
-    sma50 = _safe_ta_series(ta.sma, close, length=50) if len(close) >= 50 else [None] * len(close)
 
     # ── Best Four Point signal computation ──────────────────────────────────
     latest_close = float(close.iloc[-1])

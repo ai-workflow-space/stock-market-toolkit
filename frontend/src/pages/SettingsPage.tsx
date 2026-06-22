@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "../hooks/useTheme";
-import { COMMON_TIMEZONES } from "../context/ThemeContext";
+import { COMMON_TIMEZONES } from "../context/timezones";
 
 export default function SettingsPage() {
   const { theme, toggleTheme, timezone, setTimezone } = useTheme();

@@ -1,5 +1,4 @@
 import { createContext, useState, useEffect, type ReactNode } from "react";
-import { COMMON_TIMEZONES } from "./timezones";
 
 export type ThemeMode = "light" | "dark";
 
@@ -9,9 +8,7 @@ interface ThemeContextType {
   timezone: string;
   setTimezone: (tz: string) => void;
 }
-
-export { COMMON_TIMEZONES };
-
+// eslint-disable-next-line react-refresh/only-export-components
 export const ThemeContext = createContext<ThemeContextType | null>(null);
 
 const THEME_KEY = "stock-toolkit-theme";

@@ -863,7 +863,7 @@ function ComparePage() {
                   {data.map((s, i: number) => (
                     <Line key={s.symbol} type="monotone" dataKey={s.symbol} stroke={colors[i % colors.length]} strokeWidth={2} dot={false} />
                   ))}
-                  {data.map((s, _si: number) =>
+                  {data.map((s) =>
                     smaKeys.filter(key => activeSMAs.has(key)).map(key => (
                       <Line
                         key={`${s.symbol}_${key}`}
