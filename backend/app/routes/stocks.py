@@ -163,7 +163,6 @@ async def compare_stocks(
 @router.get("/search")
 async def search_symbols(
     q: str = Query(..., min_length=1),
-    current_user: User = Depends(get_current_user),
 ):
     try:
         import yfinance as yf
