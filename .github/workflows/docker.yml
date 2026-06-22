@@ -24,16 +24,24 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Get short SHA
+        id: short_sha
+        run: echo "sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
       - name: Build and push backend
         uses: docker/build-push-action@v5
         with:
           context: ./backend
-          push: true
-          tags: kyleckw/stock-market-toolkit-backend:latest
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            kyleckw/stock-market-toolkit-backend:latest
+            kyleckw/stock-market-toolkit-backend:${{ steps.short_sha.outputs.sha }}
 
       - name: Build and push frontend
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
-          push: true
-          tags: kyleckw/stock-market-toolkit-frontend:latest
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            kyleckw/stock-market-toolkit-frontend:latest
+            kyleckw/stock-market-toolkit-frontend:${{ steps.short_sha.outputs.sha }}
