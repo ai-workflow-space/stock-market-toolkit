@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install release-please
+        run: pip install release-please
+
+      - name: Run release-please
+        id: release
+        run: |
+          release-please manifest \
+            --token=${{ secrets.GITHUB_TOKEN }} \
+            --release-type=python \
+            --package-name=stock-market-toolkit \
+            --include-component-in-tag=false
+
+      - name: Discord Release Notification
+        if: steps.release.outputs.releases_created == 'true'
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK" ]; then
+            curl -H "Content-Type: application/json" \
+              -d "{\"content\": \"🚀 New release: ${{ github.event.head_commit.message }}\nhttps://github.com/${{ github.repository }}/releases\"}" \
+              "$DISCORD_WEBHOOK"
+          fi

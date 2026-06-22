@@ -1,0 +1,16 @@
+{
+  "include-component-in-tag": false,
+  "release-type": "python",
+  "packages": {
+    ".": {
+      "package-name": "stock-market-toolkit-backend",
+      "component": "backend",
+      "release-type": "python"
+    },
+    "frontend": {
+      "package-name": "stock-market-toolkit-frontend",
+      "component": "frontend",
+      "release-type": "node"
+    }
+  }
+}
