@@ -438,25 +438,25 @@ function Dashboard() {
   let y = 0;
   const layout: LayoutItem[] = [];
 
-  // PriceChart: 12 cols, auto height
-  layout.push({ i: "price", x: 0, y, w: 12, h: 1, minW: 6 });
-  y += 1;
+  // PriceChart: 12 cols, 3 rows (360px for 300px chart + padding)
+  layout.push({ i: "price", x: 0, y, w: 12, h: 3, minW: 6 });
+  y += 3;
 
   if (activeInds.has("rsi")) {
-    // RSI: 6 cols, auto height
+    // RSI: 6 cols, 1 row (120px for chart)
     layout.push({ i: "rsi", x: 0, y, w: 6, h: 1, minW: 4 });
   }
   if (activeInds.has("macd")) {
-    // MACD: 6 cols, auto height (to the right of RSI if shown, else left)
+    // MACD: 6 cols, 1 row (120px for chart, to the right of RSI if shown, else left)
     const macdX = activeInds.has("rsi") ? 6 : 0;
     layout.push({ i: "macd", x: macdX, y, w: 6, h: 1, minW: 4 });
   }
   if (activeInds.has("rsi") || activeInds.has("macd")) y += 1;
 
-  // StockInfoCard: 4 cols, auto height
-  layout.push({ i: "info", x: 0, y, w: 4, h: 1, minW: 3 });
-  // DataTable: 8 cols, auto height
-  layout.push({ i: "table", x: 4, y, w: 8, h: 1, minW: 4 });
+  // StockInfoCard: 4 cols, 10 rows (1200px for 1174px content)
+  layout.push({ i: "info", x: 0, y, w: 4, h: 10, minW: 3 });
+  // DataTable: 8 cols, 6 rows (720px for 676px content)
+  layout.push({ i: "table", x: 4, y, w: 8, h: 6, minW: 4 });
 
   const { containerRef, width: chartWidth } = useContainerWidth();
 
@@ -478,7 +478,7 @@ function Dashboard() {
             width={chartWidth}
             gridConfig={{
               cols: cols,
-              rowHeight: 1,
+              rowHeight: 120,
               margin: [16, 16] as const,
             }}
             dragConfig={{ enabled: true }}

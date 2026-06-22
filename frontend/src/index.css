@@ -402,8 +402,16 @@ body {
   border-radius: 12px;
   padding: 1.25rem;
   min-height: 0;
+  /* Height driven by content, grid item expands with it */
   height: auto;
+  display: flex;
+  flex-direction: column;
 }
+
+/* Each card type sets its own min-height */
+.card:has(.recharts-responsive-container) { min-height: 320px; }
+.card:has(.info-grid) { min-height: 350px; }
+.card:has(.price-table) { min-height: 400px; }
 .card-title { font-size: 0.8rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
 
 /* ─── Signals Grid (responsive) ─── */
