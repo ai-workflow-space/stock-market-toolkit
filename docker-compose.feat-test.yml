@@ -1,7 +1,25 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: smt_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: stocktoolkit
+      POSTGRES_USER: stocktoolkit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-in-production}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stocktoolkit -d stocktoolkit"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     image: kyleckw/stock-market-toolkit-backend:feat-test
     pull_policy: never
+    container_name: smt_backend
+    restart: unless-stopped
     env_file:
       - path: .env
         required: true
@@ -13,6 +31,8 @@ services:
       REFRESH_TOKEN_EXPIRE_DAYS: 7
       CORS_ORIGINS: ${CORS_ORIGINS}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8001:8001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -21,8 +41,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
   frontend:
     image: kyleckw/stock-market-toolkit-frontend:feat-test
     pull_policy: never
+    container_name: smt_frontend
+    restart: unless-stopped
+    ports:
+      - "3800:80"
     depends_on:
       - backend
+
+volumes:
+  postgres_data:
