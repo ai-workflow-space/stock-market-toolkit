@@ -208,8 +208,19 @@ def compare_stocks(payload: dict):
 
 @app.get("/api/search")
 def search_stocks(q: str = Query(..., min_length=1)):
-    """Simple search -- return ticker suggestion."""
-    return {"query": q, "suggestions": [q.upper()]}
+    """Search for stock symbols using yfinance. Returns flat array of suggestions."""
+    try:
+        results = yf.Search(q, max_results=8)
+        suggestions = []
+        for quote in (results.quotes or []):
+            suggestions.append({
+                "symbol": quote.get("symbol", ""),
+                "name": quote.get("shortname") or quote.get("longname", ""),
+                "exchange": quote.get("exchDisp", quote.get("exchange", "")),
+            })
+        return suggestions
+    except Exception:
+        return []
 
 
 @app.get("/health")
