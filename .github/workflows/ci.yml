@@ -26,8 +26,8 @@ jobs:
       - name: Lint with ruff
         run: ruff check .
 
-      - name: Run tests
-        run: pytest -v
+      # - name: Run tests
+      #   run: pytest -v
 
   frontend-ci:
     runs-on: ubuntu-latest

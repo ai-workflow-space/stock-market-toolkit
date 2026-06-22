@@ -1,9 +1,10 @@
 name: Code Review
 
 on:
+  push:
+    branches: [main, feat/**]
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: [main]
 
 jobs:
   review:
@@ -18,53 +19,60 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: '3.12'
+          node-version: '20'
 
-      - name: Install dependencies
-        run: pip install opencode httpx
+      - name: Install opencode
+        run: npm install -g opencode-ai
 
       - name: Get changed files
+        id: files
         run: |
-          git diff --name-only origin/${{ github.base_ref }}...HEAD > /tmp/changed_files.txt
-          echo "CHANGED_FILES=$(cat /tmp/changed_files.txt | tr '\n' ' ')" >> $GITHUB_ENV
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git diff --name-only origin/${{ github.base_ref }}...HEAD > /tmp/changed_files.txt
+          else
+            git diff --name-only HEAD~1 > /tmp/changed_files.txt
+          fi
+          echo "CHANGED_FILES=$(cat /tmp/changed_files.txt | tr '\n' ' ')" >> $GITHUB_OUTPUT
+          cat /tmp/changed_files.txt
 
       - name: Run OpenCode Review
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-          OPENCODE_BASE_URL: ${{ secrets.OPENCODE_BASE_URL }}
-          CHANGED_FILES: ${{ env.CHANGED_FILES }}
+          OPENCODE_API_KEY: not-needed
+          OPENCODE_BASE_URL: http://172.10.168.100:8000/v1
+          CHANGED_FILES: ${{ steps.files.outputs.CHANGED_FILES }}
         run: |
+          set +e
           REVIEW_OUTPUT=$(opencode review \
             --model "minimax/MiniMax-M2.7" \
             --no-auto-commits \
-            --context "You are reviewing a PR for the Stock Market Toolkit (FastAPI + React, Docker). Check for: code quality, security, Docker build, API correctness. Be concise and actionable. Focus on the actual changes." \
-            ./backend ./frontend 2>&1 || echo "Review completed with notes")
-          echo "REVIEW_OUTPUT=$REVIEW_OUTPUT" >> $GITHUB_ENV
-          echo "REVIEW_OUTPUT" >> $GITHUB_OUTPUT
-          echo "$REVIEW_OUTPUT" >> $GITHUB_OUTPUT
-          echo "REVIEW_OUTPUT<<EOF" >> $GITHUB_OUTPUT
-          echo "$REVIEW_OUTPUT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+            --context "You are reviewing a PR for the Stock Market Toolkit (FastAPI + React, Docker). Check for: code quality, security, Docker build, API correctness. Be concise and actionable. Focus on actual code changes." \
+            ./backend ./frontend 2>&1)
+          EXIT_CODE=$?
+          if [ $EXIT_CODE -ne 0 ] && [ -z "$REVIEW_OUTPUT" ]; then
+            REVIEW_OUTPUT="Review ran but produced no output (exit code: $EXIT_CODE)"
+          fi
+          echo "REVIEW_OUTPUT=$REVIEW_OUTPUT" >> $GITHUB_OUTPUT
+          echo "$REVIEW_OUTPUT" | head -c 4000 > /tmp/review_output.txt
 
       - name: Post review comment
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const output = process.env.REVIEW_OUTPUT || '';
+            const output = fs.readFileSync('/tmp/review_output.txt', 'utf8') || 'No review output';
             const files = fs.readFileSync('/tmp/changed_files.txt', 'utf8') || '';
             const prNumber = context.payload.pull_request.number;
 
             const body = [
-              '## Code Review',
+              '## Code Review (automated)',
               '',
               '### Changed Files',
               '```',
-              files.trim(),
+              files.trim() || 'No changed files detected',
               '```',
               '',
               '### Review Results',
@@ -79,7 +87,7 @@ jobs:
             });
 
             const existing = comments.data.find(
-              c => c.user.login === 'github-actions[bot]' && c.body.includes('## Code Review')
+              c => c.user.login === 'github-actions[bot]' && c.body.includes('## Code Review (automated)')
             );
 
             if (existing) {
