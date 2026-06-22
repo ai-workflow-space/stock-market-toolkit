@@ -243,7 +243,7 @@ function RSIChart({ data, rsi, active }: { data: ChartData[]; rsi: (number | nul
             <div style={{ color: "#fbbf24" }}>RSI: {fmt(payload[0]?.value as number)}</div>
           </div>;
         }} />
-        <Line yAxisId="rsi" type="monotone" dataKey="rsi" stroke="#fbbf24" strokeWidth={1.5} dot={false} hide={!active?.has("rsi")} />
+        <Line yAxisId="rsi" type="monotone" dataKey="rsi" stroke="#fbbf24" strokeWidth={1.5} dot={false} hide={!active?.has("rsi")} key={`rsi-${active?.has("rsi")}`} />
       </ComposedChart>
     </ResponsiveContainer>
   );
@@ -265,9 +265,9 @@ function MACDChart({ data, macd, signal, hist, active }: { data: ChartData[]; ma
             {payload.map((p, i) => <div key={i} style={{ color: p.color }}>{String(p.dataKey)}: {fmt(p.value as number)}</div>)}
           </div>;
         }} />
-        <Bar yAxisId="m" dataKey="hist" fill="#6366f1" opacity={0.5} name="Histogram" maxBarSize={6} hide={!active?.has("macd")} />
-        <Line yAxisId="m" type="monotone" dataKey="macd" stroke="#3b82f6" strokeWidth={1.5} dot={false} name="MACD" hide={!active?.has("macd")} />
-        <Line yAxisId="m" type="monotone" dataKey="signal" stroke="#f97316" strokeWidth={1.5} dot={false} name="Signal" hide={!active?.has("macd")} />
+        <Bar yAxisId="m" dataKey="hist" fill="#6366f1" opacity={0.5} name="Histogram" maxBarSize={6} hide={!active?.has("macd")} key={`macd-hist-${active?.has("macd")}`} />
+        <Line yAxisId="m" type="monotone" dataKey="macd" stroke="#3b82f6" strokeWidth={1.5} dot={false} name="MACD" hide={!active?.has("macd")} key={`macd-line-${active?.has("macd")}`} />
+        <Line yAxisId="m" type="monotone" dataKey="signal" stroke="#f97316" strokeWidth={1.5} dot={false} name="Signal" hide={!active?.has("macd")} key={`macd-signal-${active?.has("macd")}`} />
       </ComposedChart>
     </ResponsiveContainer>
   );
