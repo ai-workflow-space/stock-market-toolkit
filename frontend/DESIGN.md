@@ -34,6 +34,18 @@
 
 **Border Radius:** 6px (buttons, inputs), 8px (cards), 10px (modals, dropdowns).
 
+**Spacing Scale** (4px base unit — from design-system skill):
+
+| Token | Value | Use |
+|-------|-------|-----|
+| `--space-1` | 4px | Tight gaps |
+| `--space-2` | 8px | Icon padding, small gaps |
+| `--space-3` | 12px | Dropdown item padding |
+| `--space-4` | 16px | Standard padding, input padding |
+| `--space-5` | 20px | Card padding |
+| `--space-6` | 24px | Section gaps |
+| `--space-8` | 32px | Large section gaps |
+
 ---
 
 ## 2. Layout System
@@ -125,26 +137,44 @@ border-radius: 8px; padding: 1rem;
 ```
 - Title: `.card-title` — `color: #e2e8f0; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem`
 
-### 5.4 Dropdown (`.search-dropdown`)
+### 5.4 Dropdown / Search Results Panel (`.search-dropdown`)
+Based on shadcn/ui Popover + design-system component specs.
+
 ```css
-position: absolute; top: 100%; left: 0; right: 0;
+position: absolute; top: calc(100% + 4px); left: 0; right: 0;
 background: #1e293b; border: 1px solid #334155;
-border-radius: 8px; margin-top: 4px; z-index: 50;
+border-radius: 8px; z-index: 50;
 box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-max-height: 320px; overflow-y: auto;
+overflow: hidden;
 ```
 
-### 5.5 Dropdown Item (`.search-dropdown-item`)
+**Item (`.search-dropdown-item`):**
 ```css
 display: flex; align-items: center; gap: 0.75rem;
-padding: 0.6rem 0.75rem; cursor: pointer;
-border-bottom: 1px solid #1e293b; transition: background 0.1s;
+padding: 0.6rem 0.875rem;
+border-bottom: 1px solid #0f172a;
+cursor: pointer;
+transition: background 0.1s;
 ```
 - Hover: `background: #334155`
+- Active/focus: `background: #334155; outline: 2px solid #3b82f6; outline-offset: -2px`
 - Last item: `border-bottom: none`
-- Symbol: `.dropdown-symbol` — `color: #3b82f6; font-weight: 600; font-size: 0.875rem`
-- Name: `.dropdown-name` — `color: #94a3b8; font-size: 0.8rem`
-- Exchange: `.dropdown-exchange` — `color: #475569; font-size: 0.75rem`
+- Keyboard navigation (arrow keys + enter) must be supported
+
+**Dropdown item content layout:**
+```
+[ symbol (blue, bold) | name (muted, truncate) | exchange (dim, right-aligned) ]
+```
+- Symbol: `.dropdown-symbol` — `color: #3b82f6; font-weight: 600; font-size: 0.875rem; min-width: 60px`
+- Name: `.dropdown-name` — `color: #94a3b8; font-size: 0.8rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap`
+- Exchange: `.dropdown-exchange` — `color: #475569; font-size: 0.72rem; text-align: right`
+
+**Max height:** `max-height: 320px; overflow-y: auto` — scroll for long lists.
+
+**States to handle:**
+- Empty results: show "No results for '{query}'" with muted text
+- Loading: show "Searching…" centered, muted
+- Error: show "Search failed" with retry option
 
 ### 5.6 Ticker Chip (`.ticker-chip`)
 Used in Compare page for one-by-one added tickers.
@@ -325,3 +355,15 @@ All styles live in `frontend/src/index.css` (imported by `main.tsx`). No inline 
 ---
 
 *When changing anything in the UI: read this doc first. Update it after.*
+
+## Design System Reference
+
+Based on [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) (94.8k stars) design-system + ui-styling skills:
+
+- **Token architecture:** 3-layer (primitive → semantic → component) — see §11 CSS variables
+- **Component specs:** Button/Input/Card states — see §5 component library
+- **Spacing scale:** 4px base — see §1 Spacing Scale
+- **Dropdown/Combobox:** shadcn/ui Popover pattern, keyboard-navigable — see §5.4
+- **Future components:** Prefer shadcn/ui primitives (Radix UI) over custom implementations
+  - https://ui.shadcn.com — component library with dark mode support
+  - Install via: `npx shadcn@latest add popover combobox dialog`
