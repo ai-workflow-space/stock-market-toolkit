@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useState, useEffect, startTransition, type ReactNode } from "react";
 import axios from "axios";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8001";
@@ -21,7 +21,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+// eslint-disable-next-line react-refresh/only-export-components
+export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -33,21 +34,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await axios.get(`${API}/api/auth/me`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      setUser(res.data);
+      startTransition(() => setUser(res.data));
     } catch {
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
-      setToken(null);
-      setUser(null);
+      startTransition(() => {
+        setToken(null);
+        setUser(null);
+      });
     }
   };
 
   useEffect(() => {
-    if (token) {
-      fetchUser(token).finally(() => setLoading(false));
-    } else {
-      setLoading(false);
+    if (!token) {
+      startTransition(() => setLoading(false));
+      return;
     }
+    let ignore = false;
+    fetchUser(token).then(() => {
+      if (!ignore) startTransition(() => setLoading(false));
+    }).catch(() => {
+      if (!ignore) startTransition(() => setLoading(false));
+    });
+    return () => { ignore = true; };
   }, [token]);
 
   const login = async (email: string, password: string) => {
@@ -81,8 +90,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
-};
+// useAuth is exported from hooks/useAuth.ts to satisfy react-refresh/only-export-components

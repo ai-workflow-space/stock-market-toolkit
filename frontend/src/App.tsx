@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, startTransition } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend, Area } from "recharts";
 import { getStock, getIndicators, getStockInfo, compareStocks, searchSymbols } from "./api/stockApi";
 import type { StockData, Indicators, StockInfo } from "./types";
 import { TIMEFRAMES } from "./types";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AuthProvider } from "./context/AuthContext";
+import { useAuth } from "./hooks/useAuth";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AlertsPage from "./pages/AlertsPage";
@@ -362,20 +363,23 @@ function Dashboard() {
   const [stock, setStock] = useState<StockData | null>(null);
   const [indicators, setIndicators] = useState<Indicators | null>(null);
   const [info, setInfo] = useState<StockInfo | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [error, setError] = useState("");
   const [activeInds, setActiveInds] = useState<Set<string>>(new Set(["sma20", "rsi", "macd"]));
 
   const toggleInd = useCallback((key: string) => {
     setActiveInds(prev => {
       const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
       return next;
     });
   }, []);
 
   const load = useCallback(async (sym: string) => {
-    setLoading(true);
     setError("");
     try {
       const [st, ind, inf] = await Promise.all([
@@ -383,18 +387,20 @@ function Dashboard() {
         getIndicators(sym, period),
         getStockInfo(sym),
       ]);
-      setStock(st);
-      setIndicators(ind);
-      setInfo(inf);
+      startTransition(() => {
+        setStock(st);
+        setIndicators(ind);
+        setInfo(inf);
+      });
     } catch (e: unknown) {
       setError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to load data");
       setStock(null);
-    } finally {
-      setLoading(false);
     }
   }, [period]);
 
-  useEffect(() => { load(symbol); }, [symbol, period, load]);
+  useEffect(() => {
+    startTransition(() => { load(symbol); });
+  }, [symbol, period, load]);
 
   const chartData: ChartData[] = stock ? stock.close.map((close, i) => ({
     date: new Date(stock.timestamp[i]).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
@@ -454,7 +460,7 @@ function ComparePage() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [searching, setSearching] = useState(false);
   const [period, setPeriod] = useState("1mo");
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<StockData[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const tickerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -523,10 +529,10 @@ function ComparePage() {
 
   if (data) {
     // Build unified chart data
-    const maxLen = Math.max(...data.map((s: any) => s.close.length));
-    const chartData = Array.from({ length: maxLen }, (_, i) => {
-      const row: any = { date: "" };
-      data.forEach((s: any) => {
+    const maxLen = Math.max(...data.map((s) => s.close.length));
+    const chartData: Record<string, string | number>[] = Array.from({ length: maxLen }, (_, i) => {
+      const row: Record<string, string | number> = { date: "" };
+      data.forEach((s) => {
         row[s.symbol] = s.close[i];
         if (i === 0) row.date = new Date(s.timestamp[i]).toLocaleDateString("en-US", { month: "short", day: "numeric" });
       });
@@ -601,7 +607,7 @@ function ComparePage() {
                   );
                 }} />
                 <Legend wrapperStyle={{ fontSize: "0.8rem", color: "#94a3b8" }} />
-                {data.map((s: any, i: number) => (
+                {data.map((s, i: number) => (
                   <Line key={s.symbol} type="monotone" dataKey={s.symbol} stroke={colors[i % colors.length]} strokeWidth={2} dot={false} />
                 ))}
               </ComposedChart>
@@ -609,7 +615,7 @@ function ComparePage() {
           </div>
 
           <div className="compare-table">
-            {data.map((s: any, i: number) => (
+            {data.map((s, i: number) => (
               <div key={s.symbol} className="compare-stock-card">
                 <div className="compare-symbol" style={{ color: colors[i % colors.length] }}>{s.symbol}</div>
                 <div className="compare-price">${fmt(s.close[s.close.length - 1])}</div>

@@ -6,10 +6,8 @@ Uses yfinance with direct Yahoo Finance API as fallback.
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 import yfinance as yf
-import pandas as pd
 import pandas_ta as ta
-from datetime import datetime, timedelta
-from typing import Optional
+from datetime import datetime
 import time
 import math
 
