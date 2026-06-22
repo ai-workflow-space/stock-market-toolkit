@@ -32,6 +32,15 @@ export default function LoginPage() {
         <h1 className="auth-title">Welcome back</h1>
         <p className="auth-subtitle">Sign in to your account</p>
 
+        <div className="auth-info-banner">
+          <span className="auth-info-icon">ℹ️</span>
+          <div>
+            <strong>New here?</strong> You need to{" "}
+            <Link to="/register" className="auth-info-link">create an account</Link>{" "}
+            first before signing in. There are no default credentials.
+          </div>
+        </div>
+
         {error && <div className="auth-error">{error}</div>}
 
         <form onSubmit={handleSubmit} className="auth-form">
