@@ -43,11 +43,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    if (token) {
-      fetchUser(token).finally(() => setLoading(false));
-    } else {
+    if (!token) {
       setLoading(false);
+      return;
     }
+    let ignore = false;
+    fetchUser(token).then(() => {
+      if (!ignore) setLoading(false);
+    }).catch(() => {
+      if (!ignore) setLoading(false);
+    });
+    return () => { ignore = true; };
   }, [token]);
 
   const login = async (email: string, password: string) => {
@@ -81,8 +87,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
-};
+// useAuth is exported from hooks/useAuth.ts to satisfy react-refresh/only-export-components

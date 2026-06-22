@@ -38,9 +38,18 @@ jobs:
         if: steps.release.outputs.releases_created == 'true'
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          TAG_NAME: ${{ steps.release.outputs.tag_name }}
+          RELEASE_URL: https://github.com/${{ github.repository }}/releases/tag/${{ steps.release.outputs.tag_name }}
         run: |
           if [ -n "$DISCORD_WEBHOOK" ]; then
-            curl -H "Content-Type: application/json" \
-              -d "{\"content\": \"🚀 New release: ${{ github.event.head_commit.message }}\nhttps://github.com/${{ github.repository }}/releases\"}" \
+            # Properly escape content for JSON using jq
+            BODY=$(jq -nc \
+              --arg msg "🚀 New release: $(git log -1 --format='%s' | tr '\n' ' ')" \
+              --arg url "$RELEASE_URL" \
+              '{"content": "\($msg)\n\($url)"}')
+            curl -s -o /dev/null -w "%{http_code}" \
+              -H "Content-Type: application/json" \
+              -d "$BODY" \
               "$DISCORD_WEBHOOK"
+            echo "Discord webhook response: $BODY"
           fi
