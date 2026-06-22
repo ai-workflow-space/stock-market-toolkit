@@ -2,6 +2,12 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 
+ARG VITE_GIT_SHA=local
+ARG VITE_BUILD_TIME=
+
+ENV VITE_GIT_SHA=$VITE_GIT_SHA
+ENV VITE_BUILD_TIME=$VITE_BUILD_TIME
+
 COPY package*.json ./
 RUN npm ci
 

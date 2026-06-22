@@ -32,11 +32,11 @@ function Navbar() {
   const navigate = useNavigate();
   return (
     <nav className="navbar">
-      <Link to="/" className="nav-logo">📈 Stock Toolkit</Link>
+      <Link to="/" className="nav-logo">Stock Toolkit</Link>
       <div className="nav-links">
         <Link to="/" className="nav-link">Dashboard</Link>
         <Link to="/compare" className="nav-link">Compare</Link>
-        <Link to="/alerts" className="nav-link">🔔 Alerts</Link>
+        <Link to="/alerts" className="nav-link">Alerts</Link>
         {user && (
           <div className="nav-user">
             <span className="nav-username">{user.username}</span>
@@ -110,7 +110,7 @@ function SearchBar({ onSearch, loading }: { onSearch: (s: string) => void; loadi
     <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "2rem" }}>
       <form onSubmit={handleSubmit} style={{ display: "flex", gap: "0.5rem", flex: 1, maxWidth: 480, position: "relative" }}>
         <div className="search-container" style={{ flex: 1 }} ref={containerRef}>
-          <span className="search-icon">🔍</span>
+          <span className="search-icon"></span>
           <input
             className="search-input"
             placeholder="Search ticker… AAPL, TSLA, 0050"
@@ -685,6 +685,19 @@ function ComparePage() {
   );
 }
 
+/* ─── Footer ─── */
+function Footer() {
+  const sha = import.meta.env.VITE_GIT_SHA as string || 'local';
+  const buildTime = import.meta.env.VITE_BUILD_TIME as string || '';
+  return (
+    <footer className="app-footer">
+      <span>v1.0.0</span>
+      {sha && <span className="footer-sha">@{sha}</span>}
+      {buildTime && <span className="footer-time">built {buildTime}</span>}
+    </footer>
+  );
+}
+
 /* ─── Main App ─── */
 export default function App() {
   return (
@@ -693,9 +706,9 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/" element={<ProtectedRoute><><Navbar /><Dashboard /></></ProtectedRoute>} />
-          <Route path="/compare" element={<ProtectedRoute><><Navbar /><ComparePage /></></ProtectedRoute>} />
-          <Route path="/alerts" element={<ProtectedRoute><><Navbar /><AlertsPage /></></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute><><Navbar /><Dashboard /><Footer /></></ProtectedRoute>} />
+          <Route path="/compare" element={<ProtectedRoute><><Navbar /><ComparePage /><Footer /></></ProtectedRoute>} />
+          <Route path="/alerts" element={<ProtectedRoute><><Navbar /><AlertsPage /><Footer /></></ProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
