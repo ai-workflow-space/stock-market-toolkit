@@ -434,30 +434,29 @@ function Dashboard() {
   })) : [];
 
   // Build dynamic layout for react-grid-layout
-  const rowHeight = 280;
   const cols = 12;
   let y = 0;
   const layout: LayoutItem[] = [];
 
-  // PriceChart: 12 cols, 2 rows
-  layout.push({ i: "price", x: 0, y, w: 12, h: 2, minW: 6, minH: 2 });
-  y += 2;
+  // PriceChart: 12 cols, auto height
+  layout.push({ i: "price", x: 0, y, w: 12, h: 1, minW: 6 });
+  y += 1;
 
   if (activeInds.has("rsi")) {
-    // RSI: 6 cols, 1 row
-    layout.push({ i: "rsi", x: 0, y, w: 6, h: 1, minW: 4, minH: 1 });
+    // RSI: 6 cols, auto height
+    layout.push({ i: "rsi", x: 0, y, w: 6, h: 1, minW: 4 });
   }
   if (activeInds.has("macd")) {
-    // MACD: 6 cols, 1 row (to the right of RSI if shown, else left)
+    // MACD: 6 cols, auto height (to the right of RSI if shown, else left)
     const macdX = activeInds.has("rsi") ? 6 : 0;
-    layout.push({ i: "macd", x: macdX, y, w: 6, h: 1, minW: 4, minH: 1 });
+    layout.push({ i: "macd", x: macdX, y, w: 6, h: 1, minW: 4 });
   }
   if (activeInds.has("rsi") || activeInds.has("macd")) y += 1;
 
-  // StockInfoCard: 4 cols, 5 rows
-  layout.push({ i: "info", x: 0, y, w: 4, h: 5, minW: 3, minH: 3 });
-  // DataTable: 8 cols, 4 rows
-  layout.push({ i: "table", x: 4, y, w: 8, h: 4, minW: 4, minH: 3 });
+  // StockInfoCard: 4 cols, auto height
+  layout.push({ i: "info", x: 0, y, w: 4, h: 1, minW: 3 });
+  // DataTable: 8 cols, auto height
+  layout.push({ i: "table", x: 4, y, w: 8, h: 1, minW: 4 });
 
   const { containerRef, width: chartWidth } = useContainerWidth();
 
@@ -479,7 +478,7 @@ function Dashboard() {
             width={chartWidth}
             gridConfig={{
               cols: cols,
-              rowHeight: rowHeight,
+              rowHeight: 1,
               margin: [16, 16] as const,
             }}
             dragConfig={{ enabled: true }}
