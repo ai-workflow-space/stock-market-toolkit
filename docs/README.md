@@ -102,3 +102,13 @@ This starts:
 ## 📝 License
 
 See the main [README.md](../README.md) for project details and licensing information.
+
+## OpenCode Integration
+
+This project uses `.opencode/` to ensure OpenCode always follows this architecture and design spec:
+- `.opencode/config.yml` — project config + enforcement rules
+- `.opencode/SYSTEM_PROMPT.md` — standard preamble for every task
+- `.opencode/ARCHITECTURE.md` → symlink to `../docs/architecture.md`
+- `.opencode/DESIGN.md` → symlink to `../frontend/DESIGN.md`
+
+When dispatching a task to OpenCode, the standard preamble (SYSTEM_PROMPT.md) is always prepended, ensuring compliance with this spec.

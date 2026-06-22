@@ -260,3 +260,6 @@ All unhandled exceptions return a generic 500 response with the error logged ser
 - **Watchlist Sync**: Database-backed watchlists (already modeled)
 - **Sector Analysis**: Aggregated sector performance data
 - **Custom Indicators**: User-defined indicator configurations
+
+---
+_This document is the source of truth. It is referenced by `.opencode/SYSTEM_PROMPT.md` and loaded on every OpenCode dispatch. When updating this document, also update the symlink in `.opencode/`._

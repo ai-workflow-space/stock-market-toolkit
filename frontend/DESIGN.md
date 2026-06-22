@@ -367,3 +367,6 @@ Based on [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuil
 - **Future components:** Prefer shadcn/ui primitives (Radix UI) over custom implementations
   - https://ui.shadcn.com — component library with dark mode support
   - Install via: `npx shadcn@latest add popover combobox dialog`
+
+---
+_This document is the source of truth. It is referenced by `.opencode/SYSTEM_PROMPT.md` and loaded on every OpenCode dispatch. When updating this document, also update the symlink in `.opencode/`._
