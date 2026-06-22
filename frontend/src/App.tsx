@@ -434,7 +434,7 @@ function Dashboard() {
   })) : [];
 
   // Build dynamic layout for react-grid-layout
-  const rowHeight = 160;
+  const rowHeight = 280;
   const cols = 12;
   let y = 0;
   const layout: LayoutItem[] = [];
@@ -454,10 +454,10 @@ function Dashboard() {
   }
   if (activeInds.has("rsi") || activeInds.has("macd")) y += 1;
 
-  // StockInfoCard: 4 cols, 1 row
-  layout.push({ i: "info", x: 0, y, w: 4, h: 1, minW: 3, minH: 1 });
-  // DataTable: 8 cols, 1 row
-  layout.push({ i: "table", x: 4, y, w: 8, h: 1, minW: 4, minH: 1 });
+  // StockInfoCard: 4 cols, 4 rows
+  layout.push({ i: "info", x: 0, y, w: 4, h: 4, minW: 3, minH: 1 });
+  // DataTable: 8 cols, 4 rows
+  layout.push({ i: "table", x: 4, y, w: 8, h: 4, minW: 4, minH: 1 });
 
   const { containerRef, width: chartWidth } = useContainerWidth();
 

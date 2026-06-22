@@ -210,7 +210,7 @@ export default function DashboardPage() {
             </p>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1rem" }}>
+          <div className="signals-grid">
             {signals.map(signal => (
               <SignalCard
                 key={signal.id}

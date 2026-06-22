@@ -201,7 +201,7 @@ body {
 
 /* ─── Layout ─── */
 .page { padding: 2rem 0; }
-.container { max-width: none; margin: 0 auto; padding: 0 1.5rem; }
+.container { max-width: 100%; margin: 0 auto; padding: 0 1.5rem; }
 .page-header { margin-bottom: 2rem; }
 
 /* ─── Search ─── */
