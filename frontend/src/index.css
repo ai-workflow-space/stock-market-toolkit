@@ -201,7 +201,7 @@ body {
 
 /* ─── Layout ─── */
 .page { padding: 2rem 0; }
-.container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+.container { max-width: none; margin: 0 auto; padding: 0 1.5rem; }
 .page-header { margin-bottom: 2rem; }
 
 /* ─── Search ─── */
@@ -403,6 +403,18 @@ body {
   padding: 1.25rem;
 }
 .card-title { font-size: 0.8rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
+
+/* ─── Signals Grid (responsive) ─── */
+.signals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+@media (max-width: 640px) {
+  .signals-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* ─── Error ─── */
 .error-banner { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.875rem; margin-bottom: 1.25rem; }

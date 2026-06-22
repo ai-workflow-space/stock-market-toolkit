@@ -75,7 +75,7 @@ function SearchBar({ onSearch, loading }: { onSearch: (s: string) => void; loadi
   const [showDropdown, setShowDropdown] = useState(false);
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
   // Track when debounce is pending to prevent click-outside race
   const expectingShowRef = useRef(false);
 
@@ -84,7 +84,7 @@ function SearchBar({ onSearch, loading }: { onSearch: (s: string) => void; loadi
     const handler = (e: MouseEvent) => {
       // Don't close if we're waiting for search results to show dropdown
       if (expectingShowRef.current) return;
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setShowDropdown(false);
       }
     };
@@ -127,7 +127,7 @@ function SearchBar({ onSearch, loading }: { onSearch: (s: string) => void; loadi
   return (
     <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "2rem" }}>
       <form onSubmit={handleSubmit} style={{ display: "flex", gap: "0.5rem", flex: 1, maxWidth: 480, position: "relative" }}>
-        <div className="search-container" style={{ flex: 1 }} ref={containerRef}>
+        <div className="search-container" style={{ flex: 1 }} ref={searchRef}>
           <span className="search-icon"></span>
           <input
             className="search-input"
@@ -462,8 +462,8 @@ function Dashboard() {
   const { containerRef, width: chartWidth } = useContainerWidth();
 
   return (
-    <div className="page" ref={containerRef}>
-      <div className="container">
+    <div className="page">
+      <div className="container" ref={containerRef}>
         <div className="page-header">
           <SearchBar onSearch={setSymbol} loading={loading} />
           <TimeframeSelector value={period} onChange={setPeriod} />
