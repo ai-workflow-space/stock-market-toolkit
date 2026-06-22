@@ -509,6 +509,29 @@ function ComparePage() {
     setTickers(tickers.filter(t => t !== sym));
   };
 
+  const handleTickerKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const raw = tickerInput.trim().toUpperCase();
+      if (!raw) return;
+      const parts = raw.split(/[\s,]+/).filter(Boolean);
+      const existing = new Set(tickers);
+      let added = 0;
+      for (const p of parts) {
+        if (existing.has(p)) continue;
+        if (tickers.length + added >= 5) break;
+        existing.add(p);
+        added++;
+      }
+      if (added > 0) {
+        setTickers([...tickers, ...parts.slice(0, added).filter(p => !tickers.includes(p))]);
+        setTickerInput('');
+        setResults([]);
+        setShowDropdown(false);
+      }
+    }
+  };
+
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (tickers.length < 2) { setError("Add at least 2 tickers"); return; }
@@ -542,7 +565,10 @@ function ComparePage() {
     return (
       <div className="page">
         <div className="container">
-          <h2 style={{ color: "#e2e8f0", marginBottom: "1.5rem" }}>Compare Stocks</h2>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }}>
+            <h2 style={{ color: "#e2e8f0", margin: 0 }}>Compare</h2>
+            <span style={{ color: "#64748b", fontSize: "0.85rem" }}>({tickers.length}/5 tickers{tickers.length === 0 ? " — add at least 2" : tickers.length < 2 ? " — need more" : tickers.length >= 5 ? " — max" : ""})</span>
+          </div>
           <form onSubmit={handle} style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center", position: "relative" }} ref={tickerContainerRef}>
               {tickers.map(sym => (
@@ -559,20 +585,9 @@ function ComparePage() {
                     value={tickerInput}
                     onChange={handleTickerInput}
                     onFocus={() => results.length > 0 && setShowDropdown(true)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        const s = tickerInput.trim().toUpperCase();
-                        if (s && !tickers.includes(s) && tickers.length < 5) {
-                          setTickers([...tickers, s]);
-                          setTickerInput("");
-                          setResults([]);
-                          setShowDropdown(false);
-                        }
-                      }
-                    }}
                     placeholder="Add ticker…"
                     autoComplete="off"
+                    onKeyDown={handleTickerKeyDown}
                   />
                   {showDropdown && results.length > 0 && (
                     <div className="search-dropdown">
@@ -644,7 +659,10 @@ function ComparePage() {
   return (
     <div className="page">
       <div className="container">
-        <h2 style={{ color: "#e2e8f0", marginBottom: "1.5rem" }}>Compare Stocks</h2>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }}>
+          <h2 style={{ color: "#e2e8f0", margin: 0 }}>Compare</h2>
+          <span style={{ color: "#64748b", fontSize: "0.85rem" }}>({tickers.length}/5 tickers{tickers.length === 0 ? " — add at least 2" : tickers.length < 2 ? " — need more" : tickers.length >= 5 ? " — max" : ""})</span>
+        </div>
         <form onSubmit={handle}>
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center", position: "relative" }} ref={tickerContainerRef}>
             {tickers.map(sym => (
@@ -661,20 +679,9 @@ function ComparePage() {
                   value={tickerInput}
                   onChange={handleTickerInput}
                   onFocus={() => results.length > 0 && setShowDropdown(true)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      const s = tickerInput.trim().toUpperCase();
-                      if (s && !tickers.includes(s) && tickers.length < 5) {
-                        setTickers([...tickers, s]);
-                        setTickerInput("");
-                        setResults([]);
-                        setShowDropdown(false);
-                      }
-                    }
-                  }}
                   placeholder="Add ticker…"
                   autoComplete="off"
+                  onKeyDown={handleTickerKeyDown}
                 />
                 {showDropdown && results.length > 0 && (
                   <div className="search-dropdown">

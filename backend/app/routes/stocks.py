@@ -166,12 +166,17 @@ async def search_symbols(
     current_user: User = Depends(get_current_user),
 ):
     try:
-        from yfinance import search
-        results = search(q)
+        import yfinance as yf
+        search_result = yf.Search(q, max_results=10)
+        quotes = search_result.quotes if search_result.quotes else []
         return [
-            {"symbol": r["symbol"], "name": r.get("longName", r.get("shortName", "")),
-             "exchange": r.get("exchange", "")}
-            for r in results.get("quotes", [])[:10]
-        ]
+            {
+                "symbol": r["symbol"],
+                "name": r.get("longname", r.get("shortname", "")),
+                "exchange": r.get("exchange", ""),
+            }
+            for r in quotes
+            if r.get("symbol") and r.get("quoteType") == "EQUITY"
+        ][:8]
     except Exception:
         return []
