@@ -433,15 +433,19 @@ function Dashboard() {
               <PriceChart data={stock} indicators={indicators} showBB={activeInds.has("bb")} active={activeInds} />
             </div>
 
-            <div className="card">
-              <div className="card-title">RSI (14)</div>
-              <RSIChart data={chartData} rsi={indicators.rsi} active={activeInds} />
-            </div>
+            {activeInds.has("rsi") && (
+              <div className="card">
+                <div className="card-title">RSI (14)</div>
+                <RSIChart data={chartData} rsi={indicators.rsi} active={activeInds} />
+              </div>
+            )}
 
-            <div className="card">
-              <div className="card-title">MACD (12, 26, 9)</div>
-              <MACDChart data={chartData} macd={indicators.macd} signal={indicators.macd_signal} hist={indicators.macd_hist} active={activeInds} />
-            </div>
+            {activeInds.has("macd") && (
+              <div className="card">
+                <div className="card-title">MACD (12, 26, 9)</div>
+                <MACDChart data={chartData} macd={indicators.macd} signal={indicators.macd_signal} hist={indicators.macd_hist} active={activeInds} />
+              </div>
+            )}
 
             <StockInfoCard info={info} stock={stock} />
             <DataTable stock={stock} />
