@@ -559,6 +559,18 @@ function ComparePage() {
                     value={tickerInput}
                     onChange={handleTickerInput}
                     onFocus={() => results.length > 0 && setShowDropdown(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const s = tickerInput.trim().toUpperCase();
+                        if (s && !tickers.includes(s) && tickers.length < 5) {
+                          setTickers([...tickers, s]);
+                          setTickerInput("");
+                          setResults([]);
+                          setShowDropdown(false);
+                        }
+                      }
+                    }}
                     placeholder="Add ticker…"
                     autoComplete="off"
                   />
@@ -586,8 +598,9 @@ function ComparePage() {
                 </div>
               )}
             </div>
+            <span style={{ color: "#64748b", fontSize: "0.85rem" }}>({tickers.length}/5)</span>
             <TimeframeSelector value={period} onChange={setPeriod} />
-            <button className="search-btn" type="submit" disabled={loading || tickers.length < 2}>{loading ? "Loading…" : "Compare"}</button>
+            <button className="search-btn" type="submit" disabled={loading || tickers.length < 2}>{loading ? "Loading…" : tickers.length < 2 ? "Add" : "Compare"}</button>
             <button className="search-btn" style={{ background: "#334155" }} type="button" onClick={() => { setData(null); setTickers([]); }}>Edit</button>
           </form>
 
@@ -648,6 +661,18 @@ function ComparePage() {
                   value={tickerInput}
                   onChange={handleTickerInput}
                   onFocus={() => results.length > 0 && setShowDropdown(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const s = tickerInput.trim().toUpperCase();
+                      if (s && !tickers.includes(s) && tickers.length < 5) {
+                        setTickers([...tickers, s]);
+                        setTickerInput("");
+                        setResults([]);
+                        setShowDropdown(false);
+                      }
+                    }
+                  }}
                   placeholder="Add ticker…"
                   autoComplete="off"
                 />
@@ -674,8 +699,9 @@ function ComparePage() {
                 )}
               </div>
             )}
+            <span style={{ color: "#64748b", fontSize: "0.85rem" }}>({tickers.length}/5)</span>
             <TimeframeSelector value={period} onChange={setPeriod} />
-            <button className="search-btn" type="submit" disabled={loading || tickers.length < 2}>{loading ? "Loading…" : "Compare"}</button>
+            <button className="search-btn" type="submit" disabled={loading || tickers.length < 2}>{loading ? "Loading…" : tickers.length < 2 ? "Add" : "Compare"}</button>
           </div>
         </form>
         {error && <div className="error-banner">{error}</div>}
