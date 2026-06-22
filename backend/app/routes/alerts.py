@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from datetime import datetime, timezone
-from typing import Optional
 
 from app.database import get_db
 from app.models import User, Alert, NotificationSettings, TriggeredAlert
@@ -78,7 +77,7 @@ async def list_triggered_alerts(
 ):
     query = select(TriggeredAlert).where(TriggeredAlert.user_id == current_user.id)
     if unread_only:
-        query = query.where(TriggeredAlert.read == False)
+        query = query.where(~TriggeredAlert.read)
     query = query.order_by(TriggeredAlert.triggered_at.desc())
 
     result = await db.execute(query)
