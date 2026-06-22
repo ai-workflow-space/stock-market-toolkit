@@ -86,9 +86,14 @@ async def get_indicators(
             return [None] * n
         return df[col].tolist()
 
-    macd_df = _safe_ta_series(ta.macd, close)
+    try:
+        macd_df = ta.macd(close, fast=12, slow=26, signal=9)
+        bbands_df = ta.bbands(close, length=20, std=2)
+    except Exception:
+        macd_df = None
+        bbands_df = None
+
     rsi_vals = _safe_ta_series(ta.rsi, close, length=14)
-    bbands_df = _safe_ta_series(ta.bbands, close, length=20, std=2)
 
     return IndicatorsResponse(
         symbol=symbol.upper(),
