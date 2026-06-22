@@ -454,10 +454,10 @@ function Dashboard() {
   }
   if (activeInds.has("rsi") || activeInds.has("macd")) y += 1;
 
-  // StockInfoCard: 4 cols, 4 rows
-  layout.push({ i: "info", x: 0, y, w: 4, h: 4, minW: 3, minH: 1 });
+  // StockInfoCard: 4 cols, 5 rows
+  layout.push({ i: "info", x: 0, y, w: 4, h: 5, minW: 3, minH: 3 });
   // DataTable: 8 cols, 4 rows
-  layout.push({ i: "table", x: 4, y, w: 8, h: 4, minW: 4, minH: 1 });
+  layout.push({ i: "table", x: 4, y, w: 8, h: 4, minW: 4, minH: 3 });
 
   const { containerRef, width: chartWidth } = useContainerWidth();
 
