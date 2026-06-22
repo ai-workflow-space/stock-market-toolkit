@@ -1,0 +1,64 @@
+name: Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install opencode httpx
+
+      - name: Get changed files
+        id: files
+        run: |
+          git diff --name-only origin/${{ github.base_ref }}...HEAD > /tmp/changed_files.txt
+          echo "CONTENTS<<EOF" >> $GITHUB_OUTPUT
+          cat /tmp/changed_files.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Run OpenCode Review
+        id: review
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          OPENCODE_BASE_URL: ${{ secrets.OPENCODE_BASE_URL }}
+        run: |
+          REVIEW_OUTPUT=$(opencode review \
+            --model "minimax/MiniMax-M2.7" \
+            --no-auto-commits \
+            --context "You are reviewing a PR for the Stock Market Toolkit (FastAPI + React, Docker). Check for: code quality, security, Docker build, API correctness. Be concise and actionable. Focus on the actual changes, not the whole codebase." \
+            ./backend ./frontend 2>&1 || echo "Review completed with some notes")
+          echo "REVIEW_OUTPUT<<EOF" >> $GITHUB_OUTPUT
+          echo "$REVIEW_OUTPUT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Post review comment
+        if: steps.review.outputs.REVIEW_OUTPUT != ''
+        uses: actions/github-script@v7
+        with:
+          script-path: .github/workflows/scripts/post-review.js
+          env:
+            REVIEW_OUTPUT: ${{ steps.review.outputs.REVIEW_OUTPUT }}
+            CONTENTS: ${{ steps.files.outputs.CONTENTS }}
+            PR_NUMBER: ${{ github.event.pull_request.number }}
+            REPO_OWNER: ${{ github.repository_owner }}
+            REPO_NAME: ${{ env.GITHUB_REPOSITORY }}
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
