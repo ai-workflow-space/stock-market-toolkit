@@ -21,9 +21,7 @@ services:
 
   backend:
     image: kyleckw/stock-market-toolkit-backend:latest
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    pull_policy: always
     container_name: smt_backend
     restart: unless-stopped
     env_file:
@@ -50,9 +48,7 @@ services:
 
   frontend:
     image: kyleckw/stock-market-toolkit-frontend:latest
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    pull_policy: always
     container_name: smt_frontend
     restart: unless-stopped
     ports:
