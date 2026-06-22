@@ -74,6 +74,7 @@ jobs:
           build-args: |
             VITE_GIT_SHA=${{ steps.short_sha.outputs.sha }}
             VITE_BUILD_TIME=${{ github.event.head_commit.timestamp }}
+            VITE_APP_VERSION=${{ steps.version_tag.outputs.version }}
           tags: |
             kyleckw/stock-market-toolkit-frontend:latest
             kyleckw/stock-market-toolkit-frontend:${{ steps.short_sha.outputs.sha }}

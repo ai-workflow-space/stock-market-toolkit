@@ -16,6 +16,20 @@
   --warn: #f59e0b;
 }
 
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-dim: #64748b;
+  --primary: #3b82f6;
+  --accent: #6366f1;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warn: #d97706;
+}
+
 html { font-size: 16px; }
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -211,6 +225,33 @@ body {
 }
 .search-input:focus { border-color: var(--primary); }
 .search-input::placeholder { color: var(--text-dim); }
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.theme-toggle:hover {
+  background: var(--card);
+  border-color: var(--primary);
+}
+.theme-toggle-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+.theme-toggle-label {
+  color: var(--text);
+}
+
 .search-btn {
   background: var(--primary);
   color: white;

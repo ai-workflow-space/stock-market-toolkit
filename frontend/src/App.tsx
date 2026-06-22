@@ -13,7 +13,7 @@ import AlertsPage from "./pages/AlertsPage";
 import SettingsPage from "./pages/SettingsPage";
 import DashboardPage from "./pages/DashboardPage";
 import "./index.css";
-import GridLayout, { type LayoutItem } from 'react-grid-layout';
+import GridLayout, { type LayoutItem, useContainerWidth } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -33,7 +33,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 /* ─── Navbar ─── */
-const APP_VERSION = "1.0.0";
+const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "1.0.0";
 
 function Navbar() {
   const { user, logout } = useAuth();
@@ -459,10 +459,10 @@ function Dashboard() {
   // DataTable: 8 cols, 1 row
   layout.push({ i: "table", x: 4, y, w: 8, h: 1, minW: 4, minH: 1 });
 
-  const chartGridWidth = 1200; // approximate container width
+  const { containerRef, width: chartWidth } = useContainerWidth();
 
   return (
-    <div className="page">
+    <div className="page" ref={containerRef}>
       <div className="container">
         <div className="page-header">
           <SearchBar onSearch={setSymbol} loading={loading} />
@@ -476,7 +476,7 @@ function Dashboard() {
           <GridLayout
             className="charts-grid"
             layout={layout}
-            width={chartGridWidth}
+            width={chartWidth}
             gridConfig={{
               cols: cols,
               rowHeight: rowHeight,
