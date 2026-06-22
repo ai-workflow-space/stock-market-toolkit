@@ -22,6 +22,9 @@ class Settings:
     ]
     LOG_LEVEL: str = _get_env("LOG_LEVEL", "INFO")
     IS_DOCKER: bool = _get_env("IS_DOCKER", "false").lower() == "true"
+    ADMIN_EMAIL: str = _get_env("ADMIN_EMAIL", "admin@stocktoolkit.local")
+    ADMIN_USERNAME: str = _get_env("ADMIN_USERNAME", "admin")
+    ADMIN_PASSWORD: str = _get_env("ADMIN_PASSWORD", "Admin@1234")
 
 @lru_cache
 def get_settings() -> Settings:
