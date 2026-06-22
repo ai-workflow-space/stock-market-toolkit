@@ -65,18 +65,94 @@ async def get_analysis(
     sma20 = _safe_ta_series(ta.sma, close, length=20)
     sma50 = _safe_ta_series(ta.sma, close, length=50) if len(close) >= 50 else [None] * len(close)
 
+    # ── Best Four Point signal computation ──────────────────────────────────
+    latest_close = float(close.iloc[-1])
+    n = len(close)
+
+    # BIAS = (close - SMA20) / SMA20 * 100
+    sma20_vals = ta.sma(close, length=20)
+    latest_sma20 = float(sma20_vals.iloc[-1]) if sma20_vals.notna().any() else None
+    bias = _clean((latest_close - latest_sma20) / latest_sma20 * 100) if latest_sma20 else None
+
+    # KDJ (stochastic)
+    kdj_df = ta.stoch(high=df["High"], low=df["Low"], close=close, k=14, d=3)
+    kdj_k_vals = kdj_df["STOCHk_14_3_3"].tolist() if kdj_df is not None else [None] * n
+    kdj_d_vals = kdj_df["STOCHd_14_3_3"].tolist() if kdj_df is not None else [None] * n
+    kdj_k = _clean(kdj_k_vals[-1])
+    kdj_d = _clean(kdj_d_vals[-1])
+
+    # MACD histogram (last value)
+    macd_hist_list = _df_col(macd_df, "MACDh_12_26_9")
+    macd_hist = _clean(macd_hist_list[-1]) if macd_hist_list and not isinstance(macd_hist_list[0], type(None)) else None
+
+    # Volume ratio = volume / 20-day avg volume
+    vol_series = df["Volume"]
+    vol_avg = vol_series.rolling(20).mean()
+    vol_ratio = _clean(float(vol_series.iloc[-1] / vol_avg.iloc[-1])) if not math.isnan(vol_avg.iloc[-1]) else None
+
+    # RSI latest
+    rsi_vals_list = rsi_vals.tolist() if hasattr(rsi_vals, 'tolist') else list(rsi_vals)
+    latest_rsi = _clean(rsi_vals_list[-1]) if rsi_vals_list else None
+
+    # ── Signal logic (inspired by twstock best_four_point) ──────────────────
+    reasons = []
+    score = 0.0
+
+    if bias is not None and bias < -3:
+        score += 0.25
+        reasons.append(f"BIAS={bias:.1f} (< -3, oversold)")
+    elif bias is not None and bias > 3:
+        score -= 0.25
+        reasons.append(f"BIAS={bias:.1f} (> +3, overbought)")
+
+    if macd_hist is not None and macd_hist > 0:
+        score += 0.25
+        reasons.append(f"MACD hist positive ({macd_hist:.4f})")
+    elif macd_hist is not None and macd_hist < 0:
+        score -= 0.25
+        reasons.append(f"MACD hist negative ({macd_hist:.4f})")
+
+    if kdj_k is not None and kdj_d is not None:
+        if kdj_k > kdj_d:
+            score += 0.25
+            reasons.append(f"KDJ golden cross (K={kdj_k:.1f} > D={kdj_d:.1f})")
+        else:
+            score -= 0.25
+            reasons.append(f"KDJ death cross (K={kdj_k:.1f} < D={kdj_d:.1f})")
+
+    if vol_ratio is not None and vol_ratio > 1.2:
+        if score > 0:
+            score += 0.25
+            reasons.append(f"Volume surge ({vol_ratio:.2f}x avg)")
+        elif score < 0:
+            score -= 0.25
+            reasons.append(f"High volume selling ({vol_ratio:.2f}x avg)")
+
+    confidence = min(abs(score), 1.0)
+
+    if score >= 0.75:
+        signal = "BUY"
+    elif score <= -0.75:
+        signal = "SELL"
+    else:
+        signal = "NEUTRAL"
+
     return {
         "symbol": symbol.upper(),
         "period": period,
+        "signal": signal,
+        "confidence": round(confidence, 2),
+        "reasons": reasons,
+        "price": round(latest_close, 2),
+        "timestamp": df.index[-1].isoformat() if len(df) > 0 else None,
         "indicators": {
-            "rsi": _clean_list(rsi_vals.tolist() if hasattr(rsi_vals, 'tolist') else list(rsi_vals)),
-            "sma20": _clean_list(sma20),
-            "sma50": _clean_list(sma50),
-            "macd": _clean_list(_df_col(macd_df, "MACD_12_26_9")),
-            "macd_signal": _clean_list(_df_col(macd_df, "MACDs_12_26_9")),
-            "macd_hist": _clean_list(_df_col(macd_df, "MACDh_12_26_9")),
-            "bb_upper": _clean_list(_df_col(bbands_df, "BBU_20_2.0_2.0")),
-            "bb_middle": _clean_list(_df_col(bbands_df, "BBM_20_2.0_2.0")),
-            "bb_lower": _clean_list(_df_col(bbands_df, "BBL_20_2.0_2.0")),
+            "bias": bias,
+            "kdj_k": kdj_k,
+            "kdj_d": kdj_d,
+            "volume_ratio": vol_ratio,
+            "macd_histogram": macd_hist,
+            "rsi": latest_rsi,
+            "sma20": _clean(latest_sma20),
+            "sma50": _clean(float(ta.sma(close, length=50).iloc[-1]) if len(close) >= 50 else None),
         }
     }
