@@ -184,6 +184,34 @@ def get_stock_info(symbol: str):
     return info_data
 
 
+@app.get("/api/stock/{symbol}/news")
+def get_stock_news(symbol: str):
+    """Return recent news for a ticker using yfinance ticker.news."""
+    symbol = symbol.upper()
+    cache_key = f"news:{symbol}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    try:
+        ticker = yf.Ticker(symbol)
+        news_items = ticker.news
+        if not news_items:
+            return []
+        result = []
+        for item in (news_items or []):
+            result.append({
+                "title": item.get("title", ""),
+                "link": item.get("link", ""),
+                "publisher": item.get("publisher", ""),
+                "publishedDate": item.get("pubDate", ""),
+            })
+        _cache_set(cache_key, result, ttl=120)
+        return result
+    except Exception:
+        return []
+
+
 @app.post("/api/compare")
 def compare_stocks(payload: dict):
     """Accept { symbols: ["AAPL","MSFT"], period: "1mo" }, return OHLCV for each."""
@@ -208,8 +236,19 @@ def compare_stocks(payload: dict):
 
 @app.get("/api/search")
 def search_stocks(q: str = Query(..., min_length=1)):
-    """Simple search -- return ticker suggestion."""
-    return {"query": q, "suggestions": [q.upper()]}
+    """Search for stock symbols using yfinance. Returns flat array of suggestions."""
+    try:
+        results = yf.Search(q, max_results=8)
+        suggestions = []
+        for quote in (results.quotes or []):
+            suggestions.append({
+                "symbol": quote.get("symbol", ""),
+                "name": quote.get("shortname") or quote.get("longname", ""),
+                "exchange": quote.get("exchDisp", quote.get("exchange", "")),
+            })
+        return suggestions
+    except Exception:
+        return []
 
 
 @app.get("/health")

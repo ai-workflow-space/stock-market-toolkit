@@ -49,5 +49,13 @@ export async function searchSymbols(q: string) {
     params: { q },
     headers: authHeaders(),
   });
+  const data = res.data;
+  return Array.isArray(data) ? data : (data.suggestions || []);
+}
+
+export async function getStockNews(symbol: string): Promise<{ title: string; link: string; publisher: string; publishedDate: string }[]> {
+  const res = await axios.get(`${API}/api/stock/${symbol}/news`, {
+    headers: authHeaders(),
+  });
   return res.data;
 }
