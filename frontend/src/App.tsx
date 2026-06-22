@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, startTransition } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend, Area } from "recharts";
-import { getStock, getIndicators, getStockInfo, compareStocks, searchSymbols } from "./api/stockApi";
+import { getStock, getIndicators, getStockInfo, compareStocks, searchSymbols, getStockNews } from "./api/stockApi";
 import type { StockData, Indicators, StockInfo } from "./types";
 import { TIMEFRAMES } from "./types";
 import { AuthProvider } from "./context/AuthContext";
@@ -361,6 +361,7 @@ function Dashboard() {
   const [stock, setStock] = useState<StockData | null>(null);
   const [indicators, setIndicators] = useState<Indicators | null>(null);
   const [info, setInfo] = useState<StockInfo | null>(null);
+  const [news, setNews] = useState<{ title: string; link: string; publisher: string; publishedDate: string }[]>([]);
   const [loading] = useState(false);
   const [error, setError] = useState("");
   const [activeInds, setActiveInds] = useState<Set<string>>(new Set(["sma20", "rsi", "macd"]));
@@ -380,15 +381,17 @@ function Dashboard() {
   const load = useCallback(async (sym: string) => {
     setError("");
     try {
-      const [st, ind, inf] = await Promise.all([
+      const [st, ind, inf, nw] = await Promise.all([
         getStock(sym, period),
         getIndicators(sym, period),
         getStockInfo(sym),
+        getStockNews(sym).catch(() => []),
       ]);
       startTransition(() => {
         setStock(st);
         setIndicators(ind);
         setInfo(inf);
+        setNews(nw || []);
       });
     } catch (e: unknown) {
       setError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to load data");
@@ -443,6 +446,24 @@ function Dashboard() {
 
             <StockInfoCard info={info} stock={stock} />
             <DataTable stock={stock} />
+            <div className="news-panel">
+              <div className="news-panel-title">📰 Recent News — {stock.symbol}</div>
+              {news.length > 0 ? (
+                <div className="news-list">
+                  {news.slice(0, 8).map((item, i) => (
+                    <div key={i} className="news-item">
+                      <a href={item.link} target="_blank" rel="noopener noreferrer" className="news-link">{item.title}</a>
+                      <div className="news-meta">
+                        {item.publisher && <span>{item.publisher}</span>}
+                        {item.publishedDate && <span>{new Date(item.publishedDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="news-empty">No recent news available</div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -457,11 +478,65 @@ function ComparePage() {
   const [data, setData] = useState<StockData[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Chip state
+  const [tickerChips, setTickerChips] = useState<string[]>([]);
+  const [chipInput, setChipInput] = useState("");
+  const [chipResults, setChipResults] = useState<SearchResult[]>([]);
+  const [showChipDropdown, setShowChipDropdown] = useState(false);
+  const chipDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const chipContainerRef = useRef<HTMLDivElement>(null);
+  const expectingShowRef = useRef(false);
+
+  // Close chip dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (expectingShowRef.current) return;
+      if (chipContainerRef.current && !chipContainerRef.current.contains(e.target as Node)) {
+        setShowChipDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleChipInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    setChipInput(v);
+    if (chipDebounceRef.current) clearTimeout(chipDebounceRef.current);
+    if (v.trim().length < 3) { setChipResults([]); setShowChipDropdown(false); expectingShowRef.current = false; return; }
+    chipDebounceRef.current = setTimeout(async () => {
+      expectingShowRef.current = true;
+      try {
+        const res = await searchSymbols(v.trim());
+        setChipResults(Array.isArray(res) ? res.slice(0, 6) : []);
+        setShowChipDropdown(true);
+      } catch { setChipResults([]); }
+      finally { expectingShowRef.current = false; }
+    }, 300);
+  };
+
+  const addChipTicker = (sym: string) => {
+    const upper = sym.toUpperCase();
+    if (tickerChips.length >= 5) return;
+    if (!tickerChips.includes(upper)) {
+      setTickerChips(prev => [...prev, upper]);
+    }
+    setChipInput("");
+    setChipResults([]);
+    setShowChipDropdown(false);
+  };
+
+  const removeChip = (sym: string) => {
+    setTickerChips(prev => prev.filter(s => s !== sym));
+  };
 
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
-    const syms = input.split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
-    if (syms.length < 2) { setError("Enter at least 2 tickers separated by commas"); return; }
+    // Use chip tickers if available, otherwise fall back to comma input
+    const syms = tickerChips.length > 0
+      ? tickerChips
+      : input.split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
+    if (syms.length < 2) { setError("Enter at least 2 tickers separated by commas or add them below"); return; }
     if (syms.length > 5) { setError("Max 5 tickers"); return; }
     setError("");
     setLoading(true);
@@ -541,6 +616,51 @@ function ComparePage() {
     <div className="page">
       <div className="container">
         <h2 style={{ color: "#e2e8f0", marginBottom: "1.5rem" }}>Compare Stocks</h2>
+
+        {/* Ticker chips + chip search */}
+        {tickerChips.length > 0 && (
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem", alignItems: "center" }}>
+            {tickerChips.map(sym => (
+              <span key={sym} className="ticker-chip">
+                {sym}
+                <button type="button" className="chip-remove" onClick={() => removeChip(sym)}>×</button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }} ref={chipContainerRef}>
+          <div style={{ position: "relative", display: "inline-block" }}>
+            <input
+              className="search-input"
+              style={{ maxWidth: 240 }}
+              value={chipInput}
+              onChange={handleChipInput}
+              placeholder="Add ticker…"
+              onFocus={() => chipResults.length > 0 && setShowChipDropdown(true)}
+              autoComplete="off"
+            />
+            {showChipDropdown && chipResults.length > 0 && (
+              <div className="search-dropdown">
+                {chipResults.map(r => (
+                  <button
+                    key={r.symbol}
+                    type="button"
+                    className="search-dropdown-item"
+                    onClick={() => addChipTicker(r.symbol)}
+                  >
+                    <span className="dropdown-symbol">{r.symbol}</span>
+                    <span className="dropdown-name">{r.name}</span>
+                    {r.exchange && <span className="dropdown-exchange">{r.exchange}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {tickerChips.length === 0 && (
+            <span style={{ color: "#475569", fontSize: "0.8rem" }}>or enter below</span>
+          )}
+        </div>
+
         <form onSubmit={handle}>
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }}>
             <input className="search-input" style={{ maxWidth: 400 }} value={input} onChange={e => setInput(e.target.value)} placeholder="AAPL, TSLA, MSFT, GOOGL, NVDA" />
@@ -549,7 +669,7 @@ function ComparePage() {
           </div>
         </form>
         {error && <div className="error-banner">{error}</div>}
-        <div style={{ color: "#475569", fontSize: "0.9rem", marginTop: "1rem" }}>Enter 2–5 tickers separated by commas</div>
+        <div style={{ color: "#475569", fontSize: "0.9rem", marginTop: "1rem" }}>Add tickers above or enter 2–5 separated by commas</div>
       </div>
     </div>
   );

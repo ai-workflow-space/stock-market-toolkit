@@ -346,3 +346,38 @@ body {
 .compare-symbol { font-size: 1.25rem; font-weight: 700; }
 .compare-price { font-size: 1.5rem; font-weight: 700; color: var(--text); margin-top: 0.5rem; }
 .compare-change { font-size: 0.875rem; margin-top: 0.25rem; }
+
+/* ─── Ticker Chips ─── */
+.ticker-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--primary);
+  color: white;
+  border-radius: 20px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.chip-remove {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.chip-remove:hover { opacity: 1; }
+
+/* ─── News Panel ─── */
+.news-panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+.news-panel-title { font-size: 0.8rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
+.news-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.news-item { display: flex; flex-direction: column; gap: 0.25rem; }
+.news-link { color: var(--text); text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: color 0.15s; }
+.news-link:hover { color: var(--primary); }
+.news-meta { font-size: 0.72rem; color: var(--text-dim); display: flex; gap: 0.75rem; }
+.news-empty { color: var(--text-dim); font-size: 0.875rem; }
