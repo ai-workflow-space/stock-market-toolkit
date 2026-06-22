@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useState, useEffect, startTransition, type ReactNode } from "react";
 import axios from "axios";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8001";
@@ -33,25 +33,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await axios.get(`${API}/api/auth/me`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      setUser(res.data);
+      startTransition(() => setUser(res.data));
     } catch {
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
-      setToken(null);
-      setUser(null);
+      startTransition(() => {
+        setToken(null);
+        setUser(null);
+      });
     }
   };
 
   useEffect(() => {
     if (!token) {
-      setLoading(false);
+      startTransition(() => setLoading(false));
       return;
     }
     let ignore = false;
     fetchUser(token).then(() => {
-      if (!ignore) setLoading(false);
+      if (!ignore) startTransition(() => setLoading(false));
     }).catch(() => {
-      if (!ignore) setLoading(false);
+      if (!ignore) startTransition(() => setLoading(false));
     });
     return () => { ignore = true; };
   }, [token]);

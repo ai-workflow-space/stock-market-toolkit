@@ -360,7 +360,7 @@ function Dashboard() {
   const [stock, setStock] = useState<StockData | null>(null);
   const [indicators, setIndicators] = useState<Indicators | null>(null);
   const [info, setInfo] = useState<StockInfo | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [error, setError] = useState("");
   const [activeInds, setActiveInds] = useState<Set<string>>(new Set(["sma20", "rsi", "macd"]));
 
@@ -377,7 +377,6 @@ function Dashboard() {
   }, []);
 
   const load = useCallback(async (sym: string) => {
-    setLoading(true);
     setError("");
     try {
       const [st, ind, inf] = await Promise.all([
@@ -393,12 +392,12 @@ function Dashboard() {
     } catch (e: unknown) {
       setError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to load data");
       setStock(null);
-    } finally {
-      setLoading(false);
     }
   }, [period]);
 
-  useEffect(() => { load(symbol); }, [symbol, period, load]);
+  useEffect(() => {
+    startTransition(() => { load(symbol); });
+  }, [symbol, period, load]);
 
   const chartData: ChartData[] = stock ? stock.close.map((close, i) => ({
     date: new Date(stock.timestamp[i]).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
