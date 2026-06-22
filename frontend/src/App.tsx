@@ -214,11 +214,11 @@ function PriceChart({ data, indicators, showBB, active }: { data: StockData; ind
         {showBB && <Area yAxisId="price" dataKey="bb_middle" stroke="#6366f1" fill="none" strokeWidth={1} dot={false} name="BB Middle" />}
         {showBB && <Area yAxisId="price" dataKey="bb_lower" stroke="#6366f1" fill="rgba(99,102,241,0.1)" strokeWidth={1} strokeDasharray="3 3" dot={false} name="BB Lower" />}
         <Line yAxisId="price" type="monotone" dataKey="close" stroke="#3b82f6" strokeWidth={2} dot={false} name="Price" />
-        <Line yAxisId="price" type="monotone" dataKey="sma20" stroke="#f59e0b" strokeWidth={1} dot={false} name="SMA 20" hide={!active?.has("sma20")} key={`sma20-${active?.has("sma20")}`} />
-        <Line yAxisId="price" type="monotone" dataKey="sma50" stroke="#10b981" strokeWidth={1} dot={false} name="SMA 50" hide={!active?.has("sma50")} key={`sma50-${active?.has("sma50")}`} />
-        <Line yAxisId="price" type="monotone" dataKey="sma200" stroke="#ef4444" strokeWidth={1} dot={false} name="SMA 200" hide={!active?.has("sma200")} key={`sma200-${active?.has("sma200")}`} />
-        <Line yAxisId="price" type="monotone" dataKey="ema12" stroke="#8b5cf6" strokeWidth={1} dot={false} name="EMA 12" hide={!active?.has("ema12")} key={`ema12-${active?.has("ema12")}`} />
-        <Line yAxisId="price" type="monotone" dataKey="ema26" stroke="#ec4899" strokeWidth={1} dot={false} name="EMA 26" hide={!active?.has("ema26")} key={`ema26-${active?.has("ema26")}`} />
+        {active?.has("sma20") && <Line yAxisId="price" type="monotone" dataKey="sma20" stroke="#f59e0b" strokeWidth={1} dot={false} name="SMA 20" />}
+        {active?.has("sma50") && <Line yAxisId="price" type="monotone" dataKey="sma50" stroke="#10b981" strokeWidth={1} dot={false} name="SMA 50" />}
+        {active?.has("sma200") && <Line yAxisId="price" type="monotone" dataKey="sma200" stroke="#ef4444" strokeWidth={1} dot={false} name="SMA 200" />}
+        {active?.has("ema12") && <Line yAxisId="price" type="monotone" dataKey="ema12" stroke="#8b5cf6" strokeWidth={1} dot={false} name="EMA 12" />}
+        {active?.has("ema26") && <Line yAxisId="price" type="monotone" dataKey="ema26" stroke="#ec4899" strokeWidth={1} dot={false} name="EMA 26" />}
         <Legend wrapperStyle={{ fontSize: "0.75rem", color: "#94a3b8" }} />
       </ComposedChart>
     </ResponsiveContainer>
