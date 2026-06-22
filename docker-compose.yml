@@ -50,7 +50,7 @@ services:
     container_name: smt_frontend
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "3030:80"
     depends_on:
       - backend
 
