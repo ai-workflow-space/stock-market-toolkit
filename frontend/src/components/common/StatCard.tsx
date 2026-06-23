@@ -19,7 +19,7 @@ export default function StatCard({
   return (
     <div className={cn("rounded-md bg-secondary/50 p-3", className)}>
       <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="mt-1 font-mono text-sm font-medium tabular-nums">{value}</div>
+      <div className={cn("mt-1 font-mono text-sm font-medium tabular-nums", toneCls)}>{value}</div>
       {delta && <div className={cn("mt-0.5 font-mono text-xs tabular-nums", toneCls)}>{delta}</div>}
     </div>
   );
