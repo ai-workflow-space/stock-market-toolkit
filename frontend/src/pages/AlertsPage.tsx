@@ -12,12 +12,32 @@ import {
   type TriggeredAlert,
   type NotificationSettings,
 } from "../api/alertsApi";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Switch } from "../components/ui/switch";
+import { Badge } from "../components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "../components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
 
 const CONDITION_OPTIONS = [
-  { value: "above", label: "🔼 Price Above", description: "Trigger when price rises above threshold" },
-  { value: "below", label: "🔽 Price Below", description: "Trigger when price falls below threshold" },
-  { value: "pct_change_up", label: "📈 % Up", description: "Trigger on percentage increase" },
-  { value: "pct_change_down", label: "📉 % Down", description: "Trigger on percentage decrease" },
+  { value: "above", label: "Price Above", description: "Trigger when price rises above threshold" },
+  { value: "below", label: "Price Below", description: "Trigger when price falls below threshold" },
+  { value: "pct_change_up", label: "% Up", description: "Trigger on percentage increase" },
+  { value: "pct_change_down", label: "% Down", description: "Trigger on percentage decrease" },
 ];
 
 const PERIOD_OPTIONS = [
@@ -37,16 +57,13 @@ function conditionLabel(ct: string): string {
   return opt?.label || ct;
 }
 
-function conditionDesc(ct: string): string {
-  const opt = CONDITION_OPTIONS.find(o => o.value === ct);
-  return opt?.description || "";
-}
-
-/* ─── Create Alert Modal ─── */
-function CreateAlertModal({
+/* ─── Create Alert Dialog ─── */
+function CreateAlertDialog({
+  open,
   onClose,
   onCreated,
 }: {
+  open: boolean;
   onClose: () => void;
   onCreated: (alert: Alert) => void;
 }) {
@@ -83,77 +100,83 @@ function CreateAlertModal({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <h2 style={{ color: "#e2e8f0", marginBottom: "1.5rem" }}>Create Price Alert</h2>
+    <Dialog open={open} onOpenChange={o => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create Price Alert</DialogTitle>
+          <DialogDescription>
+            Set up a price alert for any stock symbol
+          </DialogDescription>
+        </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Symbol</label>
-            <input
-              className="form-input"
-              placeholder="AAPL, TSLA, MSFT"
-              value={symbol}
-              onChange={e => setSymbol(e.target.value)}
-              autoFocus
-            />
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="symbol">Symbol</Label>
+              <Input
+                id="symbol"
+                placeholder="AAPL, TSLA, MSFT"
+                value={symbol}
+                onChange={e => setSymbol(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="condition">Condition</Label>
+              <select
+                id="condition"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                value={conditionType}
+                onChange={e => setConditionType(e.target.value)}
+              >
+                {CONDITION_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                {CONDITION_OPTIONS.find(o => o.value === conditionType)?.description}
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="threshold">
+                {conditionType.startsWith("pct") ? "Percentage (%)" : "Price Threshold ($)"}
+              </Label>
+              <Input
+                id="threshold"
+                type="number"
+                step={conditionType.startsWith("pct") ? "0.1" : "0.01"}
+                min="0"
+                max={conditionType.startsWith("pct") ? "100" : undefined}
+                placeholder={conditionType.startsWith("pct") ? "5.0" : "200.00"}
+                value={threshold}
+                onChange={e => setThreshold(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="period">Period</Label>
+              <select
+                id="period"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                value={period}
+                onChange={e => setPeriod(e.target.value)}
+              >
+                {PERIOD_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
           </div>
-
-          <div className="form-group">
-            <label className="form-label">Condition</label>
-            <select
-              className="form-select"
-              value={conditionType}
-              onChange={e => setConditionType(e.target.value)}
-            >
-              {CONDITION_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-            <small style={{ color: "#64748b", fontSize: "0.75rem" }}>{conditionDesc(conditionType)}</small>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">
-              {conditionType.startsWith("pct") ? "Percentage (%)" : "Price Threshold ($)"}
-            </label>
-            <input
-              className="form-input"
-              type="number"
-              step={conditionType.startsWith("pct") ? "0.1" : "0.01"}
-              min="0"
-              max={conditionType.startsWith("pct") ? "100" : undefined}
-              placeholder={conditionType.startsWith("pct") ? "5.0" : "200.00"}
-              value={threshold}
-              onChange={e => setThreshold(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Period</label>
-            <select
-              className="form-select"
-              value={period}
-              onChange={e => setPeriod(e.target.value)}
-            >
-              {PERIOD_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {error && <div className="error-banner">{error}</div>}
-
-          <div style={{ display: "flex", gap: "0.5rem", marginTop: "1.5rem" }}>
-            <button type="submit" className="search-btn" disabled={loading}>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={loading}>
               {loading ? "Creating..." : "Create Alert"}
-            </button>
-            <button type="button" className="search-btn" style={{ background: "#334155" }} onClick={onClose}>
-              Cancel
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -186,35 +209,37 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
   };
 
   return (
-    <div className="card" style={{ marginTop: "1.5rem" }}>
-      <div className="card-title">Notification Settings</div>
-      <div className="form-group">
-        <label className="form-label">
-          <input
-            type="checkbox"
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle>Notification Settings</CardTitle>
+        <CardDescription>Configure how you receive alert notifications</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <div className="flex items-center gap-3">
+          <Switch
+            id="discord-toggle"
             checked={discordEnabled}
-            onChange={e => setDiscordEnabled(e.target.checked)}
-            style={{ marginRight: "0.5rem" }}
+            onCheckedChange={setDiscordEnabled}
           />
-          Enable Discord Notifications
-        </label>
-      </div>
-      <div className="form-group">
-        <label className="form-label">Discord Webhook URL</label>
-        <input
-          className="form-input"
-          placeholder="https://discord.com/api/webhooks/..."
-          value={discordWebhook}
-          onChange={e => setDiscordWebhook(e.target.value)}
-        />
-        <small style={{ color: "#64748b", fontSize: "0.75rem" }}>
-          Get your webhook URL from Discord channel settings → Integrations → Webhooks
-        </small>
-      </div>
-      <button className="search-btn" onClick={handleSave} disabled={loading}>
-        {loading ? "Saving..." : saved ? "✓ Saved!" : "Save Settings"}
-      </button>
-    </div>
+          <Label htmlFor="discord-toggle">Enable Discord Notifications</Label>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="webhook">Discord Webhook URL</Label>
+          <Input
+            id="webhook"
+            placeholder="https://discord.com/api/webhooks/..."
+            value={discordWebhook}
+            onChange={e => setDiscordWebhook(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Get your webhook URL from Discord channel settings → Integrations → Webhooks
+          </p>
+        </div>
+        <Button onClick={handleSave} disabled={loading} className="w-fit">
+          {loading ? "Saving..." : saved ? "Saved!" : "Save Settings"}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -226,7 +251,7 @@ export default function AlertsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"alerts" | "triggered" | "settings">("alerts");
+  const [activeTab, setActiveTab] = useState("alerts");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -280,114 +305,112 @@ export default function AlertsPage() {
 
   return (
     <div className="page">
-      <div className="container">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-          <h1 style={{ color: "#e2e8f0", fontSize: "1.5rem", fontWeight: 600 }}>Price Alerts</h1>
-          <button className="search-btn" onClick={() => setShowCreate(true)}>
-            + New Alert
-          </button>
+      <div className="container max-w-3xl">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold">Price Alerts</h1>
+          <Button onClick={() => setShowCreate(true)}>+ New Alert</Button>
         </div>
 
-        {error && <div className="error-banner">{error}</div>}
+        {error && <p className="text-sm text-destructive mb-4">{error}</p>}
 
-        {/* Tabs */}
-        <div className="tabs">
-          <button
-            className={`tab-btn ${activeTab === "alerts" ? "active" : ""}`}
-            onClick={() => setActiveTab("alerts")}
-          >
-            My Alerts ({alerts.length})
-          </button>
-          <button
-            className={`tab-btn ${activeTab === "triggered" ? "active" : ""}`}
-            onClick={() => setActiveTab("triggered")}
-          >
-            Triggered {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
-          </button>
-          <button
-            className={`tab-btn ${activeTab === "settings" ? "active" : ""}`}
-            onClick={() => setActiveTab("settings")}
-          >
-            Settings
-          </button>
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="alerts">My Alerts ({alerts.length})</TabsTrigger>
+            <TabsTrigger value="triggered">
+              Triggered
+              {unreadCount > 0 && <Badge variant="destructive" className="ml-1.5">{unreadCount}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
 
-        {/* Alerts List */}
-        {activeTab === "alerts" && (
-          <div>
+          <TabsContent value="alerts">
             {alerts.length === 0 ? (
-              <div className="card" style={{ textAlign: "center", padding: "3rem" }}>
-                <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔔</div>
-                <div style={{ color: "#94a3b8", marginBottom: "1rem" }}>No alerts yet</div>
-                <button className="search-btn" onClick={() => setShowCreate(true)}>+ New Alert</button>
-              </div>
+              <Card className="text-center py-12">
+                <CardContent>
+                  <p className="text-4xl mb-4">&#x1F514;</p>
+                  <p className="text-muted-foreground mb-4">No alerts yet</p>
+                  <Button onClick={() => setShowCreate(true)}>+ New Alert</Button>
+                </CardContent>
+              </Card>
             ) : (
-              <div className="alerts-list">
+              <div className="space-y-3">
                 {alerts.map(alert => (
-                  <div key={alert.id} className={`alert-card ${alert.enabled ? "" : "disabled"}`}>
-                    <div className="alert-symbol">{alert.symbol}</div>
-                    <div className="alert-condition">{conditionLabel(alert.condition_type)}</div>
-                    <div className="alert-threshold">
-                      {alert.condition_type.startsWith("pct") ? `${alert.threshold}%` : `$${fmt(alert.threshold)}`}
-                    </div>
-                    <div className="alert-period">{alert.period}</div>
-                    <label className="toggle">
-                      <input type="checkbox" checked={alert.enabled} onChange={() => handleToggle(alert)} />
-                      <span className="toggle-slider" />
-                    </label>
-                    <button className="delete-btn" onClick={() => handleDelete(alert.id)}>×</button>
-                  </div>
+                  <Card key={alert.id} className={alert.enabled ? "" : "opacity-50"}>
+                    <CardContent className="flex items-center gap-4 py-4">
+                      <span className="font-bold text-base min-w-[60px]">{alert.symbol}</span>
+                      <span className="text-sm text-muted-foreground flex-1">
+                        {conditionLabel(alert.condition_type)}
+                      </span>
+                      <span className="font-semibold text-sm">
+                        {alert.condition_type.startsWith("pct") ? `${alert.threshold}%` : `$${fmt(alert.threshold)}`}
+                      </span>
+                      <span className="text-xs text-muted-foreground uppercase">{alert.period}</span>
+                      <Switch
+                        checked={alert.enabled}
+                        onCheckedChange={() => handleToggle(alert)}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(alert.id)}
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        &times;
+                      </Button>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             )}
-          </div>
-        )}
+          </TabsContent>
 
-        {/* Triggered Alerts */}
-        {activeTab === "triggered" && (
-          <div>
+          <TabsContent value="triggered">
             {triggered.length === 0 ? (
-              <div className="card" style={{ textAlign: "center", padding: "3rem" }}>
-                <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>✅</div>
-                <div style={{ color: "#94a3b8" }}>No triggered alerts</div>
-              </div>
+              <Card className="text-center py-12">
+                <CardContent>
+                  <p className="text-4xl mb-4">&#x2705;</p>
+                  <p className="text-muted-foreground">No triggered alerts</p>
+                </CardContent>
+              </Card>
             ) : (
-              <div className="triggered-list">
+              <div className="space-y-3">
                 {triggered.map(alert => (
-                  <div
+                  <Card
                     key={alert.id}
-                    className={`triggered-card ${alert.read ? "read" : "unread"}`}
+                    className={`cursor-pointer transition-colors ${alert.read ? "opacity-70" : "border-primary"}`}
                     onClick={() => !alert.read && handleMarkRead(alert.id)}
                   >
-                    <div className="triggered-header">
-                      <span className="triggered-symbol">{alert.symbol}</span>
-                      <span className="triggered-condition">{conditionLabel(alert.condition_type)}</span>
-                      {!alert.read && <span className="unread-dot" />}
-                    </div>
-                    <div className="triggered-details">
-                      <span>Triggered at ${fmt(alert.trigger_price)} (threshold: ${fmt(alert.threshold_value)})</span>
-                    </div>
-                    <div className="triggered-time">
-                      {new Date(alert.triggered_at).toLocaleString()}
-                    </div>
-                  </div>
+                    <CardContent className="py-4">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="font-bold">{alert.symbol}</span>
+                        <span className="text-sm text-muted-foreground">{conditionLabel(alert.condition_type)}</span>
+                        {!alert.read && <span className="size-2 rounded-full bg-primary inline-block ml-auto" />}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Triggered at ${fmt(alert.trigger_price)} (threshold: ${fmt(alert.threshold_value)})
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(alert.triggered_at).toLocaleString()}
+                      </p>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             )}
-          </div>
-        )}
+          </TabsContent>
 
-        {/* Settings Tab */}
-        {activeTab === "settings" && settings && (
-          <NotificationSettingsPanel settings={settings} onUpdate={setSettings} />
-        )}
+          <TabsContent value="settings">
+            {settings && (
+              <NotificationSettingsPanel settings={settings} onUpdate={setSettings} />
+            )}
+          </TabsContent>
+        </Tabs>
 
-        {showCreate && (
-          <CreateAlertModal
-            onClose={() => setShowCreate(false)}
-            onCreated={alert => setAlerts(prev => [alert, ...prev])}
-          />
-        )}
+        <CreateAlertDialog
+          open={showCreate}
+          onClose={() => setShowCreate(false)}
+          onCreated={alert => setAlerts(prev => [alert, ...prev])}
+        />
       </div>
     </div>
   );
