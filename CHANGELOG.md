@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.2.0...v0.3.0) (2026-06-23)
+
+
+### Features
+
+* implement [#23](https://github.com/ai-workflow-space/stock-market-toolkit/issues/23) - adopt shadcn/ui design system and fix layout overflow ([#28](https://github.com/ai-workflow-space/stock-market-toolkit/issues/28)) ([09e998e](https://github.com/ai-workflow-space/stock-market-toolkit/commit/09e998e25f12fa7393dbf9366bc8dc063aa41ffd))
+
+
+### Bug Fixes
+
+* correct MiniMax API URL and model name in code-review workflow ([#29](https://github.com/ai-workflow-space/stock-market-toolkit/issues/29)) ([38f6621](https://github.com/ai-workflow-space/stock-market-toolkit/commit/38f6621cd506c893c24f20be8bbcf1ccf79d0bbc))
+
 ## [0.2.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.1.0...v0.2.0) (2026-06-22)
 
 
