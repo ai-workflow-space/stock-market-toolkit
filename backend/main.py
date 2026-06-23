@@ -3,6 +3,9 @@ Stock Market Toolkit -- FastAPI Backend
 Uses yfinance with direct Yahoo Finance API as fallback.
 """
 
+# Agent pipeline test: this print confirms the coder agent implemented issue #33
+print("Agent pipeline test: coder successfully processed issue #33")
+
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 import yfinance as yf
