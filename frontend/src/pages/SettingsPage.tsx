@@ -29,11 +29,10 @@ export default function SettingsPage() {
   }, []);
 
   return (
-    <div className="page">
-      <div className="container max-w-2xl">
-        <h1 className="text-2xl font-semibold mb-6">Settings</h1>
+    <div className="mx-auto flex max-w-2xl flex-col gap-4">
+      <h1 className="text-2xl font-semibold">Settings</h1>
 
-        <Card className="mb-4">
+        <Card>
           <CardHeader>
             <CardTitle>Appearance</CardTitle>
             <CardDescription>Customize your viewing experience</CardDescription>
@@ -53,7 +52,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="mb-4">
+        <Card>
           <CardHeader>
             <CardTitle>Timezone</CardTitle>
             <CardDescription>Set your preferred timezone for alerts and timestamps</CardDescription>
@@ -72,7 +71,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="mb-4">
+        <Card>
           <CardHeader>
             <CardTitle>Data Source Health</CardTitle>
             <CardDescription>Status of connected data providers</CardDescription>
@@ -86,14 +85,14 @@ export default function SettingsPage() {
               )}
               {yfStatus === "ok" && (
                 <>
-                  <span className="size-2 rounded-full bg-green-500 inline-block" />
-                  <span className="text-sm text-green-500 font-medium">Yahoo Finance operational</span>
+                  <span className="inline-block size-2 rounded-full bg-up" />
+                  <span className="text-sm font-medium text-up">Yahoo Finance operational</span>
                 </>
               )}
               {yfStatus === "error" && (
                 <>
-                  <span className="size-2 rounded-full bg-red-500 inline-block" />
-                  <span className="text-sm text-red-500 font-medium">Yahoo Finance error</span>
+                  <span className="inline-block size-2 rounded-full bg-down" />
+                  <span className="text-sm font-medium text-down">Yahoo Finance error</span>
                 </>
               )}
             </div>
@@ -115,7 +114,6 @@ export default function SettingsPage() {
             </p>
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 }
