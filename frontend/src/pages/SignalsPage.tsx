@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import SignalCard from "../components/SignalCard";
-import { Card, CardContent } from "../components/ui/card";
-import type { Signal } from "../types";
+import { Activity } from "lucide-react";
+import SignalCard from "@/components/SignalCard";
+import StatCard from "@/components/common/StatCard";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/components/ui/sonner";
+import type { Signal } from "@/types";
 
 /* ─── Mock signals for demonstration ─── */
 function generateMockSignals(symbols: string[]): Signal[] {
@@ -9,7 +13,7 @@ function generateMockSignals(symbols: string[]): Signal[] {
   const signals: Signal[] = [];
 
   const signalTypes: Signal["signal_type"][] = [
-    "rsi_oversold", "rsi_overbought", "macd_cross", "sma_cross", "bb_touch", "volume_spike"
+    "rsi_oversold", "rsi_overbought", "macd_cross", "sma_cross", "bb_touch", "volume_spike",
   ];
 
   symbols.forEach((symbol, idx) => {
@@ -97,7 +101,7 @@ export default function SignalsPage() {
           symbols.map(async (symbol) => {
             const res = await fetch(
               `${import.meta.env.VITE_API_URL || ""}/api/analysis/${symbol}?period=1mo`,
-              { headers: { Authorization: `Bearer ${token}` } }
+              { headers: { Authorization: `Bearer ${token}` } },
             );
             if (!res.ok) throw new Error(`${symbol} failed`);
             const data = await res.json();
@@ -126,7 +130,7 @@ export default function SignalsPage() {
               strength: Math.round(confidence * 100),
               description: `[${data.signal}] ${reasons} — confidence ${(confidence * 100).toFixed(0)}%`,
             } satisfies Signal;
-          })
+          }),
         );
         setSignals(results);
       } catch {
@@ -140,79 +144,68 @@ export default function SignalsPage() {
   }, []);
 
   const handleDismissSignal = useCallback((id: string) => {
-    setSignals(prev => prev.filter(s => s.id !== id));
+    setSignals((prev) => prev.filter((s) => s.id !== id));
+    toast("Signal dismissed");
   }, []);
 
-  const bullishSignals = signals.filter(s => s.direction === "bullish");
-  const bearishSignals = signals.filter(s => s.direction === "bearish");
-  const neutralSignals = signals.filter(s => s.direction === "neutral");
-
-  if (loading) {
-    return (
-      <div className="page">
-        <div className="container">
-          <div className="loading-screen">
-            <div className="spinner" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const bullish = signals.filter((s) => s.direction === "bullish");
+  const bearish = signals.filter((s) => s.direction === "bearish");
+  const neutral = signals.filter((s) => s.direction === "neutral");
 
   return (
-    <div className="page">
-      <div className="container">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold mb-1">Trading Signals</h1>
-          <p className="text-sm text-muted-foreground">
-            Real-time signals based on technical indicators
-          </p>
-        </div>
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Trading signals</h1>
+        <p className="text-sm text-muted-foreground">Real-time signals based on technical indicators</p>
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="rounded-xl border bg-card text-card-foreground shadow p-4" style={{ borderLeft: "3px solid #22c55e" }}>
-            <p className="text-xs text-muted-foreground uppercase mb-1">Bullish Signals</p>
-            <p className="text-2xl font-bold text-green-500">{bullishSignals.length}</p>
+      {loading ? (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Skeleton className="h-[76px] rounded-xl" />
+            <Skeleton className="h-[76px] rounded-xl" />
+            <Skeleton className="h-[76px] rounded-xl" />
           </div>
-          <div className="rounded-xl border bg-card text-card-foreground shadow p-4" style={{ borderLeft: "3px solid #ef4444" }}>
-            <p className="text-xs text-muted-foreground uppercase mb-1">Bearish Signals</p>
-            <p className="text-2xl font-bold text-red-500">{bearishSignals.length}</p>
-          </div>
-          <div className="rounded-xl border bg-card text-card-foreground shadow p-4" style={{ borderLeft: "3px solid #3b82f6" }}>
-            <p className="text-xs text-muted-foreground uppercase mb-1">Neutral Signals</p>
-            <p className="text-2xl font-bold text-primary">{neutralSignals.length}</p>
-          </div>
-        </div>
-
-        {signals.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <p className="text-4xl mb-4">&#x1F4CA;</p>
-              <p className="text-muted-foreground mb-4">No signals available</p>
-              <p className="text-sm text-muted-foreground">
-                Signals will appear here when technical indicators trigger alerts
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="signals-grid">
-            {signals.map(signal => (
-              <SignalCard
-                key={signal.id}
-                signal={signal}
-                onDismiss={handleDismissSignal}
-              />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-[180px] rounded-xl" />
             ))}
           </div>
-        )}
+        </>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <StatCard label="Bullish signals" value={String(bullish.length)} tone="up" />
+            <StatCard label="Bearish signals" value={String(bearish.length)} tone="down" />
+            <StatCard label="Neutral signals" value={String(neutral.length)} tone="neutral" />
+          </div>
 
-        <div className="mt-8 p-4 rounded-lg bg-primary/5 border border-primary/20">
-          <p className="text-xs text-muted-foreground m-0">
-            <strong>Disclaimer:</strong> These signals are generated by technical indicators and should not be considered financial advice.
-            Always do your own research before making investment decisions.
-          </p>
-        </div>
-      </div>
+          {signals.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
+                <Activity className="size-8 text-muted-foreground" />
+                <p className="text-muted-foreground">No signals available</p>
+                <p className="text-sm text-muted-foreground">
+                  Signals will appear here when technical indicators trigger alerts
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {signals.map((signal) => (
+                <SignalCard key={signal.id} signal={signal} onDismiss={handleDismissSignal} />
+              ))}
+            </div>
+          )}
+
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <p className="m-0 text-xs text-muted-foreground">
+              <strong>Disclaimer:</strong> These signals are generated by technical indicators and should not be
+              considered financial advice. Always do your own research before making investment decisions.
+            </p>
+          </div>
+        </>
+      )}
     </div>
   );
 }
