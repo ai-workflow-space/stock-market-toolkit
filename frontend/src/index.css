@@ -1,58 +1,84 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 10%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 10%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
+    --background: 224 71% 4%;
+    --foreground: 210 20% 98%;
+    --card: 224 39% 8%;
+    --card-foreground: 210 20% 98%;
+    --popover: 224 39% 8%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 217 91% 60%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --secondary: 223 30% 14%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 223 30% 14%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 223 30% 16%;
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-    --radius: 0.75rem;
+    --border: 223 30% 16%;
+    --input: 223 30% 16%;
+    --ring: 217 91% 60%;
+    --radius: 0.625rem;
+    --up: 142 71% 45%;
+    --up-foreground: 0 0% 100%;
+    --down: 0 72% 55%;
+    --down-foreground: 0 0% 100%;
+    --neutral: 215 20% 65%;
   }
 
   [data-theme="light"] {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 0 0% 100%;
+    --foreground: 224 71% 4%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 224 71% 4%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --popover-foreground: 224 71% 4%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 224 71% 11%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 224 71% 11%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 217 91% 60%;
+    --up: 142 71% 38%;
+    --up-foreground: 0 0% 100%;
+    --down: 0 72% 48%;
+    --down-foreground: 0 0% 100%;
+    --neutral: 220 9% 46%;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    border-style: solid;
+    border-color: hsl(var(--border));
+  }
+  html { font-size: 16px; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv11", "ss01";
   }
 }
 
+/* Legacy design tokens — consumed by not-yet-migrated component classes below.
+   Removed in the CSS cleanup task once every page uses shadcn/Tailwind tokens. */
 :root {
   --bg: #0a0e17;
   --surface: #111827;
@@ -79,15 +105,6 @@
   --success: #16a34a;
   --danger: #dc2626;
   --warn: #d97706;
-}
-
-html { font-size: 16px; }
-body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
 }
 
 /* ─── Auth Pages ─── */
