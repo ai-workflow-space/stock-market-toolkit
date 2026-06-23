@@ -17,6 +17,24 @@ export function defaultLayout(active: Set<string>): LayoutItem[] {
   return layout;
 }
 
+/**
+ * Reconcile a saved layout with the currently-visible widgets. When the saved
+ * widget set matches exactly, the saved layout is honored verbatim. When it
+ * differs (e.g. an indicator was toggled), user sizes are preserved but each
+ * widget's position is taken from the collision-free default — so a stale saved
+ * position can never seed an overlap.
+ */
+export function reconcileLayout(stored: LayoutItem[], active: Set<string>): LayoutItem[] {
+  const base = defaultLayout(active);
+  const storedIds = new Set(stored.map((l) => l.i));
+  const sameSet = base.length === stored.length && base.every((b) => storedIds.has(b.i));
+  return base.map((b) => {
+    const s = stored.find((l) => l.i === b.i);
+    if (sameSet && s) return s;
+    return s ? { ...b, w: s.w, h: s.h } : b;
+  });
+}
+
 export function saveLayout(items: readonly LayoutItem[]): void {
   try {
     localStorage.setItem(KEY, JSON.stringify({ version: LAYOUT_VERSION, items }));

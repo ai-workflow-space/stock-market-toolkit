@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import GridLayout, { type LayoutItem, useContainerWidth } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { defaultLayout, loadLayout, saveLayout } from "@/lib/dashboard-layout";
+import { loadLayout, reconcileLayout, saveLayout } from "@/lib/dashboard-layout";
 import ChartCard from "@/components/common/ChartCard";
 import PriceChart from "./PriceChart";
 import RsiChart from "./RsiChart";
@@ -16,24 +16,9 @@ export default function EditableGrid({ stock, indicators, info, active }: Dashbo
   const dates = stock.timestamp.map((t) =>
     new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
   );
-  const [stored, setStored] = useState<LayoutItem[]>(() => loadLayout() ?? defaultLayout(active));
+  const [stored, setStored] = useState<LayoutItem[]>(() => loadLayout() ?? []);
 
-  const keys = useMemo(() => {
-    const k = ["price"];
-    if (active.has("rsi")) k.push("rsi");
-    if (active.has("macd")) k.push("macd");
-    k.push("info", "table");
-    return k;
-  }, [active]);
-
-  // Reconcile stored positions with the currently-visible widgets, falling
-  // back to default placement for any widget that has no stored entry yet.
-  const layout = useMemo(() => {
-    const base = defaultLayout(active);
-    return keys
-      .map((key) => stored.find((l) => l.i === key) ?? base.find((l) => l.i === key))
-      .filter((l): l is LayoutItem => Boolean(l));
-  }, [keys, stored, active]);
+  const layout = useMemo(() => reconcileLayout(stored, active), [active, stored]);
 
   const handleChange = useCallback((next: readonly LayoutItem[]) => {
     setStored(next as LayoutItem[]);

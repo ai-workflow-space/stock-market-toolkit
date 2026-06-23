@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { saveLayout, loadLayout, defaultLayout, LAYOUT_VERSION } from "./dashboard-layout";
+import { saveLayout, loadLayout, defaultLayout, reconcileLayout, LAYOUT_VERSION } from "./dashboard-layout";
 
 const KEY = "stock-toolkit-dash-layout";
 
@@ -45,5 +45,28 @@ describe("defaultLayout", () => {
     const ids = defaultLayout(new Set(["rsi", "macd"])).map((l) => l.i);
     expect(ids).toContain("rsi");
     expect(ids).toContain("macd");
+  });
+});
+
+describe("reconcileLayout", () => {
+  it("honors a saved layout verbatim when the widget set matches", () => {
+    const saved = defaultLayout(new Set(["rsi", "macd"])).map((l) =>
+      l.i === "price" ? { ...l, x: 0, y: 0, w: 8, h: 4 } : l,
+    );
+    const result = reconcileLayout(saved, new Set(["rsi", "macd"]));
+    expect(result.find((l) => l.i === "price")).toEqual({ i: "price", x: 0, y: 0, w: 8, h: 4, minW: 6 });
+  });
+
+  it("re-stacks to collision-free positions but keeps sizes when the set changes", () => {
+    // saved while indicators were OFF (info/table sit on the price row's next row)
+    const saved = defaultLayout(new Set()).map((l) => (l.i === "table" ? { ...l, h: 9 } : l));
+    const result = reconcileLayout(saved, new Set(["rsi", "macd"]));
+    const byId = Object.fromEntries(result.map((l) => [l.i, l]));
+    expect(Object.keys(byId).sort()).toEqual(["info", "macd", "price", "rsi", "table"]);
+    // info/table must drop below the indicator row, not collide with it
+    expect(byId.info.y).toBeGreaterThanOrEqual(byId.rsi.y + byId.rsi.h);
+    expect(byId.table.y).toBeGreaterThanOrEqual(byId.macd.y + byId.macd.h);
+    // user-customized size is preserved
+    expect(byId.table.h).toBe(9);
   });
 });

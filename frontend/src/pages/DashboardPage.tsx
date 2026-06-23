@@ -45,6 +45,7 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [active, setActive] = useState<string[]>(["sma20", "rsi", "macd"]);
   const [editMode, setEditMode] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Fetch on symbol/period change. `loading` is raised in the change handlers
   // so this effect performs no synchronous setState (only after the await).
@@ -75,10 +76,11 @@ export default function DashboardPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [symbol, period]);
+  }, [symbol, period, reloadKey]);
 
-  const onSymbol = (s: string) => { setLoading(true); setSymbol(s); };
-  const onPeriod = (p: string) => { setLoading(true); setPeriod(p); };
+  const onSymbol = (s: string) => { if (s !== symbol) { setLoading(true); setSymbol(s); } };
+  const onPeriod = (p: string) => { if (p !== period) { setLoading(true); setPeriod(p); } };
+  const retry = () => { setLoading(true); setReloadKey((k) => k + 1); };
 
   const activeSet = useMemo(() => new Set(active), [active]);
   const ready = Boolean(stock && indicators && info);
@@ -117,7 +119,12 @@ export default function DashboardPage() {
         ) : (
           <DashboardGrid stock={stock} indicators={indicators} info={info} active={activeSet} />
         )
-      ) : null}
+      ) : (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-16 text-center text-sm text-muted-foreground">
+          <p>{error ? "Couldn't load this symbol." : "No data to display."}</p>
+          <Button variant="outline" size="sm" onClick={retry}>Retry</Button>
+        </div>
+      )}
     </div>
   );
 }

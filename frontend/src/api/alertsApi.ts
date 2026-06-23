@@ -78,13 +78,6 @@ export async function getAlerts(): Promise<Alert[]> {
   return res.data;
 }
 
-export async function getAlert(alertId: number): Promise<Alert> {
-  const res = await axios.get(`${API}/api/alerts/${alertId}`, {
-    headers: authHeaders(),
-  });
-  return res.data;
-}
-
 export async function updateAlert(alertId: number, data: AlertUpdate): Promise<Alert> {
   const res = await axios.patch(`${API}/api/alerts/${alertId}`, data, {
     headers: authHeaders(),

@@ -15,7 +15,7 @@ export default function SettingsPage() {
     fetch(`${import.meta.env.VITE_API_URL || ""}/api/mcp/yf-health`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
-      .then(res => res.json())
+      .then((res) => res.json() as Promise<{ status?: string; message?: string }>)
       .then(data => {
         if (data.status === "ok") {
           setYfStatus("ok");
@@ -25,7 +25,10 @@ export default function SettingsPage() {
           setYfMessage(data.message ?? "yfinance check failed");
         }
       })
-      .catch(() => setYfStatus("error"));
+      .catch(() => {
+        setYfStatus("error");
+        setYfMessage("Could not reach the health endpoint");
+      });
   }, []);
 
   return (
@@ -58,8 +61,10 @@ export default function SettingsPage() {
             <CardDescription>Set your preferred timezone for alerts and timestamps</CardDescription>
           </CardHeader>
           <CardContent>
-            <Label>Current: {timezone}</Label>
+            <Label htmlFor="timezone">Current: {timezone}</Label>
             <select
+              id="timezone"
+              aria-label="Timezone"
               value={timezone}
               onChange={e => setTimezone(e.target.value)}
               className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"

@@ -5,6 +5,7 @@ import ChartCard from "@/components/common/ChartCard";
 export default function HistoryTable({ stock }: { stock: StockData }) {
   const rows = stock.close
     .map((_, i) => ({
+      ts: stock.timestamp[i],
       date: new Date(stock.timestamp[i]).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
       open: stock.open[i],
       high: stock.high[i],
@@ -30,8 +31,8 @@ export default function HistoryTable({ stock }: { stock: StockData }) {
             </tr>
           </thead>
           <tbody className="font-mono tabular-nums">
-            {rows.map((d, idx) => (
-              <tr key={idx} className="border-b border-border/50 last:border-0 hover:bg-secondary/40">
+            {rows.map((d) => (
+              <tr key={d.ts} className="border-b border-border/50 last:border-0 hover:bg-secondary/40">
                 <td className="px-4 py-1.5 font-sans text-muted-foreground">{d.date}</td>
                 <td className="px-4 py-1.5 text-right">${fmt(d.open)}</td>
                 <td className="px-4 py-1.5 text-right">${fmt(d.high)}</td>

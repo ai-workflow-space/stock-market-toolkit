@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Plus, X, Download } from "lucide-react";
 import { compareStocks, getIndicators, searchSymbols } from "@/api/stockApi";
@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 type SearchResult = { symbol: string; name: string; exchange: string };
 
 const SERIES_COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6"];
+const SERIES_DASH: (string | undefined)[] = [undefined, "6 3", "2 2", "8 4", "4 2 1 2"];
 const TIMEFRAME_OPTIONS = TIMEFRAMES.map((t) => ({ value: t.value, label: t.label }));
 const SMA_OPTIONS = [
   { value: "sma20", label: "SMA 20" },
@@ -44,13 +45,15 @@ function TickerPicker({ onAdd, disabled }: { onAdd: (s: string) => void; disable
     if (v.trim().length < 2) { setResults([]); return; }
     debounceRef.current = setTimeout(async () => {
       try {
-        const data = (await searchSymbols(v.trim())) as SearchResult[];
+        const data = await searchSymbols(v.trim());
         setResults(data.slice(0, 8));
       } catch {
         setResults([]);
       }
     }, 300);
   }, []);
+
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
   const add = (s: string) => { setOpen(false); setQuery(""); setResults([]); onAdd(s); };
 
@@ -113,7 +116,9 @@ export default function ComparePage() {
     setActiveSMAs([]);
     try {
       const result = await compareStocks(tickers, period);
-      setData((result?.stocks ?? []) as StockData[]);
+      const stocks = result?.stocks ?? [];
+      setData(stocks);
+      if (stocks.length === 0) setError("No data returned for those tickers");
       const indResults: Record<string, Indicators> = {};
       await Promise.all(
         tickers.map(async (sym) => {
@@ -131,10 +136,11 @@ export default function ComparePage() {
   const exportCSV = () => {
     if (!data?.length) return;
     const len = Math.max(...data.map((s) => s.close.length));
+    const ts = data.reduce((a, s) => (s.timestamp.length > a.length ? s.timestamp : a), data[0].timestamp);
     const lines = [["Date", ...data.map((s) => s.symbol)].join(",")];
     for (let i = 0; i < len; i++) {
-      const date = data[0].timestamp[i]
-        ? new Date(data[0].timestamp[i]).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      const date = ts[i]
+        ? new Date(ts[i]).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
         : "";
       lines.push([date, ...data.map((s) => s.close[i] ?? "")].join(","));
     }
@@ -149,7 +155,7 @@ export default function ComparePage() {
   const priceData = data ? (showNormalized ? buildNormalizedSeries(data) : buildSeries(data)) : [];
   const perf = data ? performance(data, SERIES_COLORS) : [];
   const stats = perf.length ? summary(perf) : null;
-  const smaKeys = activeSMAs as SmaKey[];
+  const smaKeys = activeSMAs.filter((k): k is SmaKey => k in SMA_META);
   const smaData = data && smaKeys.length ? buildSmaSeries(data, indicatorsData, smaKeys) : [];
 
   return (
@@ -239,7 +245,7 @@ export default function ComparePage() {
                 />
                 <Legend wrapperStyle={{ fontSize: "0.8rem" }} />
                 {data.map((s, i) => (
-                  <Line key={s.symbol} type="monotone" dataKey={s.symbol} stroke={SERIES_COLORS[i % SERIES_COLORS.length]} strokeWidth={2} dot={false} />
+                  <Line key={s.symbol} type="monotone" dataKey={s.symbol} stroke={SERIES_COLORS[i % SERIES_COLORS.length]} strokeDasharray={SERIES_DASH[i % SERIES_DASH.length]} strokeWidth={2} dot={false} />
                 ))}
               </ComposedChart>
             </ResponsiveContainer>

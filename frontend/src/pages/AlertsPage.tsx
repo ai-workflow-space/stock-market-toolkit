@@ -189,10 +189,12 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
   const [discordEnabled, setDiscordEnabled] = useState(settings.discord_enabled);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSave = async () => {
     setLoading(true);
     setSaved(false);
+    setError("");
     try {
       const updated = await updateNotificationSettings({
         discord_webhook_url: discordWebhook || null,
@@ -201,8 +203,8 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
       onUpdate(updated);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch {
-      // Handle error
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to save settings");
     } finally {
       setLoading(false);
     }
@@ -236,8 +238,9 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
           </p>
         </div>
         <Button onClick={handleSave} disabled={loading} className="w-fit">
-          {loading ? "Saving..." : saved ? "Saved!" : "Save Settings"}
+          {loading ? "Saving…" : saved ? "Saved" : "Save settings"}
         </Button>
+        {error && <p className="text-sm text-destructive">{error}</p>}
       </CardContent>
     </Card>
   );
@@ -355,6 +358,7 @@ export default function AlertsPage() {
                       </span>
                       <span className="text-xs text-muted-foreground uppercase">{alert.period}</span>
                       <Switch
+                        aria-label={`${alert.enabled ? "Disable" : "Enable"} ${alert.symbol} alert`}
                         checked={alert.enabled}
                         onCheckedChange={() => handleToggle(alert)}
                       />
@@ -387,14 +391,28 @@ export default function AlertsPage() {
                 {triggered.map(alert => (
                   <Card
                     key={alert.id}
-                    className={`cursor-pointer transition-colors ${alert.read ? "opacity-70" : "border-primary"}`}
+                    role={alert.read ? undefined : "button"}
+                    tabIndex={alert.read ? -1 : 0}
+                    aria-label={alert.read ? undefined : `Mark ${alert.symbol} alert as read`}
+                    className={`transition-colors ${alert.read ? "opacity-70" : "cursor-pointer border-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"}`}
                     onClick={() => !alert.read && handleMarkRead(alert.id)}
+                    onKeyDown={(e) => {
+                      if (!alert.read && (e.key === "Enter" || e.key === " ")) {
+                        e.preventDefault();
+                        handleMarkRead(alert.id);
+                      }
+                    }}
                   >
                     <CardContent className="py-4">
                       <div className="flex items-center gap-3 mb-2">
                         <span className="font-bold">{alert.symbol}</span>
                         <span className="text-sm text-muted-foreground">{conditionLabel(alert.condition_type)}</span>
-                        {!alert.read && <span className="size-2 rounded-full bg-primary inline-block ml-auto" />}
+                        {!alert.read && (
+                          <span className="ml-auto flex items-center">
+                            <span className="inline-block size-2 rounded-full bg-primary" aria-hidden="true" />
+                            <span className="sr-only">Unread</span>
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         Triggered at ${fmt(alert.trigger_price)} (threshold: ${fmt(alert.threshold_value)})

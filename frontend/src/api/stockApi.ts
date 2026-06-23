@@ -35,7 +35,13 @@ export async function getStockInfo(symbol: string): Promise<StockInfo> {
   return res.data;
 }
 
-export async function compareStocks(symbols: string[], period: string) {
+export interface SymbolSuggestion {
+  symbol: string;
+  name: string;
+  exchange: string;
+}
+
+export async function compareStocks(symbols: string[], period: string): Promise<{ stocks: StockData[] }> {
   const res = await axios.post(
     `${API}/api/compare`,
     { symbols, period },
@@ -44,17 +50,10 @@ export async function compareStocks(symbols: string[], period: string) {
   return res.data;
 }
 
-export async function searchSymbols(q: string) {
+export async function searchSymbols(q: string): Promise<SymbolSuggestion[]> {
   const res = await axios.get(`${API}/api/search`, {
     params: { q },
   });
   const data = res.data;
   return Array.isArray(data) ? data : (data.suggestions || []);
-}
-
-export async function getStockNews(symbol: string): Promise<{ title: string; link: string; publisher: string; publishedDate: string }[]> {
-  const res = await axios.get(`${API}/api/stock/${symbol}/news`, {
-    headers: authHeaders(),
-  });
-  return res.data;
 }

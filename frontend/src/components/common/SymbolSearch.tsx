@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -32,7 +32,7 @@ export default function SymbolSearch({
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const data = (await searchSymbols(v.trim())) as SearchResult[];
+        const data = await searchSymbols(v.trim());
         setResults(data.slice(0, 8));
       } catch {
         setResults([]);
@@ -41,6 +41,8 @@ export default function SymbolSearch({
       }
     }, 300);
   }, []);
+
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
   const select = (symbol: string) => {
     setOpen(false);
