@@ -41,12 +41,12 @@ jobs:
       - name: Run OpenCode Review
         env:
           OPENCODE_API_KEY: not-needed
-          OPENCODE_BASE_URL: http://172.10.168.100:8000/v1
+          OPENCODE_BASE_URL: http://10.245.49.16:8000/v1
           CHANGED_FILES: ${{ steps.files.outputs.CHANGED_FILES }}
         run: |
           set +e
           OUTPUT=$(opencode review \
-            --model "minimax/MiniMax-M2.7" \
+            --model "MiniMax-M2.7" \
             --no-auto-commits \
             --context "You are reviewing a PR for the Stock Market Toolkit (FastAPI + React, Docker). Check for: code quality, security, Docker build, API correctness. Be concise and actionable. Focus on actual code changes." \
             ./backend ./frontend 2>&1 | tee /tmp/review_output.txt)
