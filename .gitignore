@@ -12,3 +12,6 @@ build/
 stocktoolkit.db
 
 .env
+
+# Local brainstorming/planning artifacts (superpowers)
+docs/superpowers/

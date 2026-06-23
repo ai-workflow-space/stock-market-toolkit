@@ -40,6 +40,13 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        up: { DEFAULT: "hsl(var(--up))", foreground: "hsl(var(--up-foreground))" },
+        down: { DEFAULT: "hsl(var(--down))", foreground: "hsl(var(--down-foreground))" },
+        neutral: "hsl(var(--neutral))",
+      },
+      fontFamily: {
+        sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+        mono: ["'JetBrains Mono'", "ui-monospace", "monospace"],
       },
       borderRadius: {
         lg: "var(--radius)",

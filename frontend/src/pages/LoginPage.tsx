@@ -1,6 +1,20 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+function BrandMark() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="32" height="32" rx="6" fill="#0f172a" />
+      <polyline points="4,22 10,14 16,18 22,8 28,12" stroke="#3b82f6" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="28" cy="12" r="2" fill="#22c55e" />
+    </svg>
+  );
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -26,58 +40,48 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-hero">
-        <h1 className="auth-hero-title">AI-powered technical analysis for serious investors</h1>
-        <p className="auth-hero-subtitle">Advanced charting, real-time alerts, and portfolio tracking in one powerful platform.</p>
-      </div>
-      <div className="auth-card">
-        <div className="auth-logo">📈 Stock Toolkit</div>
-        <h1 className="auth-title">Welcome back</h1>
-        <p className="auth-subtitle">Sign in to your account</p>
-
-        <div className="auth-info-banner">
-          <span className="auth-info-icon">ℹ️</span>
-          <div>
-            <strong>New here?</strong> You need to{" "}
-            <Link to="/register" className="auth-info-link">create an account</Link>{" "}
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="items-center text-center">
+          <div className="flex items-center gap-2 font-semibold">
+            <BrandMark /> Stock Toolkit
+          </div>
+          <CardTitle className="text-xl">Welcome back</CardTitle>
+          <CardDescription>Sign in to your account</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
+            <strong className="text-foreground">New here?</strong> You need to{" "}
+            <Link to="/register" className="text-primary underline-offset-4 hover:underline">create an account</Link>{" "}
             first before signing in. There are no default credentials.
           </div>
-        </div>
 
-        {error && <div className="auth-error">{error}</div>}
+          {error && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-group">
-            <label>Email or Username</label>
-            <input
-              type="text"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-              autoFocus
-            />
-          </div>
-          <div className="form-group">
-            <label>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-            />
-          </div>
-          <button type="submit" className="auth-btn" disabled={loading}>
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="email">Email or username</Label>
+              <Input id="email" type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required autoFocus />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Signing in…" : "Sign in"}
+            </Button>
+          </form>
 
-        <p className="auth-switch">
-          Don't have an account? <Link to="/register">Create one</Link>
-        </p>
-      </div>
+          <p className="text-center text-sm text-muted-foreground">
+            Don&apos;t have an account?{" "}
+            <Link to="/register" className="text-primary underline-offset-4 hover:underline">Create one</Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

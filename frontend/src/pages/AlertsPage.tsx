@@ -32,6 +32,9 @@ import {
   TabsList,
   TabsTrigger,
 } from "../components/ui/tabs";
+import { Skeleton } from "../components/ui/skeleton";
+import { Bell, CheckCircle2, X } from "lucide-react";
+import { fmt } from "../lib/format";
 
 const CONDITION_OPTIONS = [
   { value: "above", label: "Price Above", description: "Trigger when price rises above threshold" },
@@ -48,9 +51,6 @@ const PERIOD_OPTIONS = [
   { value: "4h", label: "4 hours" },
   { value: "1d", label: "1 day" },
 ];
-
-const fmt = (n: number | null | undefined) =>
-  n == null ? "—" : n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function conditionLabel(ct: string): string {
   const opt = CONDITION_OPTIONS.find(o => o.value === ct);
@@ -189,10 +189,12 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
   const [discordEnabled, setDiscordEnabled] = useState(settings.discord_enabled);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSave = async () => {
     setLoading(true);
     setSaved(false);
+    setError("");
     try {
       const updated = await updateNotificationSettings({
         discord_webhook_url: discordWebhook || null,
@@ -201,8 +203,8 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
       onUpdate(updated);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch {
-      // Handle error
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to save settings");
     } finally {
       setLoading(false);
     }
@@ -236,8 +238,9 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
           </p>
         </div>
         <Button onClick={handleSave} disabled={loading} className="w-fit">
-          {loading ? "Saving..." : saved ? "Saved!" : "Save Settings"}
+          {loading ? "Saving…" : saved ? "Saved" : "Save settings"}
         </Button>
+        {error && <p className="text-sm text-destructive">{error}</p>}
       </CardContent>
     </Card>
   );
@@ -301,15 +304,24 @@ export default function AlertsPage() {
 
   const unreadCount = triggered.filter(t => !t.read).length;
 
-  if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
+  if (loading) {
+    return (
+      <div className="mx-auto flex max-w-3xl flex-col gap-3">
+        <Skeleton className="h-9 w-40" />
+        <Skeleton className="h-10 w-full" />
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-16 w-full rounded-xl" />
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <div className="page">
-      <div className="container max-w-3xl">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold">Price Alerts</h1>
-          <Button onClick={() => setShowCreate(true)}>+ New Alert</Button>
-        </div>
+    <div className="mx-auto max-w-3xl">
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Price alerts</h1>
+        <Button onClick={() => setShowCreate(true)}>New alert</Button>
+      </div>
 
         {error && <p className="text-sm text-destructive mb-4">{error}</p>}
 
@@ -325,15 +337,15 @@ export default function AlertsPage() {
 
           <TabsContent value="alerts">
             {alerts.length === 0 ? (
-              <Card className="text-center py-12">
-                <CardContent>
-                  <p className="text-4xl mb-4">&#x1F514;</p>
-                  <p className="text-muted-foreground mb-4">No alerts yet</p>
-                  <Button onClick={() => setShowCreate(true)}>+ New Alert</Button>
+              <Card>
+                <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+                  <Bell className="size-8 text-muted-foreground" />
+                  <p className="text-muted-foreground">No alerts yet</p>
+                  <Button onClick={() => setShowCreate(true)}>New alert</Button>
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-3">
+              <div className="flex flex-col gap-3">
                 {alerts.map(alert => (
                   <Card key={alert.id} className={alert.enabled ? "" : "opacity-50"}>
                     <CardContent className="flex items-center gap-4 py-4">
@@ -346,6 +358,7 @@ export default function AlertsPage() {
                       </span>
                       <span className="text-xs text-muted-foreground uppercase">{alert.period}</span>
                       <Switch
+                        aria-label={`${alert.enabled ? "Disable" : "Enable"} ${alert.symbol} alert`}
                         checked={alert.enabled}
                         onCheckedChange={() => handleToggle(alert)}
                       />
@@ -354,8 +367,9 @@ export default function AlertsPage() {
                         size="icon"
                         onClick={() => handleDelete(alert.id)}
                         className="text-muted-foreground hover:text-destructive"
+                        aria-label={`Delete ${alert.symbol} alert`}
                       >
-                        &times;
+                        <X />
                       </Button>
                     </CardContent>
                   </Card>
@@ -366,25 +380,39 @@ export default function AlertsPage() {
 
           <TabsContent value="triggered">
             {triggered.length === 0 ? (
-              <Card className="text-center py-12">
-                <CardContent>
-                  <p className="text-4xl mb-4">&#x2705;</p>
+              <Card>
+                <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+                  <CheckCircle2 className="size-8 text-muted-foreground" />
                   <p className="text-muted-foreground">No triggered alerts</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-3">
+              <div className="flex flex-col gap-3">
                 {triggered.map(alert => (
                   <Card
                     key={alert.id}
-                    className={`cursor-pointer transition-colors ${alert.read ? "opacity-70" : "border-primary"}`}
+                    role={alert.read ? undefined : "button"}
+                    tabIndex={alert.read ? -1 : 0}
+                    aria-label={alert.read ? undefined : `Mark ${alert.symbol} alert as read`}
+                    className={`transition-colors ${alert.read ? "opacity-70" : "cursor-pointer border-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"}`}
                     onClick={() => !alert.read && handleMarkRead(alert.id)}
+                    onKeyDown={(e) => {
+                      if (!alert.read && (e.key === "Enter" || e.key === " ")) {
+                        e.preventDefault();
+                        handleMarkRead(alert.id);
+                      }
+                    }}
                   >
                     <CardContent className="py-4">
                       <div className="flex items-center gap-3 mb-2">
                         <span className="font-bold">{alert.symbol}</span>
                         <span className="text-sm text-muted-foreground">{conditionLabel(alert.condition_type)}</span>
-                        {!alert.read && <span className="size-2 rounded-full bg-primary inline-block ml-auto" />}
+                        {!alert.read && (
+                          <span className="ml-auto flex items-center">
+                            <span className="inline-block size-2 rounded-full bg-primary" aria-hidden="true" />
+                            <span className="sr-only">Unread</span>
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         Triggered at ${fmt(alert.trigger_price)} (threshold: ${fmt(alert.threshold_value)})
@@ -406,12 +434,11 @@ export default function AlertsPage() {
           </TabsContent>
         </Tabs>
 
-        <CreateAlertDialog
-          open={showCreate}
-          onClose={() => setShowCreate(false)}
-          onCreated={alert => setAlerts(prev => [alert, ...prev])}
-        />
-      </div>
+      <CreateAlertDialog
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        onCreated={alert => setAlerts(prev => [alert, ...prev])}
+      />
     </div>
   );
 }

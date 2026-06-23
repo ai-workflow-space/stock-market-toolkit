@@ -1,218 +1,130 @@
-import { useState, useEffect, useCallback } from "react";
-import SignalCard from "../components/SignalCard";
-import { Card, CardContent } from "../components/ui/card";
-import type { Signal } from "../types";
+import { useState, useEffect, useMemo, startTransition, lazy, Suspense } from "react";
+import { LayoutGrid, List } from "lucide-react";
+import { getStock, getIndicators, getStockInfo } from "@/api/stockApi";
+import type { StockData, Indicators, StockInfo } from "@/types";
+import { TIMEFRAMES } from "@/types";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ToggleBar, MultiToggleBar } from "@/components/common/ToggleBar";
+import SymbolSearch from "@/components/common/SymbolSearch";
+import DashboardGrid from "@/components/dashboard/DashboardGrid";
 
-/* ─── Mock signals for demonstration ─── */
-function generateMockSignals(symbols: string[]): Signal[] {
-  const now = new Date();
-  const signals: Signal[] = [];
+const EditableGrid = lazy(() => import("@/components/dashboard/EditableGrid"));
 
-  const signalTypes: Signal["signal_type"][] = [
-    "rsi_oversold", "rsi_overbought", "macd_cross", "sma_cross", "bb_touch", "volume_spike"
-  ];
+const TIMEFRAME_OPTIONS = TIMEFRAMES.map((t) => ({ value: t.value, label: t.label }));
+const INDICATOR_OPTIONS = [
+  { value: "sma20", label: "SMA 20" },
+  { value: "sma50", label: "SMA 50" },
+  { value: "sma200", label: "SMA 200" },
+  { value: "ema12", label: "EMA 12" },
+  { value: "ema26", label: "EMA 26" },
+  { value: "rsi", label: "RSI" },
+  { value: "macd", label: "MACD" },
+  { value: "bb", label: "Bollinger" },
+];
 
-  symbols.forEach((symbol, idx) => {
-    const signalType = signalTypes[idx % signalTypes.length];
-    let direction: Signal["direction"];
-
-    if (signalType === "rsi_oversold") {
-      direction = "bullish";
-    } else if (signalType === "rsi_overbought") {
-      direction = "bearish";
-    } else if (signalType === "macd_cross") {
-      direction = idx % 2 === 0 ? "bullish" : "bearish";
-    } else if (signalType === "sma_cross") {
-      direction = idx % 2 === 0 ? "bullish" : "bearish";
-    } else if (signalType === "bb_touch") {
-      direction = "neutral";
-    } else {
-      direction = idx % 3 === 0 ? "bullish" : idx % 3 === 1 ? "bearish" : "neutral";
-    }
-
-    signals.push({
-      id: `sig-${idx}`,
-      symbol,
-      direction,
-      signal_type: signalType,
-      price: 150 + Math.random() * 100,
-      timestamp: new Date(now.getTime() - idx * 3600000).toISOString(),
-      strength: 40 + Math.floor(Math.random() * 60),
-      description: getSignalDescription(signalType, direction),
-    });
-  });
-
-  return signals;
+function DashboardSkeleton() {
+  return (
+    <div className="grid grid-cols-12 gap-4">
+      <Skeleton className="col-span-12 h-[340px] rounded-xl" />
+      <Skeleton className="col-span-12 h-[160px] rounded-xl lg:col-span-6" />
+      <Skeleton className="col-span-12 h-[160px] rounded-xl lg:col-span-6" />
+      <Skeleton className="col-span-12 h-[480px] rounded-xl lg:col-span-4" />
+      <Skeleton className="col-span-12 h-[480px] rounded-xl lg:col-span-8" />
+    </div>
+  );
 }
 
-function getSignalDescription(signalType: Signal["signal_type"], direction: Signal["direction"]): string {
-  const descriptions: Record<Signal["signal_type"], { bullish: string; bearish: string; neutral: string }> = {
-    rsi_oversold: {
-      bullish: "RSI indicates oversold conditions, potential bounce expected",
-      bearish: "RSI oversold but momentum remains weak",
-      neutral: "RSI at oversold levels",
-    },
-    rsi_overbought: {
-      bullish: "RSI overbought but bullish momentum continues",
-      bearish: "RSI indicates overbought conditions, pullback likely",
-      neutral: "RSI at overbought levels",
-    },
-    macd_cross: {
-      bullish: "MACD line crossed above signal line, bullish momentum building",
-      bearish: "MACD line crossed below signal line, bearish momentum building",
-      neutral: "MACD crossing signal line",
-    },
-    sma_cross: {
-      bullish: "Short-term SMA crossed above long-term SMA, golden cross formation",
-      bearish: "Short-term SMA crossed below long-term SMA, death cross formation",
-      neutral: "SMA crossover detected",
-    },
-    bb_touch: {
-      bullish: "Price touched lower Bollinger Band, potential support bounce",
-      bearish: "Price touched upper Bollinger Band, potential resistance",
-      neutral: "Price at Bollinger Band boundary",
-    },
-    volume_spike: {
-      bullish: "Unusual volume spike with price increase, institutional interest",
-      bearish: "Unusual volume spike with price decrease, distribution day",
-      neutral: "Unusual volume activity detected",
-    },
-  };
-
-  return descriptions[signalType][direction];
-}
-
-/* ─── Dashboard Page ─── */
 export default function DashboardPage() {
-  const [signals, setSignals] = useState<Signal[]>([]);
+  const [symbol, setSymbol] = useState("AAPL");
+  const [period, setPeriod] = useState("1mo");
+  const [stock, setStock] = useState<StockData | null>(null);
+  const [indicators, setIndicators] = useState<Indicators | null>(null);
+  const [info, setInfo] = useState<StockInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [active, setActive] = useState<string[]>(["sma20", "rsi", "macd"]);
+  const [editMode, setEditMode] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
+  // Fetch on symbol/period change. `loading` is raised in the change handlers
+  // so this effect performs no synchronous setState (only after the await).
   useEffect(() => {
-    const symbols = ["AAPL", "TSLA", "MSFT", "GOOGL", "AMZN", "NVDA"];
-    const token = localStorage.getItem("access_token");
-
-    async function fetchSignals() {
+    let cancelled = false;
+    (async () => {
       try {
-        const results: Signal[] = await Promise.all(
-          symbols.map(async (symbol) => {
-            const res = await fetch(
-              `${import.meta.env.VITE_API_URL || ""}/api/analysis/${symbol}?period=1mo`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            if (!res.ok) throw new Error(`${symbol} failed`);
-            const data = await res.json();
-
-            const directionMap: Record<string, Signal["direction"]> = {
-              BUY: "bullish",
-              SELL: "bearish",
-              NEUTRAL: "neutral",
-            };
-            const direction = directionMap[data.signal] ?? "neutral";
-            const confidence = data.confidence ?? 0.5;
-            const reasons = (data.reasons ?? []).join("; ");
-
-            const { indicators } = data;
-            let signal_type: Signal["signal_type"] = "macd_cross";
-            if (indicators?.bias < -3 || indicators?.bias > 3) signal_type = "bb_touch";
-            else if (indicators?.volume_ratio > 1.3) signal_type = "volume_spike";
-
-            return {
-              id: `sig-${symbol}`,
-              symbol,
-              direction,
-              signal_type,
-              price: data.price ?? 0,
-              timestamp: data.timestamp ?? new Date().toISOString(),
-              strength: Math.round(confidence * 100),
-              description: `[${data.signal}] ${reasons} — confidence ${(confidence * 100).toFixed(0)}%`,
-            } satisfies Signal;
-          })
-        );
-        setSignals(results);
-      } catch {
-        setSignals(generateMockSignals(symbols));
+        const [st, ind, inf] = await Promise.all([
+          getStock(symbol, period),
+          getIndicators(symbol, period),
+          getStockInfo(symbol),
+        ]);
+        if (cancelled) return;
+        startTransition(() => {
+          setStock(st);
+          setIndicators(ind);
+          setInfo(inf);
+          setError("");
+        });
+      } catch (e: unknown) {
+        if (cancelled) return;
+        setError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to load data");
+        setStock(null);
+        setIndicators(null);
+        setInfo(null);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    }
+    })();
+    return () => { cancelled = true; };
+  }, [symbol, period, reloadKey]);
 
-    fetchSignals();
-  }, []);
+  const onSymbol = (s: string) => { if (s !== symbol) { setLoading(true); setSymbol(s); } };
+  const onPeriod = (p: string) => { if (p !== period) { setLoading(true); setPeriod(p); } };
+  const retry = () => { setLoading(true); setReloadKey((k) => k + 1); };
 
-  const handleDismissSignal = useCallback((id: string) => {
-    setSignals(prev => prev.filter(s => s.id !== id));
-  }, []);
-
-  const bullishSignals = signals.filter(s => s.direction === "bullish");
-  const bearishSignals = signals.filter(s => s.direction === "bearish");
-  const neutralSignals = signals.filter(s => s.direction === "neutral");
-
-  if (loading) {
-    return (
-      <div className="page">
-        <div className="container">
-          <div className="loading-screen">
-            <div className="spinner" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const activeSet = useMemo(() => new Set(active), [active]);
+  const ready = Boolean(stock && indicators && info);
 
   return (
-    <div className="page">
-      <div className="container">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold mb-1">Trading Signals</h1>
-          <p className="text-sm text-muted-foreground">
-            Real-time signals based on technical indicators
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="rounded-xl border bg-card text-card-foreground shadow p-4" style={{ borderLeft: "3px solid #22c55e" }}>
-            <p className="text-xs text-muted-foreground uppercase mb-1">Bullish Signals</p>
-            <p className="text-2xl font-bold text-green-500">{bullishSignals.length}</p>
-          </div>
-          <div className="rounded-xl border bg-card text-card-foreground shadow p-4" style={{ borderLeft: "3px solid #ef4444" }}>
-            <p className="text-xs text-muted-foreground uppercase mb-1">Bearish Signals</p>
-            <p className="text-2xl font-bold text-red-500">{bearishSignals.length}</p>
-          </div>
-          <div className="rounded-xl border bg-card text-card-foreground shadow p-4" style={{ borderLeft: "3px solid #3b82f6" }}>
-            <p className="text-xs text-muted-foreground uppercase mb-1">Neutral Signals</p>
-            <p className="text-2xl font-bold text-primary">{neutralSignals.length}</p>
-          </div>
-        </div>
-
-        {signals.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <p className="text-4xl mb-4">&#x1F4CA;</p>
-              <p className="text-muted-foreground mb-4">No signals available</p>
-              <p className="text-sm text-muted-foreground">
-                Signals will appear here when technical indicators trigger alerts
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="signals-grid">
-            {signals.map(signal => (
-              <SignalCard
-                key={signal.id}
-                signal={signal}
-                onDismiss={handleDismissSignal}
-              />
-            ))}
-          </div>
-        )}
-
-        <div className="mt-8 p-4 rounded-lg bg-primary/5 border border-primary/20">
-          <p className="text-xs text-muted-foreground m-0">
-            <strong>Disclaimer:</strong> These signals are generated by technical indicators and should not be considered financial advice.
-            Always do your own research before making investment decisions.
-          </p>
-        </div>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <SymbolSearch value={symbol} onSearch={onSymbol} loading={loading} />
+        <ToggleBar ariaLabel="Timeframe" options={TIMEFRAME_OPTIONS} value={period} onChange={onPeriod} />
+        <Button
+          variant={editMode ? "secondary" : "outline"}
+          size="sm"
+          className="ml-auto gap-2"
+          onClick={() => setEditMode((v) => !v)}
+        >
+          {editMode ? <List /> : <LayoutGrid />}
+          {editMode ? "Done" : "Edit layout"}
+        </Button>
       </div>
+
+      <MultiToggleBar ariaLabel="Indicators" options={INDICATOR_OPTIONS} value={active} onChange={setActive} />
+
+      {error && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      {loading && !ready ? (
+        <DashboardSkeleton />
+      ) : ready && stock && indicators && info ? (
+        editMode ? (
+          <Suspense fallback={<DashboardSkeleton />}>
+            <EditableGrid stock={stock} indicators={indicators} info={info} active={activeSet} />
+          </Suspense>
+        ) : (
+          <DashboardGrid stock={stock} indicators={indicators} info={info} active={activeSet} />
+        )
+      ) : (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-16 text-center text-sm text-muted-foreground">
+          <p>{error ? "Couldn't load this symbol." : "No data to display."}</p>
+          <Button variant="outline" size="sm" onClick={retry}>Retry</Button>
+        </div>
+      )}
     </div>
   );
 }
