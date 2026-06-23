@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "../hooks/useTheme";
 import { COMMON_TIMEZONES } from "../context/timezones";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Label } from "../components/ui/label";
 
 export default function SettingsPage() {
   const { theme, toggleTheme, timezone, setTimezone } = useTheme();
@@ -27,101 +30,91 @@ export default function SettingsPage() {
 
   return (
     <div className="page">
-      <div className="container">
-        <h1 style={{ color: "var(--text)", fontSize: "1.5rem", fontWeight: 600, marginBottom: "1.5rem" }}>Settings</h1>
+      <div className="container max-w-2xl">
+        <h1 className="text-2xl font-semibold mb-6">Settings</h1>
 
-        {/* Appearance */}
-        <div className="card" style={{ marginBottom: "1rem" }}>
-          <div className="card-title">Appearance</div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 0" }}>
-            <div>
-              <div style={{ color: "var(--text)", fontWeight: 500 }}>Theme</div>
-              <div style={{ color: "var(--text-dim)", fontSize: "0.85rem", marginTop: "0.25rem" }}>
-                {theme === "dark" ? "Dark mode is active" : "Light mode is active"}
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle>Appearance</CardTitle>
+            <CardDescription>Customize your viewing experience</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Theme</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {theme === "dark" ? "Dark mode is active" : "Light mode is active"}
+                </p>
               </div>
-            </div>
-            <button
-              className="theme-toggle"
-              onClick={toggleTheme}
-              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            >
-              <span className="theme-toggle-label">
+              <Button variant="outline" onClick={toggleTheme}>
                 {theme === "dark" ? "Switch to Light" : "Switch to Dark"}
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Timezone */}
-        <div className="card" style={{ marginBottom: "1rem" }}>
-          <div className="card-title">Timezone</div>
-          <div style={{ padding: "0.75rem 0" }}>
-            <div style={{ color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "0.5rem" }}>
-              Current: <strong style={{ color: "var(--text)" }}>{timezone}</strong>
+              </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle>Timezone</CardTitle>
+            <CardDescription>Set your preferred timezone for alerts and timestamps</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Label>Current: {timezone}</Label>
             <select
               value={timezone}
               onChange={e => setTimezone(e.target.value)}
-              style={{
-                background: "var(--bg-secondary)",
-                color: "var(--text)",
-                border: "1px solid var(--border)",
-                borderRadius: "6px",
-                padding: "0.5rem 0.75rem",
-                fontSize: "0.9rem",
-                width: "100%",
-                cursor: "pointer",
-              }}
+              className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               {COMMON_TIMEZONES.map(tz => (
                 <option key={tz.value} value={tz.value}>{tz.label}</option>
               ))}
             </select>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* YF Health */}
-        <div className="card" style={{ marginBottom: "1rem" }}>
-          <div className="card-title">Data Source Health</div>
-          <div style={{ padding: "0.75rem 0" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle>Data Source Health</CardTitle>
+            <CardDescription>Status of connected data providers</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2 mb-1">
               {yfStatus === "loading" && (
                 <>
-                  <span style={{ fontSize: "0.9rem" }}>⏳</span>
-                  <span style={{ color: "var(--text-dim)", fontSize: "0.9rem" }}>Checking Yahoo Finance...</span>
+                  <span className="text-sm">Checking Yahoo Finance...</span>
                 </>
               )}
               {yfStatus === "ok" && (
                 <>
-                  <span style={{ fontSize: "0.9rem" }}>✅</span>
-                  <span style={{ color: "#22c55e", fontSize: "0.9rem", fontWeight: 500 }}>Yahoo Finance operational</span>
+                  <span className="size-2 rounded-full bg-green-500 inline-block" />
+                  <span className="text-sm text-green-500 font-medium">Yahoo Finance operational</span>
                 </>
               )}
               {yfStatus === "error" && (
                 <>
-                  <span style={{ fontSize: "0.9rem" }}>❌</span>
-                  <span style={{ color: "#ef4444", fontSize: "0.9rem", fontWeight: 500 }}>Yahoo Finance error</span>
+                  <span className="size-2 rounded-full bg-red-500 inline-block" />
+                  <span className="text-sm text-red-500 font-medium">Yahoo Finance error</span>
                 </>
               )}
             </div>
             {yfMessage && (
-              <div style={{ color: "var(--text-dim)", fontSize: "0.8rem", marginTop: "0.25rem" }}>
-                {yfMessage}
-              </div>
+              <p className="text-xs text-muted-foreground mt-1">{yfMessage}</p>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* About */}
-        <div className="card">
-          <div className="card-title">About</div>
-          <div style={{ color: "var(--text-dim)", fontSize: "0.9rem", lineHeight: 1.6 }}>
-            <p>Stock Market Toolkit v0.2.0</p>
-            <p style={{ color: "var(--text-dim)", marginTop: "0.5rem" }}>
+        <Card>
+          <CardHeader>
+            <CardTitle>About</CardTitle>
+            <CardDescription>Stock Market Toolkit</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">v0.2.0</p>
+            <p className="text-sm text-muted-foreground mt-2">
               A comprehensive stock analysis and monitoring tool.
             </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

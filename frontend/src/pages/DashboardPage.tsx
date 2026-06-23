@@ -1,20 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
 import SignalCard from "../components/SignalCard";
+import { Card, CardContent } from "../components/ui/card";
 import type { Signal } from "../types";
 
 /* ─── Mock signals for demonstration ─── */
 function generateMockSignals(symbols: string[]): Signal[] {
   const now = new Date();
   const signals: Signal[] = [];
-  
+
   const signalTypes: Signal["signal_type"][] = [
     "rsi_oversold", "rsi_overbought", "macd_cross", "sma_cross", "bb_touch", "volume_spike"
   ];
-  
+
   symbols.forEach((symbol, idx) => {
     const signalType = signalTypes[idx % signalTypes.length];
     let direction: Signal["direction"];
-    
+
     if (signalType === "rsi_oversold") {
       direction = "bullish";
     } else if (signalType === "rsi_overbought") {
@@ -28,7 +29,7 @@ function generateMockSignals(symbols: string[]): Signal[] {
     } else {
       direction = idx % 3 === 0 ? "bullish" : idx % 3 === 1 ? "bearish" : "neutral";
     }
-    
+
     signals.push({
       id: `sig-${idx}`,
       symbol,
@@ -40,7 +41,7 @@ function generateMockSignals(symbols: string[]): Signal[] {
       description: getSignalDescription(signalType, direction),
     });
   });
-  
+
   return signals;
 }
 
@@ -77,7 +78,7 @@ function getSignalDescription(signalType: Signal["signal_type"], direction: Sign
       neutral: "Unusual volume activity detected",
     },
   };
-  
+
   return descriptions[signalType][direction];
 }
 
@@ -110,7 +111,6 @@ export default function DashboardPage() {
             const confidence = data.confidence ?? 0.5;
             const reasons = (data.reasons ?? []).join("; ");
 
-            // Map best-four-point indicators to signal_type
             const { indicators } = data;
             let signal_type: Signal["signal_type"] = "macd_cross";
             if (indicators?.bias < -3 || indicators?.bias > 3) signal_type = "bb_touch";
@@ -130,7 +130,6 @@ export default function DashboardPage() {
         );
         setSignals(results);
       } catch {
-        // Fall back to mock data on error so page still renders
         setSignals(generateMockSignals(symbols));
       } finally {
         setLoading(false);
@@ -163,52 +162,38 @@ export default function DashboardPage() {
   return (
     <div className="page">
       <div className="container">
-        <div style={{ marginBottom: "1.5rem" }}>
-          <h1 style={{ color: "#e2e8f0", fontSize: "1.5rem", fontWeight: 600, marginBottom: "0.5rem" }}>
-            Trading Signals
-          </h1>
-          <p style={{ color: "#64748b", fontSize: "0.875rem" }}>
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold mb-1">Trading Signals</h1>
+          <p className="text-sm text-muted-foreground">
             Real-time signals based on technical indicators
           </p>
         </div>
 
-        {/* Signal Summary */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-          <div className="info-card" style={{ borderLeft: "3px solid #22c55e" }}>
-            <div style={{ fontSize: "0.72rem", color: "#64748b", textTransform: "uppercase", marginBottom: "0.3rem" }}>
-              Bullish Signals
-            </div>
-            <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#22c55e" }}>
-              {bullishSignals.length}
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          <div className="rounded-xl border bg-card text-card-foreground shadow p-4" style={{ borderLeft: "3px solid #22c55e" }}>
+            <p className="text-xs text-muted-foreground uppercase mb-1">Bullish Signals</p>
+            <p className="text-2xl font-bold text-green-500">{bullishSignals.length}</p>
           </div>
-          <div className="info-card" style={{ borderLeft: "3px solid #ef4444" }}>
-            <div style={{ fontSize: "0.72rem", color: "#64748b", textTransform: "uppercase", marginBottom: "0.3rem" }}>
-              Bearish Signals
-            </div>
-            <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#ef4444" }}>
-              {bearishSignals.length}
-            </div>
+          <div className="rounded-xl border bg-card text-card-foreground shadow p-4" style={{ borderLeft: "3px solid #ef4444" }}>
+            <p className="text-xs text-muted-foreground uppercase mb-1">Bearish Signals</p>
+            <p className="text-2xl font-bold text-red-500">{bearishSignals.length}</p>
           </div>
-          <div className="info-card" style={{ borderLeft: "3px solid #3b82f6" }}>
-            <div style={{ fontSize: "0.72rem", color: "#64748b", textTransform: "uppercase", marginBottom: "0.3rem" }}>
-              Neutral Signals
-            </div>
-            <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#3b82f6" }}>
-              {neutralSignals.length}
-            </div>
+          <div className="rounded-xl border bg-card text-card-foreground shadow p-4" style={{ borderLeft: "3px solid #3b82f6" }}>
+            <p className="text-xs text-muted-foreground uppercase mb-1">Neutral Signals</p>
+            <p className="text-2xl font-bold text-primary">{neutralSignals.length}</p>
           </div>
         </div>
 
-        {/* Signals Grid */}
         {signals.length === 0 ? (
-          <div className="card" style={{ textAlign: "center", padding: "3rem" }}>
-            <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📊</div>
-            <div style={{ color: "#94a3b8", marginBottom: "1rem" }}>No signals available</div>
-            <p style={{ color: "#475569", fontSize: "0.875rem" }}>
-              Signals will appear here when technical indicators trigger alerts
-            </p>
-          </div>
+          <Card className="text-center py-12">
+            <CardContent>
+              <p className="text-4xl mb-4">&#x1F4CA;</p>
+              <p className="text-muted-foreground mb-4">No signals available</p>
+              <p className="text-sm text-muted-foreground">
+                Signals will appear here when technical indicators trigger alerts
+              </p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="signals-grid">
             {signals.map(signal => (
@@ -221,10 +206,9 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Disclaimer */}
-        <div style={{ marginTop: "2rem", padding: "1rem", background: "rgba(59, 130, 246, 0.05)", border: "1px solid rgba(59, 130, 246, 0.2)", borderRadius: "8px" }}>
-          <p style={{ fontSize: "0.75rem", color: "#64748b", margin: 0 }}>
-            <strong>Disclaimer:</strong> These signals are generated by technical indicators and should not be considered financial advice. 
+        <div className="mt-8 p-4 rounded-lg bg-primary/5 border border-primary/20">
+          <p className="text-xs text-muted-foreground m-0">
+            <strong>Disclaimer:</strong> These signals are generated by technical indicators and should not be considered financial advice.
             Always do your own research before making investment decisions.
           </p>
         </div>

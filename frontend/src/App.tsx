@@ -462,7 +462,7 @@ function Dashboard() {
 
   return (
     <div className="page">
-      <div className="container" ref={containerRef}>
+      <div className="container">
         <div className="page-header">
           <SearchBar onSearch={setSymbol} loading={loading} />
           <TimeframeSelector value={period} onChange={setPeriod} />
@@ -472,41 +472,43 @@ function Dashboard() {
         {error && <div className="error-banner">{error}</div>}
 
         {stock && indicators && info && (
-          <GridLayout
-            className="charts-grid"
-            layout={layout}
-            width={chartWidth}
-            gridConfig={{
-              cols: cols,
-              rowHeight: 120,
-              margin: [16, 16] as const,
-            }}
-            dragConfig={{ enabled: true }}
-            resizeConfig={{ enabled: true }}
-          >
-            <div className="card" key="price">
-              <div className="card-title">{stock.symbol} — {period.toUpperCase()}</div>
-              <PriceChart data={stock} indicators={indicators} showBB={activeInds.has("bb")} active={activeInds} />
-            </div>
-            {activeInds.has("rsi") && (
-              <div className="card" key="rsi">
-                <div className="card-title">RSI (14)</div>
-                <RSIChart data={chartData} rsi={indicators.rsi} active={activeInds} />
+          <div className="grid-measure" ref={containerRef}>
+            <GridLayout
+              className="charts-grid"
+              layout={layout}
+              width={chartWidth}
+              gridConfig={{
+                cols: cols,
+                rowHeight: 120,
+                margin: [16, 16] as const,
+              }}
+              dragConfig={{ enabled: true }}
+              resizeConfig={{ enabled: true }}
+            >
+              <div className="card" key="price">
+                <div className="card-title">{stock.symbol} — {period.toUpperCase()}</div>
+                <PriceChart data={stock} indicators={indicators} showBB={activeInds.has("bb")} active={activeInds} />
               </div>
-            )}
-            {activeInds.has("macd") && (
-              <div className="card" key="macd">
-                <div className="card-title">MACD (12, 26, 9)</div>
-                <MACDChart data={chartData} macd={indicators.macd} signal={indicators.macd_signal} hist={indicators.macd_hist} active={activeInds} />
+              {activeInds.has("rsi") && (
+                <div className="card" key="rsi">
+                  <div className="card-title">RSI (14)</div>
+                  <RSIChart data={chartData} rsi={indicators.rsi} active={activeInds} />
+                </div>
+              )}
+              {activeInds.has("macd") && (
+                <div className="card" key="macd">
+                  <div className="card-title">MACD (12, 26, 9)</div>
+                  <MACDChart data={chartData} macd={indicators.macd} signal={indicators.macd_signal} hist={indicators.macd_hist} active={activeInds} />
+                </div>
+              )}
+              <div className="card" key="info">
+                <StockInfoCard info={info} stock={stock} />
               </div>
-            )}
-            <div className="card" key="info">
-              <StockInfoCard info={info} stock={stock} />
-            </div>
-            <div className="card" key="table">
-              <DataTable stock={stock} />
-            </div>
-          </GridLayout>
+              <div className="card" key="table">
+                <DataTable stock={stock} />
+              </div>
+            </GridLayout>
+          </div>
         )}
       </div>
     </div>

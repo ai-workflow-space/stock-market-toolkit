@@ -1,4 +1,7 @@
 import type { Signal, SignalDirection, SignalType } from "../types";
+import { Badge } from "../components/ui/badge";
+import { Card, CardContent } from "../components/ui/card";
+import { Button } from "../components/ui/button";
 
 interface SignalCardProps {
   signal: Signal;
@@ -6,15 +9,15 @@ interface SignalCardProps {
 }
 
 const SIGNAL_ICONS: Record<SignalDirection, string> = {
-  bullish: "📈",
-  bearish: "📉",
-  neutral: "➖",
+  bullish: "\uD83D\uDCC8",
+  bearish: "\uD83D\uDCC9",
+  neutral: "\u2796",
 };
 
-const SIGNAL_COLORS: Record<SignalDirection, { bg: string; border: string; text: string }> = {
-  bullish: { bg: "rgba(34, 197, 94, 0.1)", border: "#22c55e", text: "#22c55e" },
-  bearish: { bg: "rgba(239, 68, 68, 0.1)", border: "#ef4444", text: "#ef4444" },
-  neutral: { bg: "rgba(59, 130, 246, 0.1)", border: "#3b82f6", text: "#3b82f6" },
+const SIGNAL_COLORS: Record<SignalDirection, "default" | "destructive" | "secondary"> = {
+  bullish: "default",
+  bearish: "destructive",
+  neutral: "secondary",
 };
 
 const SIGNAL_TYPE_LABELS: Record<SignalType, string> = {
@@ -44,113 +47,63 @@ function formatPrice(price: number): string {
 }
 
 function StrengthBar({ strength }: { strength: number }) {
-  const color = strength >= 70 ? "#22c55e" : strength >= 40 ? "#eab308" : "#ef4444";
+  const color = strength >= 70 ? "bg-green-500" : strength >= 40 ? "bg-yellow-500" : "bg-red-500";
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-      <div
-        style={{
-          width: "60px",
-          height: "6px",
-          background: "#334155",
-          borderRadius: "3px",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            width: `${strength}%`,
-            height: "100%",
-            background: color,
-            borderRadius: "3px",
-          }}
-        />
+    <div className="flex items-center gap-2">
+      <div className="w-[60px] h-1.5 bg-muted rounded-full overflow-hidden">
+        <div className={`h-full ${color} rounded-full`} style={{ width: `${strength}%` }} />
       </div>
-      <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{strength}%</span>
+      <span className="text-xs text-muted-foreground">{strength}%</span>
     </div>
   );
 }
 
 export default function SignalCard({ signal, onDismiss }: SignalCardProps) {
-  const colors = SIGNAL_COLORS[signal.direction];
   const icon = SIGNAL_ICONS[signal.direction];
+  const badgeVariant = SIGNAL_COLORS[signal.direction];
   const typeLabel = SIGNAL_TYPE_LABELS[signal.signal_type];
 
   return (
-    <div
-      className="signal-card"
-      style={{
-        background: colors.bg,
-        border: `1px solid ${colors.border}`,
-        borderRadius: "12px",
-        padding: "1rem",
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.75rem",
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <span style={{ fontSize: "1.25rem" }}>{icon}</span>
-          <span style={{ fontWeight: 700, fontSize: "1rem", color: "#f1f5f9" }}>
-            {signal.symbol}
-          </span>
-          <span
-            style={{
-              fontSize: "0.7rem",
-              fontWeight: 600,
-              color: colors.text,
-              textTransform: "uppercase",
-              background: "rgba(255,255,255,0.1)",
-              padding: "2px 6px",
-              borderRadius: "4px",
-            }}
-          >
-            {typeLabel}
-          </span>
-        </div>
-        {onDismiss && (
-          <button
-            onClick={() => onDismiss(signal.id)}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#64748b",
-              cursor: "pointer",
-              fontSize: "1rem",
-              padding: "0",
-              lineHeight: 1,
-            }}
-            aria-label="Dismiss signal"
-          >
-            ×
-          </button>
-        )}
-      </div>
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <div style={{ fontSize: "0.72rem", color: "#64748b", textTransform: "uppercase", marginBottom: "0.2rem" }}>
-            Price
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">{icon}</span>
+            <span className="font-bold text-base">{signal.symbol}</span>
+            <Badge variant={badgeVariant}>{typeLabel}</Badge>
           </div>
-          <div style={{ fontSize: "1rem", fontWeight: 600, color: "#f1f5f9" }}>
-            ${formatPrice(signal.price)}
+          {onDismiss && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6 text-muted-foreground"
+              onClick={() => onDismiss(signal.id)}
+              aria-label="Dismiss signal"
+            >
+              &times;
+            </Button>
+          )}
+        </div>
+
+        <div className="flex justify-between items-center mb-3">
+          <div>
+            <p className="text-xs text-muted-foreground uppercase mb-0.5">Price</p>
+            <p className="font-semibold">${formatPrice(signal.price)}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground uppercase mb-0.5">Signal Strength</p>
+            <StrengthBar strength={signal.strength} />
           </div>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: "0.72rem", color: "#64748b", textTransform: "uppercase", marginBottom: "0.2rem" }}>
-            Signal Strength
-          </div>
-          <StrengthBar strength={signal.strength} />
-        </div>
-      </div>
 
-      <div style={{ fontSize: "0.8rem", color: "#94a3b8", lineHeight: 1.4 }}>
-        {signal.description}
-      </div>
+        <p className="text-sm text-muted-foreground leading-relaxed mb-2">
+          {signal.description}
+        </p>
 
-      <div style={{ fontSize: "0.72rem", color: "#475569" }}>
-        {formatTime(signal.timestamp)}
-      </div>
-    </div>
+        <p className="text-xs text-muted-foreground">
+          {formatTime(signal.timestamp)}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
