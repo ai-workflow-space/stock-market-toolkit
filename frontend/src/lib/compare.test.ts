@@ -5,6 +5,7 @@ import type { StockData } from "@/types";
 const mk = (symbol: string, closes: number[]): StockData => ({
   symbol,
   period: "1mo",
+  cached_at: "2024-01-01T00:00:00",
   timestamp: closes.map((_, i) => new Date(2024, 0, i + 1).toISOString()),
   open: closes,
   high: closes,
