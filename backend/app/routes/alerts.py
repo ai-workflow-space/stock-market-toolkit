@@ -6,14 +6,19 @@ from datetime import datetime, timezone
 from app.database import get_db
 from app.models import User, Alert, NotificationSettings, TriggeredAlert
 from app.schemas import (
-    AlertCreate, AlertUpdate, AlertResponse,
-    TriggeredAlertResponse, NotificationSettingsResponse, NotificationSettingsUpdate,
+    AlertCreate,
+    AlertUpdate,
+    AlertResponse,
+    TriggeredAlertResponse,
+    NotificationSettingsResponse,
+    NotificationSettingsUpdate,
 )
 from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/alerts", tags=["alerts"])
 
 MAX_ALERTS_PER_USER = 50
+
 
 def _condition_label(ct: str) -> str:
     labels = {
@@ -112,7 +117,9 @@ async def get_notification_settings(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(NotificationSettings).where(NotificationSettings.user_id == current_user.id)
+        select(NotificationSettings).where(
+            NotificationSettings.user_id == current_user.id
+        )
     )
     settings = result.scalar_one_or_none()
     if not settings:
@@ -136,7 +143,9 @@ async def update_notification_settings(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(NotificationSettings).where(NotificationSettings.user_id == current_user.id)
+        select(NotificationSettings).where(
+            NotificationSettings.user_id == current_user.id
+        )
     )
     settings = result.scalar_one_or_none()
 

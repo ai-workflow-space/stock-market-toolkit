@@ -1,6 +1,7 @@
 """
 Alert checker service - runs periodically to check price alerts and send notifications.
 """
+
 import yfinance as yf
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
@@ -113,9 +114,13 @@ async def _send_discord_notification(
     color = DISCORD_COLOR_ABOVE if condition_type == "above" else DISCORD_COLOR_BELOW
     emoji = "🔔"
     condition_label = CONDITION_LABELS.get(condition_type, condition_type)
-    threshold_str = f"${threshold:.2f}" if condition_type in ("above", "below") else f"{threshold:.1f}%"
+    threshold_str = (
+        f"${threshold:.2f}"
+        if condition_type in ("above", "below")
+        else f"{threshold:.1f}%"
+    )
     price_str = f"${current_price:.2f}"
-    
+
     if pct_change_today is not None:
         price_change_str = f"({pct_change_today:+.1f}% today)"
     else:
@@ -128,7 +133,11 @@ async def _send_discord_notification(
         "fields": [
             {"name": "Condition", "value": condition_type, "inline": True},
             {"name": "Threshold", "value": threshold_str, "inline": True},
-            {"name": "Triggered At", "value": triggered_at.strftime("%Y-%m-%d %H:%M UTC"), "inline": True},
+            {
+                "name": "Triggered At",
+                "value": triggered_at.strftime("%Y-%m-%d %H:%M UTC"),
+                "inline": True,
+            },
         ],
         "url": "https://stock-toolkit.app/alerts",
     }
@@ -154,7 +163,11 @@ async def check_alerts():
         # Fetch all enabled alerts with their notification settings
         result = await db.execute(
             select(Alert, NotificationSettings)
-            .join(NotificationSettings, Alert.user_id == NotificationSettings.user_id, isouter=True)
+            .join(
+                NotificationSettings,
+                Alert.user_id == NotificationSettings.user_id,
+                isouter=True,
+            )
             .where(Alert.enabled)
         )
         rows = result.all()
@@ -184,14 +197,17 @@ async def check_alerts():
             # Get period start prices for pct_change alerts
             period_prices: dict[str, float | None] = {}
             pct_change_alerts = [
-                (a, s) for a, s in alert_settings_list
+                (a, s)
+                for a, s in alert_settings_list
                 if a.condition_type in ("pct_change_up", "pct_change_down")
             ]
             if pct_change_alerts:
                 # Fetch period start for each unique period
                 for alert, _ in pct_change_alerts:
                     if alert.period not in period_prices:
-                        period_prices[alert.period] = await _get_period_start_price(symbol, alert.period)
+                        period_prices[alert.period] = await _get_period_start_price(
+                            symbol, alert.period
+                        )
 
             for alert, settings in alert_settings_list:
                 try:
@@ -231,7 +247,10 @@ async def check_alerts():
 
                         # Send notifications if settings exist and are enabled
                         if settings:
-                            if settings.discord_enabled and settings.discord_webhook_url:
+                            if (
+                                settings.discord_enabled
+                                and settings.discord_webhook_url
+                            ):
                                 await _send_discord_notification(
                                     settings.discord_webhook_url,
                                     symbol,
@@ -244,7 +263,9 @@ async def check_alerts():
                             # Email notification could be added here
 
                         await db.commit()
-                        log.info(f"Alert triggered: {symbol} {alert.condition_type} at ${current_price:.2f}")
+                        log.info(
+                            f"Alert triggered: {symbol} {alert.condition_type} at ${current_price:.2f}"
+                        )
 
                 except Exception as e:
                     log.error(f"Error processing alert {alert.id}: {e}")
@@ -261,4 +282,5 @@ async def check_alerts_endpoint():
 
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(check_alerts())

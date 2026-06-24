@@ -11,6 +11,7 @@ from datetime import datetime
 import time
 import math
 
+
 def _clean_nan(val):
     """Replace NaN/inf with None for JSON serialization."""
     if isinstance(val, float):
@@ -18,8 +19,10 @@ def _clean_nan(val):
             return None
     return val
 
+
 def _clean_list(lst):
     return [_clean_nan(v) for v in lst]
+
 
 app = FastAPI(title="Stock Market Toolkit API", version="1.0.0")
 
@@ -125,18 +128,40 @@ def get_indicators(
         "close": close.tolist(),
         "volume": volume.tolist() if not volume.isna().all() else [],
         "sma20": _clean_list(ta.sma(close, length=20).tolist()),
-        "sma50": _clean_list(ta.sma(close, length=50).tolist()) if len(close) >= 50 else [],
-        "sma200": _clean_list(ta.sma(close, length=200).tolist()) if len(close) >= 200 else [],
-        "ema12": _clean_list(ta.ema(close, length=12).tolist()) if len(close) >= 12 else [],
-        "ema26": _clean_list(ta.ema(close, length=26).tolist()) if len(close) >= 26 else [],
+        "sma50": _clean_list(ta.sma(close, length=50).tolist())
+        if len(close) >= 50
+        else [],
+        "sma200": _clean_list(ta.sma(close, length=200).tolist())
+        if len(close) >= 200
+        else [],
+        "ema12": _clean_list(ta.ema(close, length=12).tolist())
+        if len(close) >= 12
+        else [],
+        "ema26": _clean_list(ta.ema(close, length=26).tolist())
+        if len(close) >= 26
+        else [],
         "rsi": _clean_list(ta.rsi(close, length=14).tolist()),
-        "macd": _clean_list(macd_df["MACD_12_26_9"].tolist()) if macd_df is not None else [],
-        "macd_signal": _clean_list(macd_df["MACDs_12_26_9"].tolist()) if macd_df is not None else [],
-        "macd_hist": _clean_list(macd_df["MACDh_12_26_9"].tolist()) if macd_df is not None else [],
-        "bb_upper": _clean_list(bbands_df["BBU_20_2.0_2.0"].tolist()) if bbands_df is not None else [],
-        "bb_middle": _clean_list(bbands_df["BBM_20_2.0_2.0"].tolist()) if bbands_df is not None else [],
-        "bb_lower": _clean_list(bbands_df["BBL_20_2.0_2.0"].tolist()) if bbands_df is not None else [],
-        "atr": _clean_list(ta.atr(high, low, close, length=14).tolist()) if len(close) >= 14 else [],
+        "macd": _clean_list(macd_df["MACD_12_26_9"].tolist())
+        if macd_df is not None
+        else [],
+        "macd_signal": _clean_list(macd_df["MACDs_12_26_9"].tolist())
+        if macd_df is not None
+        else [],
+        "macd_hist": _clean_list(macd_df["MACDh_12_26_9"].tolist())
+        if macd_df is not None
+        else [],
+        "bb_upper": _clean_list(bbands_df["BBU_20_2.0_2.0"].tolist())
+        if bbands_df is not None
+        else [],
+        "bb_middle": _clean_list(bbands_df["BBM_20_2.0_2.0"].tolist())
+        if bbands_df is not None
+        else [],
+        "bb_lower": _clean_list(bbands_df["BBL_20_2.0_2.0"].tolist())
+        if bbands_df is not None
+        else [],
+        "atr": _clean_list(ta.atr(high, low, close, length=14).tolist())
+        if len(close) >= 14
+        else [],
     }
 
 
@@ -199,13 +224,15 @@ def get_stock_news(symbol: str):
         if not news_items:
             return []
         result = []
-        for item in (news_items or []):
-            result.append({
-                "title": item.get("title", ""),
-                "link": item.get("link", ""),
-                "publisher": item.get("publisher", ""),
-                "publishedDate": item.get("pubDate", ""),
-            })
+        for item in news_items or []:
+            result.append(
+                {
+                    "title": item.get("title", ""),
+                    "link": item.get("link", ""),
+                    "publisher": item.get("publisher", ""),
+                    "publishedDate": item.get("pubDate", ""),
+                }
+            )
         _cache_set(cache_key, result, ttl=120)
         return result
     except Exception:
@@ -223,12 +250,14 @@ def compare_stocks(payload: dict):
     for sym in symbols:
         try:
             df = _fetch_ticker(sym.upper(), period)
-            stocks.append({
-                "symbol": sym.upper(),
-                "timestamp": df.index.strftime("%Y-%m-%dT%H:%M:%S").tolist(),
-                "close": df["Close"].tolist(),
-                "volume": df["Volume"].tolist(),
-            })
+            stocks.append(
+                {
+                    "symbol": sym.upper(),
+                    "timestamp": df.index.strftime("%Y-%m-%dT%H:%M:%S").tolist(),
+                    "close": df["Close"].tolist(),
+                    "volume": df["Volume"].tolist(),
+                }
+            )
         except Exception:
             continue
     return {"stocks": stocks, "period": period}
@@ -240,12 +269,14 @@ def search_stocks(q: str = Query(..., min_length=1)):
     try:
         results = yf.Search(q, max_results=8)
         suggestions = []
-        for quote in (results.quotes or []):
-            suggestions.append({
-                "symbol": quote.get("symbol", ""),
-                "name": quote.get("shortname") or quote.get("longname", ""),
-                "exchange": quote.get("exchDisp", quote.get("exchange", "")),
-            })
+        for quote in results.quotes or []:
+            suggestions.append(
+                {
+                    "symbol": quote.get("symbol", ""),
+                    "name": quote.get("shortname") or quote.get("longname", ""),
+                    "exchange": quote.get("exchDisp", quote.get("exchange", "")),
+                }
+            )
         return suggestions
     except Exception:
         return []

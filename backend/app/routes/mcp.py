@@ -12,6 +12,7 @@ async def mcp_health():
 async def yf_health():
     """Check if yfinance is functional by fetching a test ticker."""
     import yfinance as yf
+
     try:
         ticker = yf.Ticker("AAPL")
         ticker.fast_info  # lightweight attribute access

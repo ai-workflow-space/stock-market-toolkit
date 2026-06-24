@@ -21,6 +21,7 @@ log = logging.getLogger(__name__)
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("Initializing database...")
@@ -28,6 +29,7 @@ async def lifespan(app: FastAPI):
     log.info("Database ready. Stock Market Toolkit API started.")
     yield
     log.info("Shutting down Stock Market Toolkit API...")
+
 
 app = FastAPI(
     title="Stock Market Toolkit API",
@@ -61,9 +63,11 @@ app.include_router(mcp.router)
 app.include_router(analysis.router)
 app.include_router(admin.router)
 
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "stock-market-toolkit-api", "version": "1.0.0"}
+
 
 @app.get("/")
 async def root():
@@ -73,6 +77,7 @@ async def root():
         "docs": "/docs",
     }
 
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     log.error(f"Unhandled exception: {exc}", exc_info=True)
@@ -81,9 +86,11 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "Internal server error"},
     )
 
+
 @app.post("/cron/check-alerts")
 async def cron_check_alerts():
     """Cron endpoint to check all price alerts. Called every 15 minutes by external scheduler."""
     from app.services.alert_checker import check_alerts
+
     await check_alerts()
     return {"status": "ok", "message": "Alerts checked"}
