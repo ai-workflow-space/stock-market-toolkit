@@ -43,9 +43,7 @@ async def list_invite_codes(
     current_user: User = Depends(require_admin),
 ):
     """List all invitation codes. Requires authentication."""
-    result = await db.execute(
-        select(InviteCode).order_by(InviteCode.created_at.desc())
-    )
+    result = await db.execute(select(InviteCode).order_by(InviteCode.created_at.desc()))
     codes = result.scalars().all()
 
     return InviteCodeListResponse(

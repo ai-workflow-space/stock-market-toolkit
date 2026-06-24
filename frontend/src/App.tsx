@@ -8,10 +8,12 @@ import { Toaster } from "@/components/ui/sonner";
 import AppShell from "@/components/layout/AppShell";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import AdminInvitePage from "./pages/AdminInvitePage";
 import DashboardPage from "./pages/DashboardPage";
 import SignalsPage from "./pages/SignalsPage";
 import ComparePage from "./pages/ComparePage";
 import AlertsPage from "./pages/AlertsPage";
+import WatchlistPage from "./pages/WatchlistPage";
 import SettingsPage from "./pages/SettingsPage";
 import StyleGuidePage from "./pages/StyleGuidePage";
 import "./index.css";
@@ -49,8 +51,10 @@ export default function App() {
               <Route path="/signals" element={<Protected><SignalsPage /></Protected>} />
               <Route path="/compare" element={<Protected><ComparePage /></Protected>} />
               <Route path="/alerts" element={<Protected><AlertsPage /></Protected>} />
+              <Route path="/watchlist" element={<Protected><WatchlistPage /></Protected>} />
               <Route path="/settings" element={<Protected><SettingsPage /></Protected>} />
               <Route path="/styleguide" element={<Protected><StyleGuidePage /></Protected>} />
+              <Route path="/admin/invites" element={<Protected><AdminInvitePage /></Protected>} />
             </Routes>
             <Toaster />
           </TooltipProvider>
