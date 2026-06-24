@@ -34,7 +34,9 @@ export function useWatchlist() {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    refresh();
+    (async () => {
+      await refresh();
+    })();
   }, [refresh]);
 
   const symbols: string[] = items.map((i) => i.symbol);
@@ -42,23 +44,15 @@ export function useWatchlist() {
   const add = async (symbol: string) => {
     const upper = symbol.toUpperCase();
     if (items.some((i) => i.symbol === upper)) return;
-    try {
-      const item = await addToWatchlist(upper);
-      setItems((prev) => [item, ...prev]);
-      return item;
-    } catch (err: unknown) {
-      throw err;
-    }
+    const item = await addToWatchlist(upper);
+    setItems((prev) => [item, ...prev]);
+    return item;
   };
 
   const remove = async (symbol: string) => {
     const upper = symbol.toUpperCase();
-    try {
-      await removeFromWatchlist(upper);
-      setItems((prev) => prev.filter((i) => i.symbol !== upper));
-    } catch (err: unknown) {
-      throw err;
-    }
+    await removeFromWatchlist(upper);
+    setItems((prev) => prev.filter((i) => i.symbol !== upper));
   };
 
   const isWatched = (symbol: string): boolean =>
