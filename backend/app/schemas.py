@@ -41,6 +41,7 @@ class UserResponse(BaseModel):
 class StockDataResponse(BaseModel):
     symbol: str
     period: str
+    cached_at: str = ""
     timestamp: list[str]
     open: list[float | None]
     high: list[float | None]
@@ -51,6 +52,7 @@ class StockDataResponse(BaseModel):
 class IndicatorsResponse(BaseModel):
     symbol: str
     period: str
+    cached_at: str = ""
     timestamp: list[str]
     sma20: list[float | None]
     sma50: list[float | None]
@@ -68,6 +70,7 @@ class IndicatorsResponse(BaseModel):
 
 class StockInfoResponse(BaseModel):
     symbol: str
+    cached_at: str = ""
     short_name: str
     long_name: Optional[str]
     sector: Optional[str]

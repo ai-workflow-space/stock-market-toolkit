@@ -1,6 +1,7 @@
 export interface StockData {
   symbol: string;
   period: string;
+  cached_at: string;
   timestamp: string[];
   open: number[];
   high: number[];
@@ -27,6 +28,7 @@ export interface Indicators extends StockData {
 
 export interface StockInfo {
   symbol: string;
+  cached_at: string;
   short_name: string;
   long_name?: string;
   exchange?: string;
