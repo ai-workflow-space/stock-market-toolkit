@@ -1,7 +1,17 @@
-from sqlalchemy import Column, String, DateTime, Float, Boolean, Text, Integer, ForeignKey
+from sqlalchemy import (
+    Column,
+    String,
+    DateTime,
+    Float,
+    Boolean,
+    Text,
+    Integer,
+    ForeignKey,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
+
 
 class User(Base):
     __tablename__ = "users"
@@ -16,8 +26,16 @@ class User(Base):
 
     # watchlists = relationship("Watchlist", back_populates="user")
     alerts = relationship("Alert", back_populates="user", cascade="all, delete-orphan")
-    notification_settings = relationship("NotificationSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    triggered_alerts = relationship("TriggeredAlert", back_populates="user", cascade="all, delete-orphan")
+    notification_settings = relationship(
+        "NotificationSettings",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+    triggered_alerts = relationship(
+        "TriggeredAlert", back_populates="user", cascade="all, delete-orphan"
+    )
+
 
 class Watchlist(Base):
     __tablename__ = "watchlists"
@@ -34,7 +52,9 @@ class Alert(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     symbol = Column(String, nullable=False)
-    condition_type = Column(String, nullable=False)  # above, below, pct_change_up, pct_change_down
+    condition_type = Column(
+        String, nullable=False
+    )  # above, below, pct_change_up, pct_change_down
     threshold = Column(Float, nullable=False)
     period = Column(String, nullable=False, default="1h")  # 5m, 15m, 30m, 1h, 4h, 1d
     enabled = Column(Boolean, default=True)
@@ -42,7 +62,9 @@ class Alert(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="alerts")
-    triggered = relationship("TriggeredAlert", back_populates="alert", cascade="all, delete-orphan")
+    triggered = relationship(
+        "TriggeredAlert", back_populates="alert", cascade="all, delete-orphan"
+    )
 
 
 class NotificationSettings(Base):
@@ -55,7 +77,9 @@ class NotificationSettings(Base):
     discord_enabled = Column(Boolean, default=True)
     default_period = Column(String, default="1h")
     timezone = Column(String, default="UTC")
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     user = relationship("User", back_populates="notification_settings")
 
@@ -76,3 +100,19 @@ class TriggeredAlert(Base):
 
     user = relationship("User", back_populates="triggered_alerts")
     alert = relationship("Alert", back_populates="triggered")
+
+
+class InviteCode(Base):
+    __tablename__ = "invite_codes"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    code = Column(String, unique=True, index=True, nullable=False)
+    created_by = Column(String, ForeignKey("users.id"), nullable=False)
+    used_by = Column(String, ForeignKey("users.id"), nullable=True)
+    used_at = Column(DateTime(timezone=True), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    creator = relationship("User", foreign_keys=[created_by])
+    redeemer = relationship("User", foreign_keys=[used_by])

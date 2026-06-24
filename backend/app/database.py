@@ -21,8 +21,10 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False,
 )
 
+
 class Base(DeclarativeBase):
     pass
+
 
 async def get_db() -> AsyncSession:
     async with AsyncSessionLocal() as session:
@@ -31,10 +33,12 @@ async def get_db() -> AsyncSession:
         finally:
             await session.close()
 
+
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await bootstrap_default_user()
+
 
 async def bootstrap_default_user():
     """Create a default admin account if none exists."""
@@ -50,6 +54,7 @@ async def bootstrap_default_user():
 
     async with AsyncSessionLocal() as session:
         from sqlalchemy import select
+
         result = await session.execute(select(User).where(User.email == admin_email))
         existing = result.scalar_one_or_none()
         if existing:
@@ -65,4 +70,6 @@ async def bootstrap_default_user():
         )
         session.add(user)
         await session.commit()
-        log.info(f"Default admin created — email: {admin_email}, password: {admin_password}")
+        log.info(
+            f"Default admin created — email: {admin_email}, password: {admin_password}"
+        )

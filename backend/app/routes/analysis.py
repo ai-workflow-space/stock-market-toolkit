@@ -9,13 +9,16 @@ router = APIRouter(prefix="/api", tags=["analysis"])
 
 CACHE_TTL = 300  # 5 minutes
 
+
 def _clean(v):
     if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
         return None
     return v
 
+
 def _clean_list(lst):
     return [_clean(v) for v in lst]
+
 
 @router.get("/analysis/{symbol}")
 async def get_analysis(
@@ -68,7 +71,11 @@ async def get_analysis(
     # BIAS = (close - SMA20) / SMA20 * 100
     sma20_vals = ta.sma(close, length=20)
     latest_sma20 = float(sma20_vals.iloc[-1]) if sma20_vals.notna().any() else None
-    bias = _clean((latest_close - latest_sma20) / latest_sma20 * 100) if latest_sma20 else None
+    bias = (
+        _clean((latest_close - latest_sma20) / latest_sma20 * 100)
+        if latest_sma20
+        else None
+    )
 
     # KDJ (stochastic)
     kdj_df = ta.stoch(high=df["High"], low=df["Low"], close=close, k=14, d=3)
@@ -79,15 +86,23 @@ async def get_analysis(
 
     # MACD histogram (last value)
     macd_hist_list = _df_col(macd_df, "MACDh_12_26_9")
-    macd_hist = _clean(macd_hist_list[-1]) if macd_hist_list and not isinstance(macd_hist_list[0], type(None)) else None
+    macd_hist = (
+        _clean(macd_hist_list[-1])
+        if macd_hist_list and not isinstance(macd_hist_list[0], type(None))
+        else None
+    )
 
     # Volume ratio = volume / 20-day avg volume
     vol_series = df["Volume"]
     vol_avg = vol_series.rolling(20).mean()
-    vol_ratio = _clean(float(vol_series.iloc[-1] / vol_avg.iloc[-1])) if not math.isnan(vol_avg.iloc[-1]) else None
+    vol_ratio = (
+        _clean(float(vol_series.iloc[-1] / vol_avg.iloc[-1]))
+        if not math.isnan(vol_avg.iloc[-1])
+        else None
+    )
 
     # RSI latest
-    rsi_vals_list = rsi_vals.tolist() if hasattr(rsi_vals, 'tolist') else list(rsi_vals)
+    rsi_vals_list = rsi_vals.tolist() if hasattr(rsi_vals, "tolist") else list(rsi_vals)
     latest_rsi = _clean(rsi_vals_list[-1]) if rsi_vals_list else None
 
     # ── Signal logic (inspired by twstock best_four_point) ──────────────────
@@ -149,6 +164,8 @@ async def get_analysis(
             "macd_histogram": macd_hist,
             "rsi": latest_rsi,
             "sma20": _clean(latest_sma20),
-            "sma50": _clean(float(ta.sma(close, length=50).iloc[-1]) if len(close) >= 50 else None),
-        }
+            "sma50": _clean(
+                float(ta.sma(close, length=50).iloc[-1]) if len(close) >= 50 else None
+            ),
+        },
     }

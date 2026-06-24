@@ -1,17 +1,19 @@
 import os
 from functools import lru_cache
 
+
 def _get_env(key: str, default: str) -> str:
     return os.getenv(key, default)
+
 
 class Settings:
     DATABASE_URL: str = _get_env(
         "DATABASE_URL",
-        "sqlite+aiosqlite:///./stocktoolkit.db"  # SQLite for local dev
+        "sqlite+aiosqlite:///./stocktoolkit.db",  # SQLite for local dev
     )
     SECRET_KEY: str = _get_env(
         "SECRET_KEY",
-        "dev-secret-stocktoolkit-change-in-production-use-openssl-rand-hex-64"
+        "dev-secret-stocktoolkit-change-in-production-use-openssl-rand-hex-64",
     )
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
@@ -25,6 +27,7 @@ class Settings:
     ADMIN_EMAIL: str = _get_env("ADMIN_EMAIL", "admin@stocktoolkit.local")
     ADMIN_USERNAME: str = _get_env("ADMIN_USERNAME", "admin")
     ADMIN_PASSWORD: str = _get_env("ADMIN_PASSWORD", "Admin@1234")
+
 
 @lru_cache
 def get_settings() -> Settings:
