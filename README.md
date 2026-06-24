@@ -48,4 +48,4 @@ Open `http://localhost:5173` in your browser.
 
 ## Environment
 
-Backend runs on port **8001**, frontend proxies `/api/*` to it via Vite config.
+Backend runs on port **8001**, frontend proxies `/api/*` to it via Vite config.# Test
