@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Copy, Check, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -15,11 +15,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 const API = import.meta.env.VITE_API_URL || "";
-
-function authHeaders() {
-  const token = localStorage.getItem("access_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 interface InviteCode {
   id: number;
@@ -67,7 +62,7 @@ function CreateInviteCodeDialog({
     try {
       const res = await fetch(API + "/api/admin/invite-codes", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("access_token") ?? ""}` },
         body: JSON.stringify({ expires_in_days: days } as CreateInviteCodeRequest),
       });
       if (!res.ok) {
@@ -154,7 +149,7 @@ export default function AdminInvitePage() {
     setError("");
     try {
       const res = await fetch(API + "/api/admin/invite-codes", {
-        headers: authHeaders(),
+        headers: { Authorization: `Bearer ${localStorage.getItem("access_token") ?? ""}` },
       });
       if (!res.ok) {
         const data = await res.json() as { detail?: string };
@@ -178,7 +173,7 @@ export default function AdminInvitePage() {
     try {
       const res = await fetch(API + "/api/admin/invite-codes/" + codeId, {
         method: "DELETE",
-        headers: authHeaders(),
+        headers: { Authorization: `Bearer ${localStorage.getItem("access_token") ?? ""}` },
       });
       if (!res.ok) {
         const data = await res.json() as { detail?: string };
