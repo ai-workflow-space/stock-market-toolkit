@@ -3,8 +3,12 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.models import User
 from app.schemas import (
-    StockDataResponse, IndicatorsResponse, StockInfoResponse,
-    CompareRequest, CompareResponse, CompareStockData,
+    StockDataResponse,
+    IndicatorsResponse,
+    StockInfoResponse,
+    CompareRequest,
+    CompareResponse,
+    CompareStockData,
 )
 from app.auth import get_current_user
 import yfinance as yf
@@ -15,13 +19,16 @@ router = APIRouter(prefix="/api", tags=["stocks"])
 
 CACHE_TTL = 300  # 5 minutes
 
+
 def _clean(v):
     if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
         return None
     return v
 
+
 def _clean_list(lst):
     return [_clean(v) for v in lst]
+
 
 @router.get("/stock/{symbol}", response_model=StockDataResponse)
 async def get_stock(
@@ -29,7 +36,7 @@ async def get_stock(
     period: str = Query("1mo"),
     current_user: User = Depends(get_current_user),
 ):
-    if period not in ("1d","5d","1w","1mo","3mo","6mo","1y","2y","5y","max"):
+    if period not in ("1d", "5d", "1w", "1mo", "3mo", "6mo", "1y", "2y", "5y", "max"):
         raise HTTPException(status_code=400, detail="Invalid period")
 
     ticker = yf.Ticker(symbol.upper())
@@ -52,6 +59,7 @@ async def get_stock(
         close=_clean_list(df["Close"].tolist()),
         volume=[int(v) if not math.isnan(v) else None for v in df["Volume"].tolist()],
     )
+
 
 @router.get("/stock/{symbol}/indicators", response_model=IndicatorsResponse)
 async def get_indicators(
@@ -104,19 +112,32 @@ async def get_indicators(
         cached_at=datetime.utcnow().isoformat(),
         timestamp=df.index.strftime("%Y-%m-%dT%H:%M:%S").tolist(),
         sma20=_clean_list(_safe_ta_series(ta.sma, close, length=20)),
-        sma50=_clean_list(_safe_ta_series(ta.sma, close, length=50) if len(close) >= 50 else [None] * len(close)),
-        sma200=_clean_list(_safe_ta_series(ta.sma, close, length=200) if len(close) >= 200 else [None] * len(close)),
+        sma50=_clean_list(
+            _safe_ta_series(ta.sma, close, length=50)
+            if len(close) >= 50
+            else [None] * len(close)
+        ),
+        sma200=_clean_list(
+            _safe_ta_series(ta.sma, close, length=200)
+            if len(close) >= 200
+            else [None] * len(close)
+        ),
         ema12=_clean_list(_safe_ta_series(ta.ema, close, length=12)),
         ema26=_clean_list(_safe_ta_series(ta.ema, close, length=26)),
-        rsi=_clean_list(rsi_vals.tolist() if hasattr(rsi_vals, 'tolist') else list(rsi_vals)),
+        rsi=_clean_list(
+            rsi_vals.tolist() if hasattr(rsi_vals, "tolist") else list(rsi_vals)
+        ),
         macd=_clean_list(_df_col(macd_df, "MACD_12_26_9")),
         macd_signal=_clean_list(_df_col(macd_df, "MACDs_12_26_9")),
         macd_hist=_clean_list(_df_col(macd_df, "MACDh_12_26_9")),
         bb_upper=_clean_list(_df_col(bbands_df, "BBU_20_2.0_2.0")),
         bb_middle=_clean_list(_df_col(bbands_df, "BBM_20_2.0_2.0")),
         bb_lower=_clean_list(_df_col(bbands_df, "BBL_20_2.0_2.0")),
-        atr=_clean_list(_safe_ta_series(ta.atr, df["High"], df["Low"], df["Close"], length=14)),
+        atr=_clean_list(
+            _safe_ta_series(ta.atr, df["High"], df["Low"], df["Close"], length=14)
+        ),
     )
+
 
 @router.get("/stock/{symbol}/info", response_model=StockInfoResponse)
 async def get_stock_info(
@@ -125,7 +146,7 @@ async def get_stock_info(
 ):
     ticker = yf.Ticker(symbol.upper())
     info = ticker.info or {}
-    
+
     return StockInfoResponse(
         symbol=symbol.upper(),
         cached_at=datetime.utcnow().isoformat(),
@@ -146,6 +167,7 @@ async def get_stock_info(
         week_52_low=info.get("fiftyTwoWeekLow"),
     )
 
+
 @router.post("/compare", response_model=CompareResponse)
 async def compare_stocks(
     data: CompareRequest,
@@ -157,18 +179,24 @@ async def compare_stocks(
     for symbol in data.symbols:
         ticker = yf.Ticker(symbol.upper())
         df = ticker.history(period=data.period, interval=int_interval, auto_adjust=True)
-        
+
         if df.empty:
             raise HTTPException(status_code=404, detail=f"No data for {symbol}")
-        
-        stocks.append(CompareStockData(
-            symbol=symbol.upper(),
-            timestamp=df.index.strftime("%Y-%m-%dT%H:%M:%S").tolist(),
-            close=_clean_list(df["Close"].tolist()),
-            volume=[int(v) if not (isinstance(v, float) and math.isnan(v)) else None for v in df["Volume"].tolist()],
-        ))
-    
+
+        stocks.append(
+            CompareStockData(
+                symbol=symbol.upper(),
+                timestamp=df.index.strftime("%Y-%m-%dT%H:%M:%S").tolist(),
+                close=_clean_list(df["Close"].tolist()),
+                volume=[
+                    int(v) if not (isinstance(v, float) and math.isnan(v)) else None
+                    for v in df["Volume"].tolist()
+                ],
+            )
+        )
+
     return CompareResponse(stocks=stocks)
+
 
 @router.get("/search")
 async def search_symbols(
