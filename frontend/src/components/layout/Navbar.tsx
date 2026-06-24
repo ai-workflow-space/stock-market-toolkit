@@ -81,6 +81,9 @@ export default function Navbar() {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>{user.username}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/admin/invites")}>
+                  Invitation Codes
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { logout(); navigate("/login"); }}>
                   <LogOut /> Log out
                 </DropdownMenuItem>
