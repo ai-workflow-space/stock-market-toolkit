@@ -13,7 +13,7 @@ import logging
 
 from app.config import get_settings
 from app.database import init_db
-from app.routes import auth, stocks, alerts, mcp, analysis, watchlist
+from app.routes import auth, stocks, alerts, mcp, analysis, admin, watchlist
 
 settings = get_settings()
 log = logging.getLogger(__name__)
@@ -62,6 +62,7 @@ app.include_router(alerts.router)
 app.include_router(mcp.router)
 app.include_router(analysis.router)
 app.include_router(watchlist.router)
+app.include_router(admin.router)
 
 
 @app.get("/health")
