@@ -165,7 +165,9 @@ export default function AdminInvitePage() {
   }, []);
 
   useEffect(() => {
-    void loadCodes();
+    (async () => {
+      await loadCodes();
+    })();
   }, [loadCodes]);
 
   const handleDeactivate = async (codeId: number) => {
