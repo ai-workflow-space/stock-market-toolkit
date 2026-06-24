@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.models import User
 from app.schemas import (
@@ -42,6 +44,7 @@ async def get_stock(
     return StockDataResponse(
         symbol=symbol.upper(),
         period=period,
+        cached_at=datetime.utcnow().isoformat(),
         timestamp=df.index.strftime("%Y-%m-%dT%H:%M:%S").tolist(),
         open=_clean_list(df["Open"].tolist()),
         high=_clean_list(df["High"].tolist()),
@@ -98,6 +101,7 @@ async def get_indicators(
     return IndicatorsResponse(
         symbol=symbol.upper(),
         period=period,
+        cached_at=datetime.utcnow().isoformat(),
         timestamp=df.index.strftime("%Y-%m-%dT%H:%M:%S").tolist(),
         sma20=_clean_list(_safe_ta_series(ta.sma, close, length=20)),
         sma50=_clean_list(_safe_ta_series(ta.sma, close, length=50) if len(close) >= 50 else [None] * len(close)),
@@ -124,6 +128,7 @@ async def get_stock_info(
     
     return StockInfoResponse(
         symbol=symbol.upper(),
+        cached_at=datetime.utcnow().isoformat(),
         short_name=info.get("shortName", symbol.upper()),
         long_name=info.get("longName"),
         sector=info.get("sector"),
