@@ -65,7 +65,7 @@ export default function SettingsPage() {
   const [resetResult, setResetResult] = useState<string | null>(null);
   const [resetError, setResetError] = useState("");
   const [editEmailOpen, setEditEmailOpen] = useState(false);
-  const [editEmailTarget, setEditEmailTarget] = useState<{ id: string; email: string } | null>(null);
+  const [editEmailTarget, setEditEmailTarget] = useState<{ id: string; email: string; is_admin: boolean; is_active: boolean } | null>(null);
   const [editEmail, setEditEmail] = useState("");
   const [editEmailLoading, setEditEmailLoading] = useState(false);
   const [editEmailError, setEditEmailError] = useState("");
@@ -106,26 +106,6 @@ export default function SettingsPage() {
       .finally(() => { if (!ignore) setUsersLoading(false); });
     return () => { ignore = true; };
   }, [isAdmin]);
-
-  const toggleUserAdmin = async (userId: string, currentValue: boolean) => {
-    const token = localStorage.getItem("access_token");
-    await fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/users/${userId}`, {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ is_admin: !currentValue }),
-    });
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_admin: !currentValue } : u));
-  };
-
-  const toggleUserActive = async (userId: string, currentValue: boolean) => {
-    const token = localStorage.getItem("access_token");
-    await fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/users/${userId}`, {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ is_active: !currentValue }),
-    });
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: !currentValue } : u));
-  };
 
   const addUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,7 +160,7 @@ export default function SettingsPage() {
     }
   };
 
-  const openEditEmail = (user: { id: string; email: string }) => {
+  const openEditEmail = (user: { id: string; email: string; is_admin: boolean; is_active: boolean }) => {
     setEditEmailTarget(user);
     setEditEmail(user.email);
     setEditEmailError("");
@@ -197,12 +177,12 @@ export default function SettingsPage() {
       const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/users/${editEmailTarget.id}`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ email: editEmail }),
+        body: JSON.stringify({ email: editEmail, is_admin: editEmailTarget.is_admin, is_active: editEmailTarget.is_active }),
       });
       if (!res.ok) {
         throw new Error(await extractError(res, "Failed to update email"));
       }
-      setUsers(prev => prev.map(u => u.id === editEmailTarget.id ? { ...u, email: editEmail } : u));
+      setUsers(prev => prev.map(u => u.id === editEmailTarget.id ? { ...u, email: editEmail, is_admin: editEmailTarget.is_admin, is_active: editEmailTarget.is_active } : u));
       toast("Email updated", { description: "User email has been updated successfully." });
       setEditEmailOpen(false);
       setEditEmailTarget(null);
@@ -337,33 +317,12 @@ export default function SettingsPage() {
                       <span className="text-xs text-muted-foreground truncate">{u.email}</span>
                     </div>
                     <div className="flex items-center gap-4 shrink-0">
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-xs text-muted-foreground">Admin</span>
-                        <Switch
-                          checked={u.is_admin}
-                          onCheckedChange={() => toggleUserAdmin(u.id, u.is_admin)}
-                        />
-                      </div>
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-xs text-muted-foreground">Active</span>
-                        <Switch
-                          checked={u.is_active}
-                          onCheckedChange={() => toggleUserActive(u.id, u.is_active)}
-                        />
-                      </div>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => openEditEmail({ id: u.id, email: u.email })}
+                        onClick={() => openEditEmail({ id: u.id, email: u.email, is_admin: u.is_admin, is_active: u.is_active })}
                       >
                         <Pencil className="size-3 mr-1" /> Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setResetTarget({ id: u.id, username: u.username })}
-                      >
-                        <Key className="size-3 mr-1" /> Reset
                       </Button>
                       <Button
                         variant="destructive"
@@ -506,9 +465,9 @@ export default function SettingsPage() {
       <Dialog open={editEmailOpen} onOpenChange={(open) => { if (!open) { setEditEmailOpen(false); setEditEmailTarget(null); setEditEmailError(""); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Email</DialogTitle>
+            <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
-              Update the email address for this user.
+              Update details for user &ldquo;{editEmailTarget?.email}&rdquo;.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={editUserEmail} className="flex flex-col gap-3">
@@ -528,10 +487,48 @@ export default function SettingsPage() {
                 required
               />
             </div>
+            <div className="flex items-center justify-between rounded-md border px-3 py-2">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium">Admin</span>
+                <span className="text-xs text-muted-foreground">Can manage users and settings</span>
+              </div>
+              <Switch
+                checked={editEmailTarget?.is_admin ?? false}
+                onCheckedChange={(checked) => setEditEmailTarget(prev => prev ? { ...prev, is_admin: checked } : null)}
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-md border px-3 py-2">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium">Active</span>
+                <span className="text-xs text-muted-foreground">Can log in and use the app</span>
+              </div>
+              <Switch
+                checked={editEmailTarget?.is_active ?? false}
+                onCheckedChange={(checked) => setEditEmailTarget(prev => prev ? { ...prev, is_active: checked } : null)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Password</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    if (!editEmailTarget) return;
+                    setResetTarget({ id: editEmailTarget.id, username: editEmailTarget.email });
+                    setEditEmailOpen(false);
+                  }}
+                >
+                  <Key className="size-3 mr-1" /> Reset Password
+                </Button>
+              </div>
+            </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditEmailOpen(false)} disabled={editEmailLoading}>Cancel</Button>
               <Button type="submit" disabled={editEmailLoading}>
-                {editEmailLoading ? "Saving…" : "Save"}
+                {editEmailLoading ? "Saving…" : "Save Changes"}
               </Button>
             </DialogFooter>
           </form>
