@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { to: "/", label: "Dashboard", end: true },
   { to: "/signals", label: "Signals", end: false },
   { to: "/compare", label: "Compare", end: false },
+  { to: "/watchlist", label: "Watchlist", end: false },
   { to: "/alerts", label: "Alerts", end: false },
   { to: "/settings", label: "Settings", end: false },
 ];
