@@ -34,6 +34,7 @@ import {
 } from "../components/ui/tabs";
 import { Skeleton } from "../components/ui/skeleton";
 import { Bell, CheckCircle2, X } from "lucide-react";
+import SymbolSearch from "@/components/common/SymbolSearch";
 import { fmt } from "../lib/format";
 
 const CONDITION_OPTIONS = [
@@ -68,6 +69,7 @@ function CreateAlertDialog({
   onCreated: (alert: Alert) => void;
 }) {
   const [symbol, setSymbol] = useState("");
+  const [selectedSymbol, setSelectedSymbol] = useState("");
   const [conditionType, setConditionType] = useState<string>("above");
   const [threshold, setThreshold] = useState("");
   const [period, setPeriod] = useState("1h");
@@ -112,12 +114,12 @@ function CreateAlertDialog({
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="symbol">Symbol</Label>
-              <Input
-                id="symbol"
-                placeholder="AAPL, TSLA, MSFT"
-                value={symbol}
-                onChange={e => setSymbol(e.target.value)}
-                autoFocus
+              <SymbolSearch
+                value={selectedSymbol}
+                onSearch={(sym) => {
+                  setSelectedSymbol(sym);
+                  setSymbol(sym);
+                }}
               />
             </div>
             <div className="grid gap-2">
