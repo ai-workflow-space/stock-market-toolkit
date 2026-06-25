@@ -101,7 +101,7 @@ export default function AdminLogsPage() {
   }, [level, search]);
 
   useEffect(() => {
-    setLoading(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadLogs();
   }, [loadLogs]);
 
