@@ -36,6 +36,7 @@ import {
 import { Loader2, Key, Pencil } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { APP_VERSION, RELEASE_URL, RELEASE_API_URL } from "../lib/version";
+import { fmtDate } from "../lib/format";
 import ReactMarkdown from "react-markdown";
 
 export default function SettingsPage() {
@@ -47,9 +48,9 @@ export default function SettingsPage() {
     id: string;
     email: string;
     username: string;
+    created_at?: string;
     is_admin: boolean;
     is_active: boolean;
-    created_at: string;
   }>>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
@@ -334,6 +335,9 @@ export default function SettingsPage() {
                     <div className="flex flex-col gap-0.5 min-w-0">
                       <span className="text-sm font-medium truncate">{u.username}</span>
                       <span className="text-xs text-muted-foreground truncate">{u.email}</span>
+                      {u.created_at && (
+                        <span className="text-xs text-muted-foreground truncate">Registered {fmtDate(u.created_at)}</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-4 shrink-0">
                       <Button
