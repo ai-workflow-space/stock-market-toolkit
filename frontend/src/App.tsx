@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 import AppShell from "@/components/layout/AppShell";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import BootstrapPage from "./pages/BootstrapPage";
 import AdminInvitePage from "./pages/AdminInvitePage";
 import DashboardPage from "./pages/DashboardPage";
 import SignalsPage from "./pages/SignalsPage";
@@ -46,6 +47,7 @@ export default function App() {
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/bootstrap" element={<BootstrapPage />} />
               <Route path="/" element={<Protected><DashboardPage /></Protected>} />
               <Route path="/signals" element={<Protected><SignalsPage /></Protected>} />
               <Route path="/compare" element={<Protected><ComparePage /></Protected>} />
