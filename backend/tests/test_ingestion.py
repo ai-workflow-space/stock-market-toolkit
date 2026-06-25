@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pandas as pd
 import pytest
 
-from app.models import Dividend, FinancialStatement, JobRun, SymbolScore
+from app.models import FinancialStatement, JobRun, SymbolScore
 
 
 @pytest.fixture
