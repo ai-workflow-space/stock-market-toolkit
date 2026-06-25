@@ -16,7 +16,6 @@ import SignalsPage from "./pages/SignalsPage";
 import ComparePage from "./pages/ComparePage";
 import AlertsPage from "./pages/AlertsPage";
 import SettingsPage from "./pages/SettingsPage";
-import WatchlistPage from "./pages/WatchlistPage";
 import StyleGuidePage from "./pages/StyleGuidePage";
 import "./index.css";
 
@@ -55,7 +54,6 @@ export default function App() {
               <Route path="/compare" element={<Protected><ComparePage /></Protected>} />
               <Route path="/alerts" element={<Protected><AlertsPage /></Protected>} />
               <Route path="/settings" element={<Protected><SettingsPage /></Protected>} />
-              <Route path="/watchlist" element={<Protected><WatchlistPage /></Protected>} />
               <Route path="/styleguide" element={<Protected><StyleGuidePage /></Protected>} />
               <Route path="/admin/invites" element={<Protected><AdminInvitePage /></Protected>} />
               <Route path="/admin/logs" element={<Protected><AdminLogsPage /></Protected>} />
