@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import axios from "axios";
+
+const API = import.meta.env.VITE_API_URL || "";
 
 function BrandMark() {
   return (
@@ -17,30 +18,34 @@ function BrandMark() {
   );
 }
 
-export default function LoginPage() {
+export default function BootstrapPage() {
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [usersExist, setUsersExist] = useState<boolean | null>(null);
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get(`${import.meta.env.VITE_API_URL || ""}/api/auth/users/count`)
-      .then(res => setUsersExist(res.data.count > 0))
-      .catch(() => setUsersExist(true));
-  }, []);
+    // If users already exist, redirect to login
+    axios.get(`${API}/api/auth/users/count`)
+      .then(res => {
+        if (res.data.count > 0) {
+          navigate("/login", { replace: true });
+        }
+      })
+      .catch(() => {});
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
-      navigate("/");
+      await axios.post(`${API}/api/auth/bootstrap`, { email, username, password });
+      navigate("/login");
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Login failed";
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Bootstrap failed";
       setError(msg);
     } finally {
       setLoading(false);
@@ -54,18 +59,10 @@ export default function LoginPage() {
           <div className="flex items-center gap-2 font-semibold">
             <BrandMark /> Stock Toolkit
           </div>
-          <CardTitle className="text-xl">Welcome back</CardTitle>
-          <CardDescription>Sign in to your account</CardDescription>
+          <CardTitle className="text-xl">First-Time Setup</CardTitle>
+          <CardDescription>Create your admin account to get started</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          {usersExist === false && (
-            <div className="rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
-              <strong className="text-foreground">New here?</strong> You need to{" "}
-              <Link to="/bootstrap" className="text-primary underline-offset-4 hover:underline">set up the system</Link>{" "}
-              first before signing in.
-            </div>
-          )}
-
           {error && (
             <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}
@@ -74,23 +71,25 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email">Email or username</Label>
-              <Input id="email" type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required autoFocus />
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@example.com" required autoFocus />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="username">Username</Label>
+              <Input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="admin" required minLength={3} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={8} />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? "Creating account…" : "Create Admin Account"}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
-            <Link to={usersExist === false ? "/bootstrap" : "/register"} className="text-primary underline-offset-4 hover:underline">
-              {usersExist === false ? "Set up the system" : "Request access"}
-            </Link>
+            Already have an account?{" "}
+            <a href="/login" className="text-primary underline-offset-4 hover:underline">Sign in</a>
           </p>
         </CardContent>
       </Card>

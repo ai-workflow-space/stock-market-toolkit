@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 from sqlalchemy import select, func
 import uuid
 from app.models import User
@@ -18,6 +20,7 @@ from app.auth import (
     create_refresh_token,
     decode_token,
     get_current_user,
+    require_admin,  # noqa: F401 — used via Depends() in route handlers
 )
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -94,7 +97,103 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.post("/logout")
+@router.post("/logout", status_code=200)
 async def logout(current_user: User = Depends(get_current_user)):
     # In a production app with refresh token rotation, you would blacklist the token here
     return {"message": "Logged out successfully"}
+
+
+@router.get("/users/count")
+async def get_users_count(db: AsyncSession = Depends(get_db)):
+    """Return the total number of users. Used to determine if bootstrap is needed."""
+    result = await db.execute(select(func.count()).select_from(User))
+    count = result.scalar_one()
+    return {"count": count}
+
+
+class UserUpdate(BaseModel):
+    is_admin: Optional[bool] = None
+    is_active: Optional[bool] = None
+
+
+@router.get("/users")
+async def list_users(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """List all users. Admin only."""
+    result = await db.execute(select(User).order_by(User.created_at.desc()))
+    users = result.scalars().all()
+    return {"users": users}
+
+
+@router.patch("/users/{user_id}")
+async def update_user(
+    user_id: str,
+    data: UserUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Update a user's admin or active status. Admin only."""
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if data.is_admin is not None:
+        user.is_admin = data.is_admin
+    if data.is_active is not None:
+        user.is_active = data.is_active
+
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+@router.delete("/users/{user_id}", status_code=204)
+async def delete_user(
+    user_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Delete a user. Admin only."""
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    await db.delete(user)
+    await db.commit()
+    return None
+
+
+@router.post("/bootstrap", status_code=201)
+async def bootstrap(data: UserRegister, db: AsyncSession = Depends(get_db)):
+    """Create the first admin user. Only works when no users exist."""
+    result = await db.execute(select(func.count()).select_from(User))
+    count = result.scalar_one()
+    if count > 0:
+        raise HTTPException(
+            status_code=403, detail="Bootstrap not allowed: users already exist"
+        )
+
+    existing = await db.execute(
+        select(User).where(
+            (User.email == data.email) | (User.username == data.username.lower())
+        )
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(
+            status_code=400, detail="Email or username already registered"
+        )
+
+    user = User(
+        id=str(uuid.uuid4()),
+        email=data.email,
+        username=data.username.lower(),
+        hashed_password=hash_password(data.password),
+        is_admin=True,
+        created_at=func.now(),
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
