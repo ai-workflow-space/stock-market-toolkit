@@ -9,5 +9,7 @@ export const APP_VERSION =
   (import.meta.env.VITE_APP_VERSION as string) || "0.3.0"; // x-release-please-version
 
 // Centralized release page URL — used by Navbar and Footer
-export const RELEASE_URL =
-  `https://github.com/ai-workflow-space/stock-market-toolkit/releases/tag/v${APP_VERSION}`;
+export const RELEASE_URL = `https://github.com/ai-workflow-space/stock-market-toolkit/releases/tag/v${APP_VERSION}`;
+
+// GitHub Releases API endpoint for the current version's tag
+export const RELEASE_API_URL = `https://api.github.com/repos/ai-workflow-space/stock-market-toolkit/releases/tags/v${APP_VERSION}`;
