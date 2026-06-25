@@ -11,7 +11,7 @@ from app.schemas import (
     CompareStockData,
 )
 from app.auth import get_current_user
-import yfinance as yf
+from app.providers import market_provider
 import pandas_ta as ta
 import math
 
@@ -39,11 +39,10 @@ async def get_stock(
     if period not in ("1d", "5d", "1w", "1mo", "3mo", "6mo", "1y", "2y", "5y", "max"):
         raise HTTPException(status_code=400, detail="Invalid period")
 
-    ticker = yf.Ticker(symbol.upper())
-    # Use intraday intervals for short periods (yfinance daily data has too few rows)
+    provider = market_provider(symbol.upper())
     interval_map = {"1d": "5m", "5d": "15m"}
     interval = interval_map.get(period, "1d")
-    df = ticker.history(period=period, interval=interval, auto_adjust=True)
+    df = await provider.get_history(symbol.upper(), period=period, interval=interval)
 
     if df.empty:
         raise HTTPException(status_code=404, detail=f"No data for {symbol}")
@@ -67,10 +66,10 @@ async def get_indicators(
     period: str = Query("3mo"),
     current_user: User = Depends(get_current_user),
 ):
-    ticker = yf.Ticker(symbol.upper())
+    provider = market_provider(symbol.upper())
     interval_map = {"1d": "5m", "5d": "15m"}
     interval = interval_map.get(period, "1d")
-    df = ticker.history(period=period, interval=interval, auto_adjust=True)
+    df = await provider.get_history(symbol.upper(), period=period, interval=interval)
 
     if len(df) < 2:
         raise HTTPException(status_code=404, detail=f"No data for {symbol} ({period})")
@@ -144,8 +143,8 @@ async def get_stock_info(
     symbol: str,
     current_user: User = Depends(get_current_user),
 ):
-    ticker = yf.Ticker(symbol.upper())
-    info = ticker.info or {}
+    provider = market_provider(symbol.upper())
+    info = await provider.get_info(symbol.upper())
 
     return StockInfoResponse(
         symbol=symbol.upper(),
@@ -177,8 +176,10 @@ async def compare_stocks(
     interval_map = {"1d": "5m", "5d": "15m"}
     int_interval = interval_map.get(data.period, "1d")
     for symbol in data.symbols:
-        ticker = yf.Ticker(symbol.upper())
-        df = ticker.history(period=data.period, interval=int_interval, auto_adjust=True)
+        provider = market_provider(symbol.upper())
+        df = await provider.get_history(
+            symbol.upper(), period=data.period, interval=int_interval
+        )
 
         if df.empty:
             raise HTTPException(status_code=404, detail=f"No data for {symbol}")
