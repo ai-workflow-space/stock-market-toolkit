@@ -66,6 +66,16 @@
     border-style: solid;
     border-color: hsl(var(--border));
   }
+  /* Tailwind preflight is disabled (see tailwind.config.js), so anchors would
+     otherwise fall back to the UA default of underlined blue text that turns
+     dark-blue/purple on :active and :visited — making nav items and brand
+     links look like raw hyperlinks. Restore the preflight behavior: links
+     inherit color and carry no underline by default. Components opt in to
+     link styling explicitly via text-primary / hover:underline utilities. */
+  a {
+    color: inherit;
+    text-decoration: inherit;
+  }
   html { font-size: 16px; }
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
