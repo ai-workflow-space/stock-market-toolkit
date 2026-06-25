@@ -7,7 +7,7 @@ async function extractError(res: Response, fallback: string): Promise<string> {
     const d = await res.json();
     // Pydantic 422: detail is ValidationError[]
     if (Array.isArray(d.detail)) {
-      return d.detail.map((e: { msg?: string }) => e.msg || JSON.stringify(e)).join("; ");
+      return d.detail[0]?.msg || fallback;
     }
     // Plain string detail: HTTPException raised by app code
     if (typeof d.detail === "string") return d.detail;
@@ -141,7 +141,8 @@ export default function SettingsPage() {
       setAddUsername("");
       setAddPassword("");
     } catch (err: unknown) {
-      setAddError((err as Error).message);
+      const msg = err instanceof Error ? err.message : "Failed to add user";
+      setAddError(msg);
     } finally {
       setAddLoading(false);
     }
@@ -161,7 +162,7 @@ export default function SettingsPage() {
       });
       if (!res.ok) {
         const d = await res.json();
-        throw new Error(d.detail || "Reset failed");
+        throw new Error(typeof d.detail === "string" ? d.detail : d.detail?.[0]?.msg || "Reset failed");
       }
       const data = await res.json();
       setResetResult(data.password);
