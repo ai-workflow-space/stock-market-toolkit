@@ -52,6 +52,7 @@ class Alert(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     symbol = Column(String, nullable=False)
+    symbol_name = Column(String, nullable=True)
     condition_type = Column(
         String, nullable=False
     )  # above, below, pct_change_up, pct_change_down

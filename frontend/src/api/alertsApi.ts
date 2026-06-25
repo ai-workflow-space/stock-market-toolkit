@@ -16,6 +16,7 @@ export interface Alert {
   id: number;
   user_id: string;
   symbol: string;
+  symbol_name?: string;
   condition_type: "above" | "below" | "pct_change_up" | "pct_change_down";
   threshold: number;
   period: string;
@@ -29,6 +30,7 @@ export interface TriggeredAlert {
   alert_id: number | null;
   user_id: string;
   symbol: string;
+  symbol_name?: string;
   condition_type: string;
   trigger_price: number;
   threshold_value: number;
@@ -50,6 +52,7 @@ export interface NotificationSettings {
 
 export interface AlertCreate {
   symbol: string;
+  symbol_name?: string;
   condition_type: "above" | "below" | "pct_change_up" | "pct_change_down";
   threshold: number;
   period?: string;

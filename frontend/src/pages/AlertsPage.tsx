@@ -71,6 +71,7 @@ function CreateAlertDialog({
 }) {
   const [symbol, setSymbol] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState("");
+  const [symbolName, setSymbolName] = useState("");
   const [conditionType, setConditionType] = useState<string>("above");
   const [threshold, setThreshold] = useState("");
   const [period, setPeriod] = useState("1h");
@@ -109,6 +110,7 @@ function CreateAlertDialog({
     try {
       const alert = await createAlert({
         symbol: symbol.trim().toUpperCase(),
+        symbol_name: symbolName || undefined,
         condition_type: conditionType as Alert["condition_type"],
         threshold: thresh,
         period,
@@ -141,6 +143,7 @@ function CreateAlertDialog({
                   setSelectedSymbol(sym);
                   setSymbol(sym);
                 }}
+                onSelect={(result) => setSymbolName(result.name)}
               />
             </div>
             <div className="grid gap-2">
@@ -382,8 +385,8 @@ export default function AlertsPage() {
                   <Card key={alert.id} className={alert.enabled ? "" : "opacity-50"}>
                     <CardContent className="flex items-center gap-4 py-4">
                       <span className="font-bold text-base min-w-[60px]">{alert.symbol}</span>
-                      <span className="text-sm text-muted-foreground flex-1">
-                        {conditionLabel(alert.condition_type)}
+                      <span className="text-sm text-muted-foreground truncate flex-1">
+                        {alert.symbol_name ? `${alert.symbol_name} · ` : ""}{conditionLabel(alert.condition_type)}
                       </span>
                       <span className="font-semibold text-sm">
                         {alert.condition_type.startsWith("pct") ? `${alert.threshold}%` : `$${fmt(alert.threshold)}`}
@@ -438,6 +441,9 @@ export default function AlertsPage() {
                     <CardContent className="py-4">
                       <div className="flex items-center gap-3 mb-2">
                         <span className="font-bold">{alert.symbol}</span>
+                        {alert.symbol_name && (
+                          <span className="text-sm text-muted-foreground truncate">{alert.symbol_name}</span>
+                        )}
                         <span className="text-sm text-muted-foreground">{conditionLabel(alert.condition_type)}</span>
                         {!alert.read && (
                           <span className="ml-auto flex items-center">

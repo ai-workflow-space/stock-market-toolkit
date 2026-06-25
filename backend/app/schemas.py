@@ -116,6 +116,7 @@ class CompareResponse(BaseModel):
 # ─── Alert schemas ───
 class AlertCreate(BaseModel):
     symbol: str = Field(..., min_length=1, max_length=20)
+    symbol_name: Optional[str] = Field(None, max_length=200)
     condition_type: str = Field(
         ..., pattern="^(above|below|pct_change_up|pct_change_down)$"
     )
@@ -144,6 +145,7 @@ class AlertResponse(BaseModel):
     id: int
     user_id: str
     symbol: str
+    symbol_name: Optional[str] = None
     condition_type: str
     threshold: float
     period: str
@@ -160,6 +162,7 @@ class TriggeredAlertResponse(BaseModel):
     alert_id: Optional[int]
     user_id: str
     symbol: str
+    symbol_name: Optional[str] = None
     condition_type: str
     trigger_price: float
     threshold_value: float
