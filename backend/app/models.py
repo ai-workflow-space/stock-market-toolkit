@@ -100,6 +100,29 @@ class TriggeredAlert(Base):
 
     user = relationship("User", back_populates="triggered_alerts")
     alert = relationship("Alert", back_populates="triggered")
+    deliveries = relationship(
+        "NotificationDelivery",
+        back_populates="triggered_alert",
+        cascade="all, delete-orphan",
+    )
+
+
+class NotificationDelivery(Base):
+    __tablename__ = "notification_deliveries"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    triggered_alert_id = Column(
+        Integer, ForeignKey("triggered_alerts.id"), nullable=True
+    )
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    channel = Column(String, nullable=False)  # discord | email | webhook
+    status = Column(String, nullable=False)  # success | failed
+    http_status = Column(Integer, nullable=True)
+    error = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User")
+    triggered_alert = relationship("TriggeredAlert", back_populates="deliveries")
 
 
 class InviteCode(Base):
