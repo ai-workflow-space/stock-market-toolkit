@@ -26,19 +26,22 @@ limiter = Limiter(key_func=get_remote_address)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("Running database migrations...")
-    import subprocess
+    from alembic import command
+    from alembic.config import Config
 
-    result = subprocess.run(
-        ["alembic", "upgrade", "head"],
-        cwd=Path(__file__).parent.parent,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        log.warning(f"Alembic migration warning: {result.stderr.strip()}")
-    else:
-        log.info("Migrations complete.")
-    log.info("Stock Market Toolkit API started.")
+    # Run Alembic in-process (no dependency on the `alembic` binary being on
+    # PATH or on the working directory). A failed migration must abort startup
+    # rather than let the app boot against a missing/half-applied schema.
+    backend_dir = Path(__file__).parent.parent
+    alembic_cfg = Config(str(backend_dir / "alembic.ini"))
+    # Absolute script_location so migrations resolve regardless of CWD.
+    alembic_cfg.set_main_option("script_location", str(backend_dir / "alembic"))
+    try:
+        command.upgrade(alembic_cfg, "head")
+    except Exception:
+        log.exception("Alembic migration failed; aborting startup")
+        raise
+    log.info("Migrations complete. Stock Market Toolkit API started.")
     yield
     log.info("Shutting down Stock Market Toolkit API...")
 
