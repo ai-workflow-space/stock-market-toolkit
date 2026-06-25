@@ -153,13 +153,14 @@ through tokens — if you used tokens, you get both themes for free. Test both.
 >   brand link) renders as a raw underlined-blue UA hyperlink. Links **opt in** to their
 >   look: the `Button` `link` variant, or `text-primary underline-offset-4 hover:underline`
 >   for inline text. Nav items are styled as buttons, not links.
-> - `button, input, select, textarea` → `color: inherit; font-family: inherit`. Without
->   it, native controls fall back to the UA `ButtonText` colour (dark, unreadable on the
->   dark theme) for any control that doesn't set an explicit `text-*` class — i.e. the
->   `outline`/`ghost` button variants, unselected `ToggleBar` items, and inactive
->   `Tabs` triggers. **Takeaway:** a control that should read in a non-default colour must
->   set `text-foreground` / `text-muted-foreground` / `text-*-foreground` itself; never
->   rely on the UA default.
+> - `button, input, select, textarea` → `color: inherit; font-family: inherit`, and
+>   `button` → `background-color: transparent`. Without these, native controls fall back
+>   to the UA `ButtonText` colour (dark) **and** the opaque `ButtonFace` background
+>   (light grey) for any control without an explicit `text-*` / `bg-*` class — the
+>   `ghost`/`link`/`outline` button variants, icon buttons, unselected `ToggleBar` items,
+>   and inactive `Tabs` triggers — so they render as dark-on-light or blank light boxes.
+>   **Takeaway:** a button that should read in a non-default colour or surface must set
+>   `text-*` / `bg-*` itself (use the `Button` variants); never rely on the UA default.
 
 ---
 
