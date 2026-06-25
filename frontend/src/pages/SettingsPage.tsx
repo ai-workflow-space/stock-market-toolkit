@@ -371,7 +371,7 @@ export default function SettingsPage() {
               rel="noopener noreferrer"
               className="text-sm text-muted-foreground hover:underline"
             >
-              v{APP_VERSION}
+              {APP_VERSION}
             </a>
             <p className="text-xs text-muted-foreground">
               A comprehensive stock analysis and monitoring tool.
