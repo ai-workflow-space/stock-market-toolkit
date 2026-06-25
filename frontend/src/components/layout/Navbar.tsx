@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Sun, Moon, LogOut, Menu, Key } from "lucide-react";
+import { Sun, Moon, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
-import { APP_VERSION } from "@/lib/version";
+import { APP_VERSION, RELEASE_URL } from "@/lib/version";
 import { toast } from "@/components/ui/sonner";
 
 const NAV_ITEMS = [
@@ -147,11 +147,14 @@ export default function Navbar() {
                 <DropdownMenuItem onClick={() => navigate("/admin/invites")}>
                   Invitation Codes
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.open(RELEASE_URL, "_blank", "noopener,noreferrer")}>
+                  Changelog
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setChangePasswordOpen(true)}>
-                  <Key /> Change Password
+                  Change Password
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { logout(); navigate("/login"); }}>
-                  <LogOut /> Log out
+                  Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
