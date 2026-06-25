@@ -18,86 +18,8 @@ import {
 import { toast } from "@/components/ui/sonner";
 import type { Signal } from "@/types";
 
-/* ─── Mock signals for demonstration ─── */
-function generateMockSignals(symbols: string[]): Signal[] {
-  const now = new Date();
-  const signals: Signal[] = [];
-
-  const signalTypes: Signal["signal_type"][] = [
-    "rsi_oversold", "rsi_overbought", "macd_cross", "sma_cross", "bb_touch", "volume_spike",
-  ];
-
-  symbols.forEach((symbol, idx) => {
-    const signalType = signalTypes[idx % signalTypes.length];
-    let direction: Signal["direction"];
-
-    if (signalType === "rsi_oversold") {
-      direction = "bullish";
-    } else if (signalType === "rsi_overbought") {
-      direction = "bearish";
-    } else if (signalType === "macd_cross") {
-      direction = idx % 2 === 0 ? "bullish" : "bearish";
-    } else if (signalType === "sma_cross") {
-      direction = idx % 2 === 0 ? "bullish" : "bearish";
-    } else if (signalType === "bb_touch") {
-      direction = "neutral";
-    } else {
-      direction = idx % 3 === 0 ? "bullish" : idx % 3 === 1 ? "bearish" : "neutral";
-    }
-
-    signals.push({
-      id: `sig-${idx}`,
-      symbol,
-      direction,
-      signal_type: signalType,
-      price: 150 + Math.random() * 100,
-      timestamp: new Date(now.getTime() - idx * 3600000).toISOString(),
-      strength: 40 + Math.floor(Math.random() * 60),
-      description: getSignalDescription(signalType, direction),
-    });
-  });
-
-  return signals;
-}
-
-function getSignalDescription(signalType: Signal["signal_type"], direction: Signal["direction"]): string {
-  const descriptions: Record<Signal["signal_type"], { bullish: string; bearish: string; neutral: string }> = {
-    rsi_oversold: {
-      bullish: "RSI indicates oversold conditions, potential bounce expected",
-      bearish: "RSI oversold but momentum remains weak",
-      neutral: "RSI at oversold levels",
-    },
-    rsi_overbought: {
-      bullish: "RSI overbought but bullish momentum continues",
-      bearish: "RSI indicates overbought conditions, pullback likely",
-      neutral: "RSI at overbought levels",
-    },
-    macd_cross: {
-      bullish: "MACD line crossed above signal line, bullish momentum building",
-      bearish: "MACD line crossed below signal line, bearish momentum building",
-      neutral: "MACD crossing signal line",
-    },
-    sma_cross: {
-      bullish: "Short-term SMA crossed above long-term SMA, golden cross formation",
-      bearish: "Short-term SMA crossed below long-term SMA, death cross formation",
-      neutral: "SMA crossover detected",
-    },
-    bb_touch: {
-      bullish: "Price touched lower Bollinger Band, potential support bounce",
-      bearish: "Price touched upper Bollinger Band, potential resistance",
-      neutral: "Price at Bollinger Band boundary",
-    },
-    volume_spike: {
-      bullish: "Unusual volume spike with price increase, institutional interest",
-      bearish: "Unusual volume spike with price decrease, distribution day",
-      neutral: "Unusual volume activity detected",
-    },
-  };
-
-  return descriptions[signalType][direction];
-}
-
 type AnalysisResponse = {
+  symbol?: string;
   signal?: string;
   confidence?: number;
   reasons?: string[];
@@ -105,6 +27,33 @@ type AnalysisResponse = {
   price?: number;
   timestamp?: string;
 };
+
+function mapAnalysisToSignal(data: AnalysisResponse, symbolOverride?: string): Signal {
+  const sym = symbolOverride ?? data.symbol ?? "";
+  const directionMap: Record<string, Signal["direction"]> = {
+    BUY: "bullish",
+    SELL: "bearish",
+    NEUTRAL: "neutral",
+  };
+  const direction = directionMap[data.signal ?? ""] ?? "neutral";
+  const confidence = data.confidence ?? 0.5;
+  const reasons = (data.reasons ?? []).join("; ");
+  const indicators = data.indicators;
+  let signal_type: Signal["signal_type"] = "macd_cross";
+  if ((indicators?.bias ?? 0) < -3 || (indicators?.bias ?? 0) > 3) signal_type = "bb_touch";
+  else if ((indicators?.volume_ratio ?? 0) > 1.3) signal_type = "volume_spike";
+
+  return {
+    id: `sig-${sym}`,
+    symbol: sym,
+    direction,
+    signal_type,
+    price: data.price ?? 0,
+    timestamp: data.timestamp ?? new Date().toISOString(),
+    strength: Math.round(confidence * 100),
+    description: `[${data.signal ?? "NEUTRAL"}] ${reasons} — confidence ${(confidence * 100).toFixed(0)}%`,
+  } satisfies Signal;
+}
 
 /* ─── Signals Page ─── */
 export default function SignalsPage() {
@@ -120,9 +69,7 @@ export default function SignalsPage() {
   useEffect(() => {
     const symbols = watchedSymbols;
     if (symbols.length === 0) {
-      // Keep the existing reference when already empty so React can bail out of
-      // the re-render — avoids an update loop if `symbols` identity churns.
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- false positive: direct early-return guard
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- false positive: early-return guard
       setSignals((prev) => (prev.length === 0 ? prev : []));
       setLoading(false);
       return;
@@ -130,67 +77,23 @@ export default function SignalsPage() {
     const token = localStorage.getItem("access_token");
 
     async function fetchSignals() {
-      const BATCH_SIZE = 3;
-      const BATCH_DELAY_MS = 500;
-      const results: Signal[] = [];
-
-      for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
-        const batch = symbols.slice(i, i + BATCH_SIZE);
-        const settled = await Promise.allSettled(
-          batch.map(async (symbol): Promise<Signal> => {
-            const res = await fetch(
-              `${import.meta.env.VITE_API_URL || ""}/api/analysis/${symbol}?period=1mo`,
-              { headers: { Authorization: `Bearer ${token}` } },
-            );
-            if (!res.ok) throw new Error(`${symbol} failed`);
-            const data = (await res.json()) as AnalysisResponse;
-
-            const directionMap: Record<string, Signal["direction"]> = {
-              BUY: "bullish",
-              SELL: "bearish",
-              NEUTRAL: "neutral",
-            };
-            const direction = directionMap[data.signal ?? ""] ?? "neutral";
-            const confidence = data.confidence ?? 0.5;
-            const reasons = (data.reasons ?? []).join("; ");
-
-            const indicators = data.indicators;
-            let signal_type: Signal["signal_type"] = "macd_cross";
-            if ((indicators?.bias ?? 0) < -3 || (indicators?.bias ?? 0) > 3) signal_type = "bb_touch";
-            else if ((indicators?.volume_ratio ?? 0) > 1.3) signal_type = "volume_spike";
-
-            return {
-              id: `sig-${symbol}`,
-              symbol,
-              direction,
-              signal_type,
-              price: data.price ?? 0,
-              timestamp: data.timestamp ?? new Date().toISOString(),
-              strength: Math.round(confidence * 100),
-              description: `[${data.signal ?? "NEUTRAL"}] ${reasons} — confidence ${(confidence * 100).toFixed(0)}%`,
-            } satisfies Signal;
-          }),
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL || ""}/api/analysis/signals?symbols=${symbols.join(",")}&period=1mo`,
+          { headers: { Authorization: `Bearer ${token}` } },
         );
-        const batchResults = settled
-          .filter((r): r is PromiseFulfilledResult<Signal> => r.status === "fulfilled")
-          .map((r) => r.value);
-        results.push(...batchResults);
-        if (i + BATCH_SIZE < symbols.length) {
-          await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
+        if (!res.ok) throw new Error("Failed to fetch signals");
+        const data = (await res.json()) as AnalysisResponse[];
+        const mapped = data.map((d) => mapAnalysisToSignal(d));
+        setSignals(mapped);
+        if (mapped.length < symbols.length) {
+          toast(`Loaded ${mapped.length} of ${symbols.length} symbols`);
         }
+      } catch {
+        setSignals([]);
+      } finally {
+        setLoading(false);
       }
-
-      const ok = results;
-
-      if (ok.length > 0) {
-        setSignals(ok);
-        if (ok.length < symbols.length) {
-          toast(`Loaded ${ok.length} of ${symbols.length} symbols`);
-        }
-      } else {
-        setSignals(generateMockSignals(symbols));
-      }
-      setLoading(false);
     }
 
     fetchSignals();
@@ -199,36 +102,15 @@ export default function SignalsPage() {
   const fetchSignalForTicker = useCallback(async (symbol: string): Promise<Signal> => {
     const token = localStorage.getItem("access_token");
     const res = await fetch(
-      String.raw`${import.meta.env.VITE_API_URL || ""}/api/analysis/${symbol}?period=1mo`,
+      `${import.meta.env.VITE_API_URL || ""}/api/analysis/${symbol}?period=1mo`,
       { headers: { Authorization: `Bearer ${token}` } },
     );
     if (!res.ok) throw new Error(`${symbol} failed`);
     const data = (await res.json()) as AnalysisResponse;
-
-    const directionMap: Record<string, Signal["direction"]> = {
-      BUY: "bullish",
-      SELL: "bearish",
-      NEUTRAL: "neutral",
-    };
-    const direction = directionMap[data.signal ?? ""] ?? "neutral";
-    const confidence = data.confidence ?? 0.5;
-    const reasons = (data.reasons ?? []).join("; ");
-
-    const indicators = data.indicators;
-    let signal_type: Signal["signal_type"] = "macd_cross";
-    if ((indicators?.bias ?? 0) < -3 || (indicators?.bias ?? 0) > 3) signal_type = "bb_touch";
-    else if ((indicators?.volume_ratio ?? 0) > 1.3) signal_type = "volume_spike";
-
     return {
+      ...mapAnalysisToSignal(data, symbol),
       id: `sig-${symbol}-${Date.now()}`,
-      symbol,
-      direction,
-      signal_type,
-      price: data.price ?? 0,
-      timestamp: data.timestamp ?? new Date().toISOString(),
-      strength: Math.round(confidence * 100),
-      description: `[${data.signal ?? "NEUTRAL"}] ${reasons} — confidence ${(confidence * 100).toFixed(0)}%`,
-    } satisfies Signal;
+    };
   }, []);
 
   const handleAddTicker = async () => {
