@@ -34,8 +34,6 @@ async def lifespan(app: FastAPI):
     # rather than let the app boot against a missing/half-applied schema.
     backend_dir = Path(__file__).parent.parent
     alembic_cfg = Config(str(backend_dir / "alembic.ini"))
-    # Absolute script_location so migrations resolve regardless of CWD.
-    alembic_cfg.set_main_option("script_location", str(backend_dir / "alembic"))
     try:
         command.upgrade(alembic_cfg, "head")
     except Exception:
