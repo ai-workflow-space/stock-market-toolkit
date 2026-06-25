@@ -1,19 +1,22 @@
-# Git merge driver configuration for conflict-prone files
+# Git merge driver configuration for conflict-prone files.
 #
-# Setup (run once per machine):
-#   git config --global merge.ours.driver true
+# `merge=ours` below is NOT a built-in git driver — it must be registered with
+#   git config merge.ours.driver true
+# That registration is automated: `npm install` runs the "prepare" script which
+# invokes scripts/setup-git-merge-drivers.sh (idempotent, repo-local). Run it
+# directly after a fresh clone if you skip npm install:
+#   bash scripts/setup-git-merge-drivers.sh
 #
-# After running the above, git will use 'true' (exit 0) as the merge driver.
-# A successful exit with no output means git keeps the "ours" version unchanged,
-# which is the desired behavior for lockfiles and bot-managed files.
+# Until the driver is registered, the lines below are a no-op and git falls back
+# to the default 3-way merge.
 #
-# If you hit a lockfile conflict after a rebase/merge:
-#   1. Abort the conflicted merge: git merge --abort
-#   2. Re-merge: git merge origin/main
-#      OR for a rebase: git rebase origin/main
-#   3. Then regenerate: npm install  (for package-lock.json)
+# Scope: custom merge drivers run only during LOCAL merge/rebase. GitHub's
+# server-side merge button does not execute them, so a stale branch may still be
+# reported as conflicting in the UI — but a local rebase auto-resolves these
+# files to "ours" instead of leaving conflict markers.
 #
-# Key convention: Never hand-merge lockfiles. Always regenerate.
+# Convention: never hand-merge lockfiles. Re-resolve to ours, then regenerate
+# with `npm install` so the lockfile matches package.json.
 
 # Prevent merge conflicts in lockfiles — keep ours (delete and regenerate instead)
 package-lock.json merge=ours linguist-generated=true
