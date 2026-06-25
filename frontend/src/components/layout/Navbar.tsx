@@ -144,6 +144,11 @@ export default function Navbar() {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>{user.username}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                {user?.is_admin && (
+                  <DropdownMenuItem onClick={() => navigate("/admin/logs")}>
+                    Log Viewer
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => navigate("/admin/invites")}>
                   Invitation Codes
                 </DropdownMenuItem>
