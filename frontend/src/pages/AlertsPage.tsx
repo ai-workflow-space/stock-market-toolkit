@@ -12,6 +12,7 @@ import {
   type TriggeredAlert,
   type NotificationSettings,
 } from "../api/alertsApi";
+import { getStockInfo } from "../api/stockApi";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Input } from "../components/ui/input";
@@ -75,6 +76,26 @@ function CreateAlertDialog({
   const [period, setPeriod] = useState("1h");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+
+  // Fetch current price when a symbol is selected
+  useEffect(() => {
+    if (!selectedSymbol) {
+      setCurrentPrice(null); // eslint-disable-line react-hooks/set-state-in-effect
+      return;
+    }
+    let cancelled = false;
+    getStockInfo(selectedSymbol)
+      .then(info => { if (!cancelled) setCurrentPrice(info.price || null); })
+      .catch(() => { if (!cancelled) setCurrentPrice(null); });
+    return () => { cancelled = true; };
+  }, [selectedSymbol]);
+
+  const thresh = parseFloat(threshold);
+  const isPct = conditionType.startsWith("pct");
+  const distance = (currentPrice != null && !isNaN(thresh) && thresh > 0)
+    ? ((thresh - currentPrice) / currentPrice * 100)
+    : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,18 +161,27 @@ function CreateAlertDialog({
             </div>
             <div className="grid gap-2">
               <Label htmlFor="threshold">
-                {conditionType.startsWith("pct") ? "Percentage (%)" : "Price Threshold ($)"}
+                {isPct ? "Percentage (%)" : "Price Threshold ($)"}
               </Label>
               <Input
                 id="threshold"
                 type="number"
-                step={conditionType.startsWith("pct") ? "0.1" : "0.01"}
+                step={isPct ? "0.1" : "0.01"}
                 min="0"
-                max={conditionType.startsWith("pct") ? "100" : undefined}
-                placeholder={conditionType.startsWith("pct") ? "5.0" : "200.00"}
+                max={isPct ? "100" : undefined}
+                placeholder={isPct ? "5.0" : "200.00"}
                 value={threshold}
                 onChange={e => setThreshold(e.target.value)}
               />
+              {currentPrice != null && thresh > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Current: ${currentPrice.toFixed(2)} &nbsp;|&nbsp;
+                  {isPct
+                    ? `Target: ${thresh}%`
+                    : `Distance: ${distance != null ? (distance >= 0 ? "+" : "") + distance.toFixed(1) + "%" : "—"} from current`
+                  }
+                </p>
+              )}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="period">Period</Label>
