@@ -61,6 +61,15 @@ async def _non_admin_token(db_session) -> str:
     return create_access_token(data={"sub": user.id})
 
 
+async def _reset_smtp_settings():
+    """Delete any existing SMTP settings to start with a clean slate."""
+    async with AsyncSessionLocal() as session:
+        from app.models import SmtpSettings
+        from sqlalchemy import delete
+        await session.execute(delete(SmtpSettings))
+        await session.commit()
+
+
 # ─── Crypto tests ────────────────────────────────────────────────────────────
 
 
@@ -197,6 +206,7 @@ class TestSmtpAdminRoutes:
     def test_smtp_route_not_found_when_no_settings(self, client, app):
 
         async def _setup():
+            await _reset_smtp_settings()
             async with AsyncSessionLocal() as session:
                 user = await _seed_admin(session)
                 return _admin_token(user)
@@ -312,6 +322,7 @@ class TestSmtpAdminRoutes:
     def test_smtp_test_no_settings(self, client, app):
 
         async def _setup():
+            await _reset_smtp_settings()
             async with AsyncSessionLocal() as session:
                 user = await _seed_admin(session)
                 return _admin_token(user)
