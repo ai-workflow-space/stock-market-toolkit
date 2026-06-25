@@ -26,7 +26,6 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleReload = () => {
-    this.setState({ hasError: false, error: null });
     window.location.reload();
   };
 
@@ -41,7 +40,7 @@ export class ErrorBoundary extends Component<Props, State> {
               An unexpected error occurred. The page you were viewing may have
               crashed.
             </p>
-            {this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <p className="text-xs text-muted-foreground font-mono mt-2">
                 {this.state.error.message}
               </p>
