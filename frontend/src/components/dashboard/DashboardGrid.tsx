@@ -5,6 +5,7 @@ import RsiChart from "./RsiChart";
 import MacdChart from "./MacdChart";
 import StockInfoCard from "./StockInfoCard";
 import HistoryTable from "./HistoryTable";
+import WatchlistButton from "@/components/common/WatchlistButton";
 
 export interface DashboardGridProps {
   stock: StockData;
@@ -23,7 +24,7 @@ export default function DashboardGrid({ stock, indicators, info, active }: Dashb
   return (
     <div className="grid grid-cols-12 gap-4">
       <div className="col-span-12">
-        <ChartCard title={`${stock.symbol} · ${stock.period.toUpperCase()}`} subtitle="Price">
+        <ChartCard title={`${stock.symbol} · ${stock.period.toUpperCase()}`} subtitle="Price" toolbar={<WatchlistButton symbol={stock.symbol} />}>
           <PriceChart data={stock} indicators={indicators} showBB={active.has("bb")} active={active} />
         </ChartCard>
       </div>
