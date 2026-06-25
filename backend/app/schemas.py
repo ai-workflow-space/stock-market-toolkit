@@ -194,6 +194,20 @@ class NotificationSettingsUpdate(BaseModel):
     timezone: str = "UTC"
 
 
+class NotificationDeliveryResponse(BaseModel):
+    id: int
+    triggered_alert_id: Optional[int]
+    user_id: str
+    channel: str  # discord | email | webhook
+    status: str  # success | failed
+    http_status: Optional[int]
+    error: Optional[str]
+    created_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
 # ─── Invite code schemas ───
 class InviteCodeCreate(BaseModel):
     expires_in_days: int = Field(default=7, ge=1, le=365)

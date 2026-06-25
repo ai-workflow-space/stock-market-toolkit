@@ -10,7 +10,7 @@ import math
 import httpx
 
 from app.database import AsyncSessionLocal
-from app.models import Alert, NotificationSettings, TriggeredAlert
+from app.models import Alert, NotificationSettings, TriggeredAlert, NotificationDelivery
 
 log = logging.getLogger(__name__)
 
@@ -109,8 +109,8 @@ async def _send_discord_notification(
     threshold: float,
     triggered_at: datetime,
     pct_change_today: float | None = None,
-):
-    """Send notification to Discord webhook."""
+) -> tuple[bool, int | None, str | None]:
+    """Send notification to Discord webhook. Returns (success, http_status, error)."""
     color = DISCORD_COLOR_ABOVE if condition_type == "above" else DISCORD_COLOR_BELOW
     emoji = "🔔"
     condition_label = CONDITION_LABELS.get(condition_type, condition_type)
@@ -146,10 +146,18 @@ async def _send_discord_notification(
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            await client.post(webhook_url, json=payload)
-            log.info(f"Discord notification sent for {symbol} alert")
+            resp = await client.post(webhook_url, json=payload)
+            if resp.status_code >= 200 and resp.status_code < 300:
+                log.info(f"Discord notification sent for {symbol} alert")
+                return (True, resp.status_code, None)
+            else:
+                log.warning(
+                    f"Discord notification failed for {symbol}: {resp.status_code}"
+                )
+                return (False, resp.status_code, f"HTTP {resp.status_code}")
     except Exception as e:
         log.error(f"Failed to send Discord notification: {e}")
+        return (False, None, str(e))
 
 
 async def check_alerts():
@@ -246,12 +254,17 @@ async def check_alerts():
                         alert.cooldown_until = now + timedelta(minutes=COOLDOWN_MINUTES)
 
                         # Send notifications if settings exist and are enabled
+                        delivery_records = []
                         if settings:
                             if (
                                 settings.discord_enabled
                                 and settings.discord_webhook_url
                             ):
-                                await _send_discord_notification(
+                                (
+                                    success,
+                                    http_status,
+                                    error,
+                                ) = await _send_discord_notification(
                                     settings.discord_webhook_url,
                                     symbol,
                                     alert.condition_type,
@@ -259,8 +272,25 @@ async def check_alerts():
                                     alert.threshold,
                                     now,
                                 )
-                                triggered_record.notified = True
+                                delivery_records.append(
+                                    NotificationDelivery(
+                                        triggered_alert_id=None,  # filled after flush
+                                        user_id=alert.user_id,
+                                        channel="discord",
+                                        status="success" if success else "failed",
+                                        http_status=http_status,
+                                        error=error,
+                                    )
+                                )
+                                if success:
+                                    triggered_record.notified = True
                             # Email notification could be added here
+
+                        # Flush to get triggered_record.id, then link deliveries
+                        await db.flush()
+                        for dr in delivery_records:
+                            dr.triggered_alert_id = triggered_record.id
+                            db.add(dr)
 
                         await db.commit()
                         log.info(

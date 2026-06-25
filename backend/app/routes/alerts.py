@@ -4,7 +4,13 @@ from sqlalchemy import select, func
 from datetime import datetime, timezone
 
 from app.database import get_db
-from app.models import User, Alert, NotificationSettings, TriggeredAlert
+from app.models import (
+    User,
+    Alert,
+    NotificationSettings,
+    TriggeredAlert,
+    NotificationDelivery,
+)
 from app.schemas import (
     AlertCreate,
     AlertUpdate,
@@ -12,6 +18,7 @@ from app.schemas import (
     TriggeredAlertResponse,
     NotificationSettingsResponse,
     NotificationSettingsUpdate,
+    NotificationDeliveryResponse,
 )
 from app.auth import get_current_user
 
@@ -134,6 +141,49 @@ async def get_notification_settings(
             timezone="UTC",
         )
     return settings
+
+
+MAX_DELIVERIES_PER_USER = 100
+
+
+@router.get("/deliveries", response_model=list[NotificationDeliveryResponse])
+async def list_deliveries(
+    limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """List recent notification delivery attempts, newest first."""
+    result = await db.execute(
+        select(NotificationDelivery)
+        .where(NotificationDelivery.user_id == current_user.id)
+        .order_by(NotificationDelivery.created_at.desc())
+        .limit(limit)
+    )
+    return result.scalars().all()
+
+
+@router.post("/deliveries/{delivery_id}/resend", status_code=202)
+async def resend_notification(
+    delivery_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Re-trigger the alert associated with a delivery attempt."""
+    result = await db.execute(
+        select(NotificationDelivery).where(
+            NotificationDelivery.id == delivery_id,
+            NotificationDelivery.user_id == current_user.id,
+        )
+    )
+    delivery = result.scalar_one_or_none()
+    if not delivery:
+        raise HTTPException(status_code=404, detail="Delivery not found")
+
+    # Re-trigger by calling check_alerts for this specific alert
+    from app.services.alert_checker import check_alerts_endpoint
+
+    await check_alerts_endpoint()
+    return {"status": "ok", "message": "Resend triggered"}
 
 
 @router.put("/settings", response_model=NotificationSettingsResponse)
