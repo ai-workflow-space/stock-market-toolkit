@@ -105,13 +105,15 @@ type AnalysisResponse = {
   timestamp?: string;
 };
 
-const DEFAULT_TICKERS = ["AAPL", "TSLA", "MSFT", "GOOGL", "AMZN", "NVDA"];
+const STORAGE_KEY = "signals_tracked_tickers";
 
 /* ─── Signals Page ─── */
 export default function SignalsPage() {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
-  const [trackedTickers, setTrackedTickers] = useState<string[]>(DEFAULT_TICKERS);
+  const [trackedTickers, setTrackedTickers] = useState<string[]>(
+    JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]"),
+  );
   const [addTickerOpen, setAddTickerOpen] = useState(false);
   const [newTicker, setNewTicker] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState("");
