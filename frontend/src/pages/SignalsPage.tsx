@@ -3,6 +3,7 @@ import { Activity, Plus } from "lucide-react";
 import SignalCard from "@/components/SignalCard";
 import StatCard from "@/components/common/StatCard";
 import SymbolSearch from "@/components/common/SymbolSearch";
+import { useWatchlist } from "@/hooks/useWatchlist";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -105,13 +106,11 @@ type AnalysisResponse = {
   timestamp?: string;
 };
 
-const DEFAULT_TICKERS = ["AAPL", "TSLA", "MSFT", "GOOGL", "AMZN", "NVDA"];
-
 /* ─── Signals Page ─── */
 export default function SignalsPage() {
+  const { symbols: watchedSymbols, add: addToWatchlist, remove: removeFromWatchlist, isWatched } = useWatchlist();
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
-  const [trackedTickers, setTrackedTickers] = useState<string[]>(DEFAULT_TICKERS);
   const [addTickerOpen, setAddTickerOpen] = useState(false);
   const [newTicker, setNewTicker] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState("");
@@ -119,7 +118,15 @@ export default function SignalsPage() {
   const [addingTicker, setAddingTicker] = useState(false);
 
   useEffect(() => {
-    const symbols = DEFAULT_TICKERS;
+    const symbols = watchedSymbols;
+    if (symbols.length === 0) {
+      // Keep the existing reference when already empty so React can bail out of
+      // the re-render — avoids an update loop if `symbols` identity churns.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- false positive: direct early-return guard
+      setSignals((prev) => (prev.length === 0 ? prev : []));
+      setLoading(false);
+      return;
+    }
     const token = localStorage.getItem("access_token");
 
     async function fetchSignals() {
@@ -175,7 +182,7 @@ export default function SignalsPage() {
     }
 
     fetchSignals();
-  }, []);
+  }, [watchedSymbols]);
 
   const fetchSignalForTicker = useCallback(async (symbol: string): Promise<Signal> => {
     const token = localStorage.getItem("access_token");
@@ -222,7 +229,7 @@ export default function SignalsPage() {
       setTickerError("Invalid ticker symbol format");
       return;
     }
-    if (trackedTickers.includes(trimmed)) {
+    if (isWatched(trimmed)) {
       setTickerError(`${trimmed} is already being tracked`);
       return;
     }
@@ -231,9 +238,9 @@ export default function SignalsPage() {
     setAddingTicker(true);
 
     try {
+      await addToWatchlist(trimmed);
       const signal = await fetchSignalForTicker(trimmed);
       setSignals((prev) => [...prev, signal]);
-      setTrackedTickers((prev) => [...prev, trimmed]);
       setAddTickerOpen(false);
       setNewTicker("");
       setSelectedSymbol("");
@@ -245,11 +252,11 @@ export default function SignalsPage() {
     }
   };
 
-  const handleRemoveTicker = useCallback((symbol: string) => {
+  const handleRemoveTicker = useCallback(async (symbol: string) => {
+    await removeFromWatchlist(symbol);
     setSignals((prev) => prev.filter((s) => s.symbol !== symbol));
-    setTrackedTickers((prev) => prev.filter((t) => t !== symbol));
     toast(`${symbol} removed from tracking`);
-  }, []);
+  }, [removeFromWatchlist]);
 
   const handleDismissSignal = useCallback((id: string) => {
     setSignals((prev) => prev.filter((s) => s.id !== id));

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   getWatchlist,
   addToWatchlist,
@@ -39,7 +39,11 @@ export function useWatchlist() {
     })();
   }, [refresh]);
 
-  const symbols: string[] = items.map((i) => i.symbol);
+  // Memoize so the reference is stable across renders that don't change
+  // `items`. Consumers use `symbols` as a useEffect dependency; a fresh array
+  // every render would re-run those effects on every render (and can spin into
+  // an infinite update loop). See SignalsPage.
+  const symbols: string[] = useMemo(() => items.map((i) => i.symbol), [items]);
 
   const add = async (symbol: string) => {
     const upper = symbol.toUpperCase();
