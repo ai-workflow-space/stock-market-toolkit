@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.3.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.2.0...v0.3.0) (2026-06-25)
+
+
+### Features
+
+* add /ping health-check command to CLI ([#58](https://github.com/ai-workflow-space/stock-market-toolkit/issues/58)) ([#59](https://github.com/ai-workflow-space/stock-market-toolkit/issues/59)) ([5f39962](https://github.com/ai-workflow-space/stock-market-toolkit/commit/5f39962a4ca5f5146a3e6b1d3a5fd8ee001e563a))
+* add admin invite-code management UI (issue [#21](https://github.com/ai-workflow-space/stock-market-toolkit/issues/21)) ([#70](https://github.com/ai-workflow-space/stock-market-toolkit/issues/70)) ([803bb14](https://github.com/ai-workflow-space/stock-market-toolkit/commit/803bb148b95f1654edfd1f7c5004e7a63ef4f3ee))
+* add reset password to user management panel (issue [#73](https://github.com/ai-workflow-space/stock-market-toolkit/issues/73)) ([b3851be](https://github.com/ai-workflow-space/stock-market-toolkit/commit/b3851bec5cbb86c435e897f1de97fc2fff911c21))
+* add user management + add user dialog (issue [#73](https://github.com/ai-workflow-space/stock-market-toolkit/issues/73)) ([85a258d](https://github.com/ai-workflow-space/stock-market-toolkit/commit/85a258de0ff70b38162bb49743b1993bf15ad290))
+* **CI:** add compose-verify job with real startup gate ([#64](https://github.com/ai-workflow-space/stock-market-toolkit/issues/64)) ([0889c7d](https://github.com/ai-workflow-space/stock-market-toolkit/commit/0889c7dd1c21f1ffe851b90220a4fddad07c0be7))
+* implement [#23](https://github.com/ai-workflow-space/stock-market-toolkit/issues/23) - adopt shadcn/ui design system and fix layout overflow ([#28](https://github.com/ai-workflow-space/stock-market-toolkit/issues/28)) ([09e998e](https://github.com/ai-workflow-space/stock-market-toolkit/commit/09e998e25f12fa7393dbf9366bc8dc063aa41ffd))
+* implement [#27](https://github.com/ai-workflow-space/stock-market-toolkit/issues/27) - favorite tickers (watchlist) ([8c52b09](https://github.com/ai-workflow-space/stock-market-toolkit/commit/8c52b09b44e94f6ec6c8cff2c5271dfac1f324e7))
+* implement [#55](https://github.com/ai-workflow-space/stock-market-toolkit/issues/55) - cache expiry timestamp in stock responses ([#56](https://github.com/ai-workflow-space/stock-market-toolkit/issues/56)) ([4f81925](https://github.com/ai-workflow-space/stock-market-toolkit/commit/4f81925571e2f2ec3f377ce32a79348d8a74a409))
+* implement [#61](https://github.com/ai-workflow-space/stock-market-toolkit/issues/61), [#62](https://github.com/ai-workflow-space/stock-market-toolkit/issues/62) - register admin router and add admin auth ([#65](https://github.com/ai-workflow-space/stock-market-toolkit/issues/65)) ([99bc2a9](https://github.com/ai-workflow-space/stock-market-toolkit/commit/99bc2a913e7ae2d9963e52837ed9d60af07e4bff))
+* implement [#73](https://github.com/ai-workflow-space/stock-market-toolkit/issues/73) - first-time bootstrap & user management ([11a7f5d](https://github.com/ai-workflow-space/stock-market-toolkit/commit/11a7f5d377bc58e8fc9d878102aed18f7064f0a1))
+
+
+### Bug Fixes
+
+* backend image crashes on boot (ImportError) — repair CI publish pipeline + add smoke test ([#71](https://github.com/ai-workflow-space/stock-market-toolkit/issues/71)) ([4ab9707](https://github.com/ai-workflow-space/stock-market-toolkit/commit/4ab970731a1a3c92c7933b22c5a3665563f442e4))
+* **CI:** create test .env before docker compose up in compose-verify job ([a1bb10f](https://github.com/ai-workflow-space/stock-market-toolkit/commit/a1bb10f5b60a129ec2a4b2ea3fff42f6b4a06180))
+* correct MiniMax API URL and model name in code-review workflow ([#29](https://github.com/ai-workflow-space/stock-market-toolkit/issues/29)) ([38f6621](https://github.com/ai-workflow-space/stock-market-toolkit/commit/38f6621cd506c893c24f20be8bbcf1ccf79d0bbc))
+* handle Pydantic validation errors in addUser and confirmDelete ([9eb1fdd](https://github.com/ai-workflow-space/stock-market-toolkit/commit/9eb1fddad59930f0bfacd623104d17b0a81d4f39))
+* make extractError async to properly await res.json() ([38512c7](https://github.com/ai-workflow-space/stock-market-toolkit/commit/38512c723dec5d4a26abd246c1fc1b9ad266b9b1))
+* properly display Pydantic validation errors in user management (issue [#73](https://github.com/ai-workflow-space/stock-market-toolkit/issues/73)) ([900158f](https://github.com/ai-workflow-space/stock-market-toolkit/commit/900158f0f9e9d444dcf7b491c4d2d924a5344435))
+* resolve ImportError on backend boot — add InviteCode model + schemas ([#67](https://github.com/ai-workflow-space/stock-market-toolkit/issues/67), issue [#66](https://github.com/ai-workflow-space/stock-market-toolkit/issues/66)) ([8729a89](https://github.com/ai-workflow-space/stock-market-toolkit/commit/8729a895420028df8d1f2d499e36e029db784c48))
+* wire watchlist router into app to resolve backend boot ([#68](https://github.com/ai-workflow-space/stock-market-toolkit/issues/68), issue [#60](https://github.com/ai-workflow-space/stock-market-toolkit/issues/60)) ([f673dd1](https://github.com/ai-workflow-space/stock-market-toolkit/commit/f673dd1fd24525dcd2fc440d57ef65eb3f7ee4cc))
+
 ## [0.2.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.1.0...v0.2.0) (2026-06-22)
 
 
