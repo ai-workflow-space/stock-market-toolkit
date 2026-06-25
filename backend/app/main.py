@@ -68,7 +68,11 @@ app.include_router(admin.router)
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "stock-market-toolkit-api", "version": __version__}
+    return {
+        "status": "ok",
+        "service": "stock-market-toolkit-api",
+        "version": __version__,
+    }
 
 
 @app.get("/")

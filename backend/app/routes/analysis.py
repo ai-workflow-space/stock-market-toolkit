@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.models import User
 from app.auth import get_current_user
-import yfinance as yf
+from app.providers import market_provider
 import pandas_ta as ta
 import math
 
@@ -27,10 +27,10 @@ async def get_analysis(
     current_user: User = Depends(get_current_user),
 ):
     """Get comprehensive technical analysis for a symbol."""
-    ticker = yf.Ticker(symbol.upper())
+    provider = market_provider(symbol.upper())
     interval_map = {"1d": "5m", "5d": "15m"}
     interval = interval_map.get(period, "1d")
-    df = ticker.history(period=period, interval=interval, auto_adjust=True)
+    df = provider.history(symbol.upper(), period=period, interval=interval)
 
     if df.empty:
         raise HTTPException(status_code=404, detail=f"No data for {symbol}")
