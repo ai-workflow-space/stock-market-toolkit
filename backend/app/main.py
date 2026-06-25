@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Stock Market Toolkit API",
     description="Production stock market analysis API with user authentication",
-    version="1.0.0",
+    version="0.2.0",
     docs_url="/docs",
     redoc_url="/redoc",
     redirect_slashes=False,
@@ -67,14 +67,14 @@ app.include_router(admin.router)
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "stock-market-toolkit-api", "version": "1.0.0"}
+    return {"status": "ok", "service": "stock-market-toolkit-api", "version": "0.2.0"}
 
 
 @app.get("/")
 async def root():
     return {
         "name": "Stock Market Toolkit API",
-        "version": "1.0.0",
+        "version": "0.2.0",
         "docs": "/docs",
     }
 
