@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.1](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.5.0...v0.5.1) (2026-06-25)
+
+
+### Bug Fixes
+
+* include year in chart date labels to avoid ambiguity across year boundaries ([4524fe2](https://github.com/ai-workflow-space/stock-market-toolkit/commit/4524fe2c576cf5c14f410dfb9b015d03c6a745f4))
+* remove hardcoded v prefix in SettingsPage About card; APP_VERSION already includes v ([75abab0](https://github.com/ai-workflow-space/stock-market-toolkit/commit/75abab01ad98e11e635cad4ae70334c7266c8965))
+* replace plain Input with SymbolSearch in Create Price Alert dialog ([9c0592a](https://github.com/ai-workflow-space/stock-market-toolkit/commit/9c0592ab000081c25ae365db05357aaa8c4e42fa))
+
 ## [0.5.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.4.0...v0.5.0) (2026-06-25)
 
 
