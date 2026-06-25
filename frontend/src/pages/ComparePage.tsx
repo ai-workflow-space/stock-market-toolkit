@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Plus, X, Download } from "lucide-react";
 import { compareStocks, getIndicators, searchSymbols } from "@/api/stockApi";
@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import ChartCard from "@/components/common/ChartCard";
+import WatchlistButton from "@/components/common/WatchlistButton";
 import StatCard from "@/components/common/StatCard";
 import { ToggleBar, MultiToggleBar } from "@/components/common/ToggleBar";
 import { cn } from "@/lib/utils";
@@ -169,18 +170,21 @@ export default function ComparePage() {
 
       <div className="flex flex-wrap items-center gap-2">
         {tickers.map((sym, i) => (
-          <Badge key={sym} variant="secondary" className="gap-1.5 py-1 pl-2 pr-1">
-            <span className="size-2 rounded-full" style={{ background: SERIES_COLORS[i % SERIES_COLORS.length] }} />
-            {sym}
-            <button
-              type="button"
-              onClick={() => removeTicker(sym)}
-              aria-label={`Remove ${sym}`}
-              className="rounded-sm text-muted-foreground hover:text-foreground"
-            >
-              <X className="size-3" />
-            </button>
-          </Badge>
+          <Fragment key={sym}>
+            <Badge variant="secondary" className="gap-1.5 py-1 pl-2 pr-1">
+              <span className="size-2 rounded-full" style={{ background: SERIES_COLORS[i % SERIES_COLORS.length] }} />
+              {sym}
+              <button
+                type="button"
+                onClick={() => removeTicker(sym)}
+                aria-label={`Remove ${sym}`}
+                className="rounded-sm text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-3" />
+              </button>
+            </Badge>
+            <WatchlistButton symbol={sym} size="sm" />
+          </Fragment>
         ))}
         <TickerPicker onAdd={addTicker} disabled={tickers.length >= 5} />
         <ToggleBar ariaLabel="Timeframe" options={TIMEFRAME_OPTIONS} value={period} onChange={setPeriod} />
