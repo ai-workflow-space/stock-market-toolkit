@@ -14,7 +14,7 @@ import type { DashboardGridProps } from "./DashboardGrid";
 export default function EditableGrid({ stock, indicators, info, active }: DashboardGridProps) {
   const { containerRef, width } = useContainerWidth();
   const dates = stock.timestamp.map((t) =>
-    new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
   );
   const [stored, setStored] = useState<LayoutItem[]>(() => loadLayout() ?? []);
 

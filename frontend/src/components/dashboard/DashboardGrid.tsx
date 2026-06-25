@@ -16,7 +16,7 @@ export interface DashboardGridProps {
 
 export default function DashboardGrid({ stock, indicators, info, active }: DashboardGridProps) {
   const dates = stock.timestamp.map((t) =>
-    new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
   );
   const showRsi = active.has("rsi");
   const showMacd = active.has("macd");

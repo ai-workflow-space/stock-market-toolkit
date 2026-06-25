@@ -26,7 +26,7 @@ export default function PriceChart({
 }) {
   const c = useChartTheme();
   const chartData = data.close.map((close, i) => ({
-    date: new Date(data.timestamp[i]).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    date: new Date(data.timestamp[i]).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
     close: close ?? 0,
     sma20: indicators.sma20[i],
     sma50: indicators.sma50[i],
