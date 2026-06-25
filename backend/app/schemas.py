@@ -215,3 +215,17 @@ class InviteCodeResponse(BaseModel):
 class InviteCodeListResponse(BaseModel):
     codes: list[InviteCodeResponse]
     total: int
+
+
+class WatchlistCreate(BaseModel):
+    symbol: str = Field(..., min_length=1, max_length=20)
+
+
+class WatchlistResponse(BaseModel):
+    id: int
+    user_id: str
+    symbol: str
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
