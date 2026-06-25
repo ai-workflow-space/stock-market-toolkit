@@ -2,6 +2,7 @@
 Stock Market Toolkit — FastAPI Backend (Production)
 """
 
+from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +14,6 @@ import logging
 
 from app import __version__
 from app.config import get_settings
-from app.database import init_db
 from app.routes import auth, stocks, alerts, mcp, analysis, admin, watchlist
 
 settings = get_settings()
@@ -25,9 +25,20 @@ limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    log.info("Initializing database...")
-    await init_db()
-    log.info("Database ready. Stock Market Toolkit API started.")
+    log.info("Running database migrations...")
+    import subprocess
+
+    result = subprocess.run(
+        ["alembic", "upgrade", "head"],
+        cwd=Path(__file__).parent.parent,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        log.warning(f"Alembic migration warning: {result.stderr.strip()}")
+    else:
+        log.info("Migrations complete.")
+    log.info("Stock Market Toolkit API started.")
     yield
     log.info("Shutting down Stock Market Toolkit API...")
 
@@ -68,7 +79,11 @@ app.include_router(admin.router)
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "stock-market-toolkit-api", "version": __version__}
+    return {
+        "status": "ok",
+        "service": "stock-market-toolkit-api",
+        "version": __version__,
+    }
 
 
 @app.get("/")
