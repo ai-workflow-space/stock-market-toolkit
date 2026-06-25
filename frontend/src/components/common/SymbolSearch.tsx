@@ -5,15 +5,17 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { searchSymbols } from "@/api/stockApi";
 
-type SearchResult = { symbol: string; name: string; exchange: string };
+export type SearchResult = { symbol: string; name: string; exchange: string };
 
 export default function SymbolSearch({
   value,
   onSearch,
+  onSelect,
   loading,
 }: {
   value?: string;
   onSearch: (symbol: string) => void;
+  onSelect?: (result: SearchResult) => void;
   loading?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -44,11 +46,12 @@ export default function SymbolSearch({
 
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
-  const select = (symbol: string) => {
+  const select = (result: SearchResult) => {
     setOpen(false);
     setQuery("");
     setResults([]);
-    onSearch(symbol);
+    onSearch(result.symbol);
+    onSelect?.(result);
   };
 
   return (
@@ -70,7 +73,7 @@ export default function SymbolSearch({
             {results.length > 0 && (
               <CommandGroup heading="Results">
                 {results.map((r) => (
-                  <CommandItem key={r.symbol} value={r.symbol} onSelect={() => select(r.symbol)}>
+                  <CommandItem key={r.symbol} value={r.symbol} onSelect={() => select(r)}>
                     <span className="font-medium">{r.symbol}</span>
                     <span className="ml-2 truncate text-muted-foreground">{r.name}</span>
                     {r.exchange && <span className="ml-auto text-xs text-muted-foreground">{r.exchange}</span>}
@@ -80,7 +83,7 @@ export default function SymbolSearch({
             )}
             {query.trim().length >= 1 && (
               <CommandGroup>
-                <CommandItem value={`__raw_${query}`} onSelect={() => select(query.trim().toUpperCase())}>
+                <CommandItem value={`__raw_${query}`} onSelect={() => select({ symbol: query.trim().toUpperCase(), name: query.trim().toUpperCase(), exchange: "" })}>
                   <Search />
                   Search “{query.trim().toUpperCase()}”
                 </CommandItem>

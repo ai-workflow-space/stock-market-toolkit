@@ -50,6 +50,7 @@ async def create_alert(
     alert = Alert(
         user_id=current_user.id,
         symbol=data.symbol.upper(),
+        symbol_name=data.symbol_name,
         condition_type=data.condition_type,
         threshold=data.threshold,
         period=data.period,
