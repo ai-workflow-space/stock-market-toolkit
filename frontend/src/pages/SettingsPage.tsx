@@ -15,7 +15,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "../components/ui/dialog";
-import { Loader2 } from "lucide-react";
+import { Loader2, Key } from "lucide-react";
 
 export default function SettingsPage() {
   const { theme, toggleTheme, timezone, setTimezone } = useTheme();
@@ -40,6 +40,10 @@ export default function SettingsPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; username: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [resetTarget, setResetTarget] = useState<{ id: string; username: string } | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetResult, setResetResult] = useState<string | null>(null);
+  const [resetError, setResetError] = useState("");
 
   const isAdmin = user?.is_admin === true;
 
@@ -123,6 +127,31 @@ export default function SettingsPage() {
       setAddError((err as Error).message);
     } finally {
       setAddLoading(false);
+    }
+  };
+
+  const resetUserPassword = async () => {
+    if (!resetTarget) return;
+    setResetLoading(true);
+    setResetError("");
+    setResetResult(null);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/users/${resetTarget.id}/reset-password`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.detail || "Reset failed");
+      }
+      const data = await res.json();
+      setResetResult(data.password);
+    } catch (err: unknown) {
+      setResetError((err as Error).message);
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -266,6 +295,13 @@ export default function SettingsPage() {
                         />
                       </div>
                       <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setResetTarget({ id: u.id, username: u.username })}
+                      >
+                        <Key className="size-3 mr-1" /> Reset
+                      </Button>
+                      <Button
                         variant="destructive"
                         size="sm"
                         onClick={() => setDeleteTarget({ id: u.id, username: u.username })}
@@ -368,6 +404,38 @@ export default function SettingsPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!resetTarget} onOpenChange={(open) => { if (!open) { setResetTarget(null); setResetResult(null); setResetError(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Reset password for user &ldquo;{resetTarget?.username}&rdquo;? A new random password will be generated.
+            </DialogDescription>
+          </DialogHeader>
+          {resetResult ? (
+            <div className="rounded-md border border-green-500/40 bg-green-500/10 px-3 py-3 text-sm">
+              <p className="font-medium text-green-600 dark:text-green-400 mb-1">New Password:</p>
+              <code className="text-base font-mono font-bold break-all">{resetResult}</code>
+              <p className="text-xs text-muted-foreground mt-2">Copy this password — it cannot be recovered.</p>
+            </div>
+          ) : (
+            <form onSubmit={(e) => { e.preventDefault(); resetUserPassword(); }} className="flex flex-col gap-3">
+              {resetError && (
+                <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {resetError}
+                </div>
+              )}
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setResetTarget(null)} disabled={resetLoading}>Cancel</Button>
+                <Button type="submit" disabled={resetLoading}>
+                  {resetLoading ? "Resetting…" : "Reset Password"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
     </>

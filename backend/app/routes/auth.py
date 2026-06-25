@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from sqlalchemy import select, func
 import uuid
+import secrets
 from app.models import User
 from app.database import get_db
 from app.schemas import (
@@ -116,6 +117,10 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
+class ResetPasswordRequest(BaseModel):
+    new_password: Optional[str] = None  # If omitted, a random password is generated
+
+
 @router.get("/users")
 async def list_users(
     db: AsyncSession = Depends(get_db),
@@ -163,6 +168,25 @@ async def delete_user(
     await db.delete(user)
     await db.commit()
     return None
+
+
+@router.post("/users/{user_id}/reset-password")
+async def reset_user_password(
+    user_id: str,
+    data: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Reset a user's password. Admin only. Returns the new password in plain text."""
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    generated_password = data.new_password or secrets.token_urlsafe(12)
+    user.hashed_password = hash_password(generated_password)
+    await db.commit()
+
+    return {"password": generated_password}
 
 
 @router.post("/bootstrap", status_code=201)
