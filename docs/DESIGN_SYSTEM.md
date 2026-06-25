@@ -145,13 +145,21 @@ Light + dark, **dark default**. Toggle via the navbar button (persists to
 `localStorage`, applied as `data-theme` on `<html>`). Everything themes automatically
 through tokens — if you used tokens, you get both themes for free. Test both.
 
-> **Anchors / links.** Tailwind preflight is disabled (`corePlugins.preflight=false`
-> in [`tailwind.config.js`](../frontend/tailwind.config.js)), so the base layer in
-> [`index.css`](../frontend/src/index.css) resets `a` to `color: inherit;
-> text-decoration: inherit` — without it, every `<a>` (nav items, brand link) renders
-> as a raw underlined-blue UA hyperlink. A link must therefore **opt in** to its look:
-> use the `Button` `link` variant, or `text-primary underline-offset-4 hover:underline`
-> for inline text links. Nav items are styled as buttons, not links.
+> **Preflight is off — controls inherit `color`.** Tailwind preflight is disabled
+> (`corePlugins.preflight=false` in [`tailwind.config.js`](../frontend/tailwind.config.js)),
+> so the base layer in [`index.css`](../frontend/src/index.css) re-adds the parts of it
+> that matter:
+> - `a` → `color: inherit; text-decoration: inherit`. Without it every `<a>` (nav items,
+>   brand link) renders as a raw underlined-blue UA hyperlink. Links **opt in** to their
+>   look: the `Button` `link` variant, or `text-primary underline-offset-4 hover:underline`
+>   for inline text. Nav items are styled as buttons, not links.
+> - `button, input, select, textarea` → `color: inherit; font-family: inherit`. Without
+>   it, native controls fall back to the UA `ButtonText` colour (dark, unreadable on the
+>   dark theme) for any control that doesn't set an explicit `text-*` class — i.e. the
+>   `outline`/`ghost` button variants, unselected `ToggleBar` items, and inactive
+>   `Tabs` triggers. **Takeaway:** a control that should read in a non-default colour must
+>   set `text-foreground` / `text-muted-foreground` / `text-*-foreground` itself; never
+>   rely on the UA default.
 
 ---
 

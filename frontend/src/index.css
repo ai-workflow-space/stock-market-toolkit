@@ -66,15 +66,28 @@
     border-style: solid;
     border-color: hsl(var(--border));
   }
-  /* Tailwind preflight is disabled (see tailwind.config.js), so anchors would
-     otherwise fall back to the UA default of underlined blue text that turns
-     dark-blue/purple on :active and :visited — making nav items and brand
-     links look like raw hyperlinks. Restore the preflight behavior: links
-     inherit color and carry no underline by default. Components opt in to
-     link styling explicitly via text-primary / hover:underline utilities. */
+  /* Tailwind preflight is disabled (see tailwind.config.js), so we re-add the
+     parts of it that matter for a themed UI:
+
+     - <a> would otherwise be UA underlined-blue hyperlinks that turn
+       dark-blue/purple on :active/:visited — making nav items and brand links
+       look like raw links. Reset to inherit colour + no underline; components
+       opt into link styling via text-primary / hover:underline.
+
+     - <button>/<input>/<select>/<textarea> do NOT inherit colour or font from
+       the page without preflight, so any control lacking an explicit text-*
+       class — outline/ghost buttons, unselected toggles, inactive tab triggers
+       — falls back to the UA `ButtonText` colour, which is dark and unreadable
+       on the dark theme. Inheriting `currentColor` lets those controls pick up
+       `foreground` / `muted-foreground` as intended; variants that set their
+       own text-* class still win. */
   a {
     color: inherit;
     text-decoration: inherit;
+  }
+  button, input, optgroup, select, textarea {
+    font-family: inherit;
+    color: inherit;
   }
   html { font-size: 16px; }
   body {
