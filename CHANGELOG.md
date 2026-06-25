@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.4.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.3.0...v0.4.0) (2026-06-25)
+
+
+### Features
+
+* implement [#76](https://github.com/ai-workflow-space/stock-market-toolkit/issues/76) - add ticker tracking UI to Signals page ([43c6e76](https://github.com/ai-workflow-space/stock-market-toolkit/commit/43c6e768c38ea5ed033510802577caaaf23d2ae4))
+* implement [#78](https://github.com/ai-workflow-space/stock-market-toolkit/issues/78) - expose WatchlistButton on Dashboard and Compare pages ([3fe82ed](https://github.com/ai-workflow-space/stock-market-toolkit/commit/3fe82ed090063d219c08857d228db97279de41ed))
+* implement [#78](https://github.com/ai-workflow-space/stock-market-toolkit/issues/78) - expose WatchlistButton on Dashboard and Compare pages ([0a0357a](https://github.com/ai-workflow-space/stock-market-toolkit/commit/0a0357a54bcc98dfcc585f62cd013f33259e1890))
+* implement [#79](https://github.com/ai-workflow-space/stock-market-toolkit/issues/79) - email edit and change password ([e399a05](https://github.com/ai-workflow-space/stock-market-toolkit/commit/e399a050e940fd10f76020ce14561d55963d5b6a))
+* implement [#87](https://github.com/ai-workflow-space/stock-market-toolkit/issues/87) B+C - gitattributes merge=ours for lockfiles; skip build-and-push on PR ([d3cb2f6](https://github.com/ai-workflow-space/stock-market-toolkit/commit/d3cb2f6b4093e3cfed9a2b9f70f3af1c020c6a17))
+
+
+### Bug Fixes
+
+* actually register the merge=ours driver (was a no-op) ([bba95a3](https://github.com/ai-workflow-space/stock-market-toolkit/commit/bba95a3ffa01066c482a4885fcac5330e7e26748))
+* add merge driver setup instructions to .gitattributes comments ([6c91b92](https://github.com/ai-workflow-space/stock-market-toolkit/commit/6c91b922ad73b3b15c1af8f01c7ecfa073f26e61))
+* add trailing newline to .gitattributes ([4e03830](https://github.com/ai-workflow-space/stock-market-toolkit/commit/4e0383082fab8e14f9d658e088e6fc614e07100f))
+* allow digits in ticker symbols (0050.TW international format) ([da94c78](https://github.com/ai-workflow-space/stock-market-toolkit/commit/da94c78851813e9c3e069e029e667a761b11ad36))
+* bump version to 0.3.0 in backend/app/main.py ([24c4a31](https://github.com/ai-workflow-space/stock-market-toolkit/commit/24c4a3160d9fffc020383accf5c6a06c00f96cf0))
+* ghost/icon buttons & inactive tabs render as blank white boxes ([ae19ac0](https://github.com/ai-workflow-space/stock-market-toolkit/commit/ae19ac0bf14df269718b48f4e5b2f4c345ac37f2))
+* implement [#80](https://github.com/ai-workflow-space/stock-market-toolkit/issues/80) - dark mode button text contrast and toggle selected state ([d0a9628](https://github.com/ai-workflow-space/stock-market-toolkit/commit/d0a962843f4493b112ca789dd482d7f5ef886c7f))
+* integrate Admin/Active/Reset into Edit dialog; remove separate row toggles ([9e5b6c5](https://github.com/ai-workflow-space/stock-market-toolkit/commit/9e5b6c56e0f60d3a89e4c4b42459b7bf3f608c0f))
+* make dark-mode selected toggle actually visible (was bg-accent == border) ([01fc8d9](https://github.com/ai-workflow-space/stock-market-toolkit/commit/01fc8d920c594be3cfa819f13681b717591d09fe))
+* navbar/brand links render as raw hyperlinks (underlined blue) ([bd4c800](https://github.com/ai-workflow-space/stock-market-toolkit/commit/bd4c8008db7955b1c2bde9a6aa9e6cd52ab97f7e))
+* outline/ghost buttons, toggles & inactive tabs unreadable in dark mode ([4b79283](https://github.com/ai-workflow-space/stock-market-toolkit/commit/4b79283d2c7c69b86c4362ef258f39b53e83a48b))
+* register /watchlist route and add navbar link for WatchlistPage ([b612f16](https://github.com/ai-workflow-space/stock-market-toolkit/commit/b612f16db74bf624689d5779bcbf9e11af9a1f42))
+* resolve merge conflict markers in Navbar.tsx and SettingsPage.tsx ([63885f7](https://github.com/ai-workflow-space/stock-market-toolkit/commit/63885f7cc0515006dece439506d3f65743155989))
+* use SymbolSearch combobox for Add Ticker; allow dot in tickers (BRK.B) ([f1600a3](https://github.com/ai-workflow-space/stock-market-toolkit/commit/f1600a381805cf3d3defdb8853e2ee5fef1e0bfe))
+
+
+### Documentation
+
+* note button background reset in DESIGN_SYSTEM ([71c1d2b](https://github.com/ai-workflow-space/stock-market-toolkit/commit/71c1d2b7032689660e456c08ed1fcf24488a0377))
+* record selected-state and anchor conventions in DESIGN_SYSTEM ([7780c04](https://github.com/ai-workflow-space/stock-market-toolkit/commit/7780c04d93a408c08521357fd5d2cd9d71f3f9dd))
+
 ## [0.3.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.2.0...v0.3.0) (2026-06-25)
 
 
