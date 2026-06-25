@@ -33,8 +33,13 @@ import {
   DialogFooter,
   DialogDescription,
 } from "../components/ui/dialog";
+<<<<<<< ours
 import { Loader2, Key } from "lucide-react";
 import { APP_VERSION } from "@/lib/version";
+=======
+import { Loader2, Key, Pencil } from "lucide-react";
+import { toast } from "@/components/ui/sonner";
+>>>>>>> theirs
 
 export default function SettingsPage() {
   const { theme, toggleTheme, timezone, setTimezone } = useTheme();
@@ -63,6 +68,11 @@ export default function SettingsPage() {
   const [resetLoading, setResetLoading] = useState(false);
   const [resetResult, setResetResult] = useState<string | null>(null);
   const [resetError, setResetError] = useState("");
+  const [editEmailOpen, setEditEmailOpen] = useState(false);
+  const [editEmailTarget, setEditEmailTarget] = useState<{ id: string; email: string } | null>(null);
+  const [editEmail, setEditEmail] = useState("");
+  const [editEmailLoading, setEditEmailLoading] = useState(false);
+  const [editEmailError, setEditEmailError] = useState("");
 
   const isAdmin = user?.is_admin === true;
 
@@ -171,6 +181,39 @@ export default function SettingsPage() {
       setResetError((err as Error).message);
     } finally {
       setResetLoading(false);
+    }
+  };
+
+  const openEditEmail = (user: { id: string; email: string }) => {
+    setEditEmailTarget(user);
+    setEditEmail(user.email);
+    setEditEmailError("");
+    setEditEmailOpen(true);
+  };
+
+  const editUserEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editEmailTarget) return;
+    setEditEmailLoading(true);
+    setEditEmailError("");
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/users/${editEmailTarget.id}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ email: editEmail }),
+      });
+      if (!res.ok) {
+        throw new Error(await extractError(res, "Failed to update email"));
+      }
+      setUsers(prev => prev.map(u => u.id === editEmailTarget.id ? { ...u, email: editEmail } : u));
+      toast("Email updated", { description: "User email has been updated successfully." });
+      setEditEmailOpen(false);
+      setEditEmailTarget(null);
+    } catch (err: unknown) {
+      setEditEmailError((err as Error).message);
+    } finally {
+      setEditEmailLoading(false);
     }
   };
 
@@ -315,6 +358,13 @@ export default function SettingsPage() {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => openEditEmail({ id: u.id, email: u.email })}
+                      >
+                        <Pencil className="size-3 mr-1" /> Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setResetTarget({ id: u.id, username: u.username })}
                       >
                         <Key className="size-3 mr-1" /> Reset
@@ -454,6 +504,41 @@ export default function SettingsPage() {
               </DialogFooter>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editEmailOpen} onOpenChange={(open) => { if (!open) { setEditEmailOpen(false); setEditEmailTarget(null); setEditEmailError(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Email</DialogTitle>
+            <DialogDescription>
+              Update the email address for this user.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={editUserEmail} className="flex flex-col gap-3">
+            {editEmailError && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {editEmailError}
+              </div>
+            )}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                placeholder="user@example.com"
+                value={editEmail}
+                onChange={e => setEditEmail(e.target.value)}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditEmailOpen(false)} disabled={editEmailLoading}>Cancel</Button>
+              <Button type="submit" disabled={editEmailLoading}>
+                {editEmailLoading ? "Saving…" : "Save"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </>

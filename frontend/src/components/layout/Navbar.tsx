@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Sun, Moon, LogOut, Menu } from "lucide-react";
+import { Sun, Moon, LogOut, Menu, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -10,10 +11,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
+<<<<<<< ours
 import { APP_VERSION } from "@/lib/version";
+=======
+import { toast } from "@/components/ui/sonner";
+
+const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "1.0.0";
+>>>>>>> theirs
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", end: true },
@@ -27,8 +44,59 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changePasswordError, setChangePasswordError] = useState("");
+  const [changePasswordLoading, setChangePasswordLoading] = useState(false);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangePasswordError("");
+
+    if (newPassword.length < 8) {
+      setChangePasswordError("New password must be at least 8 characters");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setChangePasswordError("New passwords do not match");
+      return;
+    }
+
+    if (!user) return;
+
+    setChangePasswordLoading(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/users/${user.id}/change-password`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+      });
+
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(typeof d.detail === "string" ? d.detail : "Failed to change password");
+      }
+
+      toast("Password changed", { description: "Your password has been updated successfully." });
+      setChangePasswordOpen(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to change password";
+      setChangePasswordError(msg);
+      toast("Error", { description: msg });
+    } finally {
+      setChangePasswordLoading(false);
+    }
+  };
 
   return (
+    <>
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center gap-2 px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-2 font-semibold">
@@ -83,6 +151,9 @@ export default function Navbar() {
                 <DropdownMenuItem onClick={() => navigate("/admin/invites")}>
                   Invitation Codes
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setChangePasswordOpen(true)}>
+                  <Key /> Change Password
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { logout(); navigate("/login"); }}>
                   <LogOut /> Log out
                 </DropdownMenuItem>
@@ -109,5 +180,63 @@ export default function Navbar() {
         </div>
       </div>
     </header>
+
+    <Dialog open={changePasswordOpen} onOpenChange={(open) => { if (!open) { setChangePasswordOpen(false); setChangePasswordError(""); setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); } }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Change Password</DialogTitle>
+          <DialogDescription>
+            Update your account password.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleChangePassword} className="flex flex-col gap-3">
+          {changePasswordError && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {changePasswordError}
+            </div>
+          )}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="current-password">Current Password</Label>
+            <Input
+              id="current-password"
+              type="password"
+              placeholder="Enter current password"
+              value={currentPassword}
+              onChange={e => setCurrentPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="new-password">New Password</Label>
+            <Input
+              id="new-password"
+              type="password"
+              placeholder="Enter new password"
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="confirm-password">Confirm New Password</Label>
+            <Input
+              id="confirm-password"
+              type="password"
+              placeholder="Confirm new password"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              required
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setChangePasswordOpen(false)} disabled={changePasswordLoading}>Cancel</Button>
+            <Button type="submit" disabled={changePasswordLoading}>
+              {changePasswordLoading ? "Saving…" : "Save"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
