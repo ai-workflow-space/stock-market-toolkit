@@ -130,45 +130,57 @@ export default function SignalsPage() {
     const token = localStorage.getItem("access_token");
 
     async function fetchSignals() {
-      const settled = await Promise.allSettled(
-        symbols.map(async (symbol): Promise<Signal> => {
-          const res = await fetch(
-            String.raw`${import.meta.env.VITE_API_URL || ""}/api/analysis/${symbol}?period=1mo`,
-            { headers: { Authorization: `Bearer ${token}` } },
-          );
-          if (!res.ok) throw new Error(`${symbol} failed`);
-          const data = (await res.json()) as AnalysisResponse;
+      const BATCH_SIZE = 3;
+      const BATCH_DELAY_MS = 500;
+      const results: Signal[] = [];
 
-          const directionMap: Record<string, Signal["direction"]> = {
-            BUY: "bullish",
-            SELL: "bearish",
-            NEUTRAL: "neutral",
-          };
-          const direction = directionMap[data.signal ?? ""] ?? "neutral";
-          const confidence = data.confidence ?? 0.5;
-          const reasons = (data.reasons ?? []).join("; ");
+      for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
+        const batch = symbols.slice(i, i + BATCH_SIZE);
+        const settled = await Promise.allSettled(
+          batch.map(async (symbol): Promise<Signal> => {
+            const res = await fetch(
+              `${import.meta.env.VITE_API_URL || ""}/api/analysis/${symbol}?period=1mo`,
+              { headers: { Authorization: `Bearer ${token}` } },
+            );
+            if (!res.ok) throw new Error(`${symbol} failed`);
+            const data = (await res.json()) as AnalysisResponse;
 
-          const indicators = data.indicators;
-          let signal_type: Signal["signal_type"] = "macd_cross";
-          if ((indicators?.bias ?? 0) < -3 || (indicators?.bias ?? 0) > 3) signal_type = "bb_touch";
-          else if ((indicators?.volume_ratio ?? 0) > 1.3) signal_type = "volume_spike";
+            const directionMap: Record<string, Signal["direction"]> = {
+              BUY: "bullish",
+              SELL: "bearish",
+              NEUTRAL: "neutral",
+            };
+            const direction = directionMap[data.signal ?? ""] ?? "neutral";
+            const confidence = data.confidence ?? 0.5;
+            const reasons = (data.reasons ?? []).join("; ");
 
-          return {
-            id: `sig-${symbol}`,
-            symbol,
-            direction,
-            signal_type,
-            price: data.price ?? 0,
-            timestamp: data.timestamp ?? new Date().toISOString(),
-            strength: Math.round(confidence * 100),
-            description: `[${data.signal ?? "NEUTRAL"}] ${reasons} — confidence ${(confidence * 100).toFixed(0)}%`,
-          } satisfies Signal;
-        }),
-      );
+            const indicators = data.indicators;
+            let signal_type: Signal["signal_type"] = "macd_cross";
+            if ((indicators?.bias ?? 0) < -3 || (indicators?.bias ?? 0) > 3) signal_type = "bb_touch";
+            else if ((indicators?.volume_ratio ?? 0) > 1.3) signal_type = "volume_spike";
 
-      const ok = settled
-        .filter((r): r is PromiseFulfilledResult<Signal> => r.status === "fulfilled")
-        .map((r) => r.value);
+            return {
+              id: `sig-${symbol}`,
+              symbol,
+              direction,
+              signal_type,
+              price: data.price ?? 0,
+              timestamp: data.timestamp ?? new Date().toISOString(),
+              strength: Math.round(confidence * 100),
+              description: `[${data.signal ?? "NEUTRAL"}] ${reasons} — confidence ${(confidence * 100).toFixed(0)}%`,
+            } satisfies Signal;
+          }),
+        );
+        const batchResults = settled
+          .filter((r): r is PromiseFulfilledResult<Signal> => r.status === "fulfilled")
+          .map((r) => r.value);
+        results.push(...batchResults);
+        if (i + BATCH_SIZE < symbols.length) {
+          await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
+        }
+      }
+
+      const ok = results;
 
       if (ok.length > 0) {
         setSignals(ok);
