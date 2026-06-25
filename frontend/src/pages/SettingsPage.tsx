@@ -34,8 +34,7 @@ import {
   DialogDescription,
 } from "../components/ui/dialog";
 import { Loader2, Key } from "lucide-react";
-
-const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "1.0.0";
+import { APP_VERSION } from "@/lib/version";
 
 export default function SettingsPage() {
   const { theme, toggleTheme, timezone, setTimezone } = useTheme();

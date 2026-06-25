@@ -1,4 +1,4 @@
-const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "1.0.0";
+import { APP_VERSION } from "@/lib/version";
 
 export default function Footer() {
   const sha = (import.meta.env.VITE_GIT_SHA as string) || "local";

@@ -13,8 +13,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
-
-const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "1.0.0";
+import { APP_VERSION } from "@/lib/version";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", end: true },
