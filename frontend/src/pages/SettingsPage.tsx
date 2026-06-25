@@ -364,7 +364,7 @@ export default function SettingsPage() {
             <CardTitle>About</CardTitle>
             <CardDescription>Stock Market Toolkit</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-2">
             <a
               href={RELEASE_URL}
               target="_blank"
@@ -373,24 +373,27 @@ export default function SettingsPage() {
             >
               v{APP_VERSION}
             </a>
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-xs text-muted-foreground">
               A comprehensive stock analysis and monitoring tool.
             </p>
             {releaseNotes ? (
-              <div className="mt-3 text-xs text-muted-foreground border-t pt-3 max-w-none">
-                <ReactMarkdown>{releaseNotes}</ReactMarkdown>
-              </div>
+              <details className="mt-2 text-xs">
+                <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                  Release notes
+                </summary>
+                <div className="mt-2 text-muted-foreground border-t pt-2 text-xs leading-relaxed space-y-1">
+                  <ReactMarkdown>{releaseNotes}</ReactMarkdown>
+                </div>
+              </details>
             ) : (
-              <p className="mt-3 text-xs text-muted-foreground">
-                <a
-                  href={RELEASE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
-                >
-                  View release notes on GitHub
-                </a>
-              </p>
+              <a
+                href={RELEASE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-muted-foreground hover:underline"
+              >
+                View release notes on GitHub
+              </a>
             )}
           </CardContent>
         </Card>

@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
-import { APP_VERSION, RELEASE_URL } from "@/lib/version";
+import { APP_VERSION } from "@/lib/version";
 import { toast } from "@/components/ui/sonner";
 
 const NAV_ITEMS = [
@@ -146,9 +146,6 @@ export default function Navbar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate("/admin/invites")}>
                   Invitation Codes
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.open(RELEASE_URL, "_blank", "noopener,noreferrer")}>
-                  Changelog
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setChangePasswordOpen(true)}>
                   Change Password
