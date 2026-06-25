@@ -182,3 +182,65 @@ async def list_audit_logs(
         per_page=per_page,
     )
     return AuditLogListResponse(logs=logs, total=total)
+
+
+@router.get("/access-logs")
+async def get_access_logs(
+    since: Optional[str] = Query(
+        None, description="ISO datetime filter (logs after this time)"
+    ),
+    limit: int = Query(100, ge=1, le=10000, description="Max number of log entries"),
+    search: Optional[str] = Query(None, description="Text search across log entries"),
+    status: Optional[int] = Query(
+        None, description="Filter by HTTP status code"
+    ),
+    current_user: User = Depends(require_admin),
+):
+    log_file = Path(__file__).resolve().parent.parent.parent / "logs" / "app.json"
+
+    if not log_file.exists():
+        return {"logs": [], "total": 0}
+
+    entries: list[dict] = []
+    try:
+        with open(log_file, "r") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    parsed = json.loads(line)
+                    if parsed.get("type") == "access":
+                        entries.append(parsed)
+                except json.JSONDecodeError:
+                    continue
+    except OSError:
+        return {"logs": [], "total": 0}
+
+    if status is not None:
+        entries = [e for e in entries if e.get("status") == status]
+
+    if since:
+        try:
+            since_dt = datetime.fromisoformat(since)
+            entries = [
+                e
+                for e in entries
+                if e.get("timestamp")
+                and datetime.fromisoformat(e["timestamp"]) >= since_dt
+            ]
+        except ValueError:
+            pass
+
+    if search:
+        search_lower = search.lower()
+        entries = [
+            e for e in entries if search_lower in json.dumps(e, default=str).lower()
+        ]
+
+    entries.sort(key=lambda e: e.get("timestamp", ""), reverse=True)
+
+    total = len(entries)
+    entries = entries[:limit]
+
+    return {"logs": entries, "total": total}
