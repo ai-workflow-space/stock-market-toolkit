@@ -14,7 +14,16 @@ import logging
 
 from app import __version__
 from app.config import get_settings
-from app.routes import auth, stocks, alerts, mcp, analysis, admin, watchlist
+from app.routes import (
+    auth,
+    stocks,
+    alerts,
+    mcp,
+    analysis,
+    admin,
+    watchlist,
+    fundamentals,
+)
 
 settings = get_settings()
 log = logging.getLogger(__name__)
@@ -76,6 +85,7 @@ app.include_router(mcp.router)
 app.include_router(analysis.router)
 app.include_router(watchlist.router)
 app.include_router(admin.router)
+app.include_router(fundamentals.router)
 
 
 @app.get("/health")

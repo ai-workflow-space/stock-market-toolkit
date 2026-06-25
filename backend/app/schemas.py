@@ -247,3 +247,12 @@ class WatchlistResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ─── Fundamentals schemas ───
+class FundamentalsResponse(BaseModel):
+    symbol: str
+    cached_at: str = ""
+    profitability: dict
+    piotroski: dict
+    dividend_quality: dict

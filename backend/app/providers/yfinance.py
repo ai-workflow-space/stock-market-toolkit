@@ -52,6 +52,57 @@ class YFinanceMarketDataProvider:
         return await cached(key, INFO_TTL, loader)
 
 
+FUNDAMENTALS_TTL = 86400  # 24h
+
+# ── yfinance row-label → canonical key mappings ──────────────────────────
+_INCOME_FIELDS = {
+    "Total Revenue": "total_revenue",
+    "Cost of Revenue": "cost_of_revenue",
+    "Gross Profit": "gross_profit",
+    "Operating Income": "operating_income",
+    "Net Income": "net_income",
+    "Net Income from Continuing Operations": "net_income",
+    "Basic EPS": "basic_eps",
+    "Diluted EPS": "diluted_eps",
+    "Weighted Average Shs Out": "weighted_shares_outstanding",
+}
+
+_BALANCE_FIELDS = {
+    "Total Assets": "total_assets",
+    "Current Assets": "current_assets",
+    "Current Liabilities": "current_liabilities",
+    "Long Term Debt": "long_term_debt",
+    "Total Equity Gross Minority Interest": "total_equity",
+    "Stockholders Equity": "total_equity",
+}
+
+_CASHFLOW_FIELDS = {
+    "Operating Cash Flow": "operating_cash_flow",
+    "Free Cash Flow": "free_cash_flow",
+}
+
+
+def _extract_row(df: pd.DataFrame, field_map: dict, col_idx: int) -> dict:
+    """Extract values from a yfinance DataFrame at column *col_idx*.
+
+    Returns a dict mapping canonical field names to float values.
+    """
+    result = {}
+    if df is None or df.empty or col_idx >= len(df.columns):
+        return result
+    for label, canonical in field_map.items():
+        try:
+            series = df.loc[label]
+            val = series.iloc[col_idx] if hasattr(series, "iloc") else series
+            if isinstance(val, pd.Series):
+                val = val.iloc[0]
+            if pd.notna(val):
+                result[canonical] = float(val)
+        except (KeyError, TypeError, ValueError, IndexError):
+            continue
+    return result
+
+
 class YFinanceFundamentalsProvider:
     """Fundamentals provider backed by yfinance, with caching."""
 
@@ -66,5 +117,46 @@ class YFinanceFundamentalsProvider:
     def cash_flow(self, symbol: str) -> pd.DataFrame:
         return yf.Ticker(symbol.upper()).cashflow
 
-    def dividends(self, symbol: str) -> pd.DataFrame:
+    def dividends(self, symbol: str) -> pd.Series:
         return yf.Ticker(symbol.upper()).dividends
+
+    async def get_fundamentals_dict(self, symbol: str) -> dict:
+        """Return ``{current: dict, prior: dict}`` with canonical field names.
+
+        Cached with ``FUNDAMENTALS_TTL`` (24 h).
+        """
+        key = cache_key("fundamentals", symbol)
+
+        async def loader() -> dict:
+            def _fetch():
+                t = yf.Ticker(symbol.upper())
+                return t.income_stmt, t.balance_sheet, t.cashflow
+
+            is_df, bs_df, cf_df = await asyncio.to_thread(_fetch)
+            current = {}
+            prior = {}
+
+            for df, fmap in [
+                (is_df, _INCOME_FIELDS),
+                (bs_df, _BALANCE_FIELDS),
+                (cf_df, _CASHFLOW_FIELDS),
+            ]:
+                current.update(_extract_row(df, fmap, 0))
+                if df is not None and len(df.columns) > 1:
+                    prior.update(_extract_row(df, fmap, 1))
+
+            return {"current": current, "prior": prior}
+
+        return await cached(key, FUNDAMENTALS_TTL, loader)
+
+    async def get_dividends(self, symbol: str) -> pd.Series:
+        """Return dividend history as a ``pd.Series`` (DatetimeIndex → amount).
+
+        Cached with ``FUNDAMENTALS_TTL`` (24 h).
+        """
+        key = cache_key("dividends", symbol)
+
+        async def loader() -> pd.Series:
+            return await asyncio.to_thread(self.dividends, symbol)
+
+        return await cached(key, FUNDAMENTALS_TTL, loader)
