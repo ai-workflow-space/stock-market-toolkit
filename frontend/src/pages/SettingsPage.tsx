@@ -4,6 +4,7 @@ import { COMMON_TIMEZONES } from "../context/timezones";
 import { useAuth } from "../hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
 import {
@@ -30,6 +31,12 @@ export default function SettingsPage() {
     created_at: string;
   }>>([]);
   const [usersLoading, setUsersLoading] = useState(true);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addEmail, setAddEmail] = useState("");
+  const [addUsername, setAddUsername] = useState("");
+  const [addPassword, setAddPassword] = useState("");
+  const [addLoading, setAddLoading] = useState(false);
+  const [addError, setAddError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; username: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [actionError, setActionError] = useState("");
@@ -89,6 +96,34 @@ export default function SettingsPage() {
       body: JSON.stringify({ is_active: !currentValue }),
     });
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: !currentValue } : u));
+  };
+
+  const addUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddLoading(true);
+    setAddError("");
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/register`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ email: addEmail, username: addUsername, password: addPassword }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.detail || "Failed to add user");
+      }
+      const newUser = await res.json();
+      setUsers(prev => [...prev, newUser]);
+      setAddOpen(false);
+      setAddEmail("");
+      setAddUsername("");
+      setAddPassword("");
+    } catch (err: unknown) {
+      setAddError((err as Error).message);
+    } finally {
+      setAddLoading(false);
+    }
   };
 
   const confirmDelete = async () => {
@@ -192,8 +227,13 @@ export default function SettingsPage() {
         {isAdmin && (
         <Card>
           <CardHeader>
-            <CardTitle>User Management</CardTitle>
-            <CardDescription>Manage user accounts and permissions</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>Manage user accounts and permissions</CardDescription>
+              </div>
+              <Button size="sm" onClick={() => setAddOpen(true)}>+ Add User</Button>
+            </div>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             {usersLoading ? (
@@ -274,6 +314,60 @@ export default function SettingsPage() {
               {deleting ? "Deleting…" : "Delete"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={addOpen} onOpenChange={(open) => { if (!open) { setAddOpen(false); setAddError(""); setAddEmail(""); setAddUsername(""); setAddPassword(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+            <DialogDescription>Create a new user account.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={addUser} className="flex flex-col gap-3">
+            {addError && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {addError}
+              </div>
+            )}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="add-email">Email</Label>
+              <Input
+                id="add-email"
+                type="email"
+                placeholder="user@example.com"
+                value={addEmail}
+                onChange={e => setAddEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="add-username">Username</Label>
+              <Input
+                id="add-username"
+                placeholder="username"
+                value={addUsername}
+                onChange={e => setAddUsername(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="add-password">Password</Label>
+              <Input
+                id="add-password"
+                type="password"
+                placeholder="Password"
+                value={addPassword}
+                onChange={e => setAddPassword(e.target.value)}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setAddOpen(false)} disabled={addLoading}>Cancel</Button>
+              <Button type="submit" disabled={addLoading}>
+                {addLoading ? "Creating…" : "Create User"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </>
