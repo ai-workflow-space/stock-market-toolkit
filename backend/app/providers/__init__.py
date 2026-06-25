@@ -8,7 +8,6 @@ from app.providers.yfinance import (
     YFinanceMarketDataProvider,
     YFinanceFundamentalsProvider,
 )
-from app.providers.registry import get_fundamentals_provider, get_market_provider
 
 # Process-wide singletons.
 market_provider = YFinanceMarketDataProvider()
@@ -17,8 +16,6 @@ fundamentals_provider = YFinanceFundamentalsProvider()
 __all__ = [
     "market_provider",
     "fundamentals_provider",
-    "get_fundamentals_provider",
-    "get_market_provider",
     "YFinanceMarketDataProvider",
     "YFinanceFundamentalsProvider",
 ]
