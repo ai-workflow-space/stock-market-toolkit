@@ -43,6 +43,13 @@ and **never** raw Tailwind palette colors like `bg-blue-500`.
 | `destructive` | `0 72% 51%` | `0 72% 45%` | Errors, destructive actions |
 | `border` / `input` / `ring` | `223 30% 16%` | `220 13% 91%` | Borders, inputs, focus ring |
 
+> **Hover vs. selected — don't reuse `accent` for "selected".** In the dark theme
+> `accent`, `border`, and `input` are the *same* value (`223 30% 16%`), so a control
+> filled with `bg-accent` is indistinguishable from its own border. `accent` is for
+> transient **hover** only. For a persistent **selected/active** state (e.g. a chosen
+> toggle), use `primary` (`bg-primary text-primary-foreground`) so the state reads
+> clearly in both themes.
+
 **Semantic finance tokens** — for price/percentage direction only:
 
 | Token | Dark | Light | Tailwind |
@@ -112,7 +119,9 @@ Import from the barrel: `import { Button, Card, Badge } from "@/components/ui";`
 - **`StatCard`** — labelled metric: uppercase label, mono value, optional delta. `tone`
   (`up`/`down`/`neutral`) colors the value/delta.
 - **`ToggleBar` / `MultiToggleBar`** — pill toggle groups over `ToggleGroup` for
-  single- and multi-select (timeframe, indicators, SMA overlays).
+  single- and multi-select (timeframe, indicators, SMA overlays). The selected
+  item uses the `primary` token (`data-[state=on]:bg-primary`), not `accent`, so
+  the active option is unmistakable in dark mode.
 - **`SymbolSearch`** — Radix `Popover` + `Command` ticker combobox (no viewport overflow).
 
 ### Rules (do / don't)
@@ -135,6 +144,14 @@ Import from the barrel: `import { Button, Card, Badge } from "@/components/ui";`
 Light + dark, **dark default**. Toggle via the navbar button (persists to
 `localStorage`, applied as `data-theme` on `<html>`). Everything themes automatically
 through tokens — if you used tokens, you get both themes for free. Test both.
+
+> **Anchors / links.** Tailwind preflight is disabled (`corePlugins.preflight=false`
+> in [`tailwind.config.js`](../frontend/tailwind.config.js)), so the base layer in
+> [`index.css`](../frontend/src/index.css) resets `a` to `color: inherit;
+> text-decoration: inherit` — without it, every `<a>` (nav items, brand link) renders
+> as a raw underlined-blue UA hyperlink. A link must therefore **opt in** to its look:
+> use the `Button` `link` variant, or `text-primary underline-offset-4 hover:underline`
+> for inline text links. Nav items are styled as buttons, not links.
 
 ---
 
