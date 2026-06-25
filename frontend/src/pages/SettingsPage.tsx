@@ -35,7 +35,8 @@ import {
 } from "../components/ui/dialog";
 import { Loader2, Key, Pencil } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
-import { APP_VERSION } from "@/lib/version";
+import { APP_VERSION, RELEASE_URL, RELEASE_API_URL } from "../lib/version";
+import ReactMarkdown from "react-markdown";
 
 export default function SettingsPage() {
   const { theme, toggleTheme, timezone, setTimezone } = useTheme();
@@ -69,6 +70,7 @@ export default function SettingsPage() {
   const [editEmail, setEditEmail] = useState("");
   const [editEmailLoading, setEditEmailLoading] = useState(false);
   const [editEmailError, setEditEmailError] = useState("");
+  const [releaseNotes, setReleaseNotes] = useState<string | null>(null);
 
   const isAdmin = user?.is_admin === true;
 
@@ -106,6 +108,23 @@ export default function SettingsPage() {
       .finally(() => { if (!ignore) setUsersLoading(false); });
     return () => { ignore = true; };
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (releaseNotes !== null) return; // cached, skip
+    let ignore = false;
+    fetch(RELEASE_API_URL)
+      .then(res => {
+        if (!res.ok) throw new Error("not found");
+        return res.json();
+      })
+      .then(data => {
+        if (!ignore && data.body) setReleaseNotes(data.body);
+      })
+      .catch(() => {
+        if (!ignore) setReleaseNotes(""); // graceful degradation — empty string
+      });
+    return () => { ignore = true; };
+  }, []);
 
   const addUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -345,11 +364,45 @@ export default function SettingsPage() {
             <CardTitle>About</CardTitle>
             <CardDescription>Stock Market Toolkit</CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">{APP_VERSION}</p>
-            <p className="text-sm text-muted-foreground mt-2">
+          <CardContent className="flex flex-col gap-2">
+            <a
+              href={RELEASE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-muted-foreground hover:underline"
+            >
+              v{APP_VERSION}
+            </a>
+            <p className="text-xs text-muted-foreground">
               A comprehensive stock analysis and monitoring tool.
             </p>
+            {releaseNotes ? (
+              <details className="mt-2 text-xs">
+                <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                  Release notes
+                </summary>
+                <div className="mt-2 max-h-72 overflow-y-auto overflow-x-hidden border-t pt-2 text-xs leading-relaxed text-muted-foreground break-words [&_a]:break-all [&_a]:underline [&_a]:underline-offset-2 [&_h1]:mt-3 [&_h1]:mb-1 [&_h1]:text-sm [&_h1]:font-semibold [&_h1]:text-foreground [&_h2]:mt-3 [&_h2]:mb-1 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:text-foreground [&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:text-xs [&_h3]:font-semibold [&_h3]:text-foreground [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:my-0.5 [&_p]:my-1">
+                  <ReactMarkdown
+                    components={{
+                      a: ({ ...props }) => (
+                        <a {...props} target="_blank" rel="noopener noreferrer" />
+                      ),
+                    }}
+                  >
+                    {releaseNotes}
+                  </ReactMarkdown>
+                </div>
+              </details>
+            ) : (
+              <a
+                href={RELEASE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-muted-foreground hover:underline"
+              >
+                View release notes on GitHub
+              </a>
+            )}
           </CardContent>
         </Card>
       </div>
