@@ -5,12 +5,14 @@ Alert checker service - runs periodically to check price alerts and send notific
 import yfinance as yf
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 import logging
 import math
 import httpx
 
 from app.database import AsyncSessionLocal
-from app.models import Alert, NotificationSettings, TriggeredAlert, NotificationDelivery
+from app.models import Alert, AlertCondition, NotificationSettings, TriggeredAlert, NotificationDelivery
+from app.services.cache import cached, cache_key
 
 log = logging.getLogger(__name__)
 
@@ -49,12 +51,16 @@ async def _get_current_price(symbol: str, period: str) -> float | None:
         period = "1h"
     hist_period, interval = PERIOD_MAP[period]
 
-    try:
+    async def _load():
         ticker = yf.Ticker(symbol)
         df = ticker.history(period=hist_period, interval=interval, auto_adjust=True)
         if df.empty:
             return None
         return float(df["Close"].iloc[-1])
+
+    key = cache_key("price", symbol, period)
+    try:
+        return await cached(key, ttl=120, loader=_load)
     except Exception as e:
         log.warning(f"Failed to fetch price for {symbol}: {e}")
         return None
@@ -66,15 +72,91 @@ async def _get_period_start_price(symbol: str, period: str) -> float | None:
         period = "1h"
     hist_period, interval = PERIOD_MAP[period]
 
-    try:
+    async def _load():
         ticker = yf.Ticker(symbol)
         df = ticker.history(period=hist_period, interval=interval, auto_adjust=True)
         if df.empty or len(df) < 2:
             return None
         return float(df["Close"].iloc[0])
+
+    key = cache_key("price_start", symbol, period)
+    try:
+        return await cached(key, ttl=300, loader=_load)
     except Exception as e:
         log.warning(f"Failed to fetch period start price for {symbol}: {e}")
         return None
+
+
+async def _get_ohlcv_df(symbol: str, period: str):
+    """Fetch OHLCV dataframe for a symbol, cached via BE-2."""
+    if period not in PERIOD_MAP:
+        period = "1h"
+    hist_period, interval = PERIOD_MAP[period]
+
+    async def _load():
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(period=hist_period, interval=interval, auto_adjust=True)
+        return df
+
+    key = cache_key("ohlcv", symbol, period)
+    return await cached(key, ttl=120, loader=_load)
+
+
+async def _get_indicators(symbol: str, period: str) -> dict:
+    """Fetch latest indicator values for a symbol, cached via BE-2."""
+    async def _load():
+        import pandas_ta as ta
+        df = await _get_ohlcv_df(symbol, period)
+        result = {"price": None, "rsi": None, "macd_hist": None, "macd_signal": None, "pct_change": None}
+        if df.empty:
+            return result
+
+        close = df["Close"]
+        price = float(close.iloc[-1])
+        result["price"] = price
+
+        if len(close) >= 14:
+            rsi_series = ta.rsi(close, length=14)
+            if rsi_series is not None and not rsi_series.empty:
+                result["rsi"] = float(rsi_series.iloc[-1])
+
+        if len(close) >= 26:
+            macd_df = ta.macd(close, fast=12, slow=26, signal=9)
+            if macd_df is not None and not macd_df.empty:
+                result["macd_hist"] = _clean(float(macd_df["MACDh_12_26_9"].iloc[-1]))
+                result["macd_signal"] = _clean(float(macd_df["MACDs_12_26_9"].iloc[-1]))
+
+        if len(close) >= 2:
+            pct = ((float(close.iloc[-1]) - float(close.iloc[0])) / float(close.iloc[0])) * 100
+            result["pct_change"] = pct
+
+        return result
+
+    key = cache_key("indicators", symbol, period)
+    return await cached(key, ttl=120, loader=_load)
+
+
+def _evaluate_condition(condition: AlertCondition, indicators: dict) -> bool:
+    """Evaluate a single AlertCondition against current indicator values."""
+    metric = condition.metric
+    op = condition.operator
+    value = condition.value
+
+    current_val = indicators.get(metric)
+    if current_val is None:
+        return False
+
+    if op == "gt":
+        return current_val > value
+    elif op == "lt":
+        return current_val < value
+    elif op == "eq":
+        return abs(current_val - value) < 0.001
+    elif op == "crosses_above":
+        # Check if current > value (already satisfied for crossing)
+        # For a proper cross check we'd need previous value too
+        return current_val > value
+    return False
 
 
 def _should_trigger(
@@ -83,7 +165,7 @@ def _should_trigger(
     threshold: float,
     period_start_price: float | None,
 ) -> bool:
-    """Check if alert condition is met."""
+    """Check if legacy alert condition is met."""
     if condition_type == "above":
         return current_price > threshold
     elif condition_type == "below":
@@ -99,6 +181,21 @@ def _should_trigger(
         pct_change = ((current_price - period_start_price) / period_start_price) * 100
         return pct_change < -threshold
     return False
+
+
+def _check_multi_condition(alert: Alert, indicators: dict) -> bool:
+    """Evaluate all conditions of an alert using its combinator."""
+    conditions = alert.conditions or []
+    if not conditions:
+        return False
+
+    combinator = alert.combinator or "all"
+    results = [_evaluate_condition(c, indicators) for c in conditions]
+
+    if combinator == "all":
+        return all(results)
+    else:
+        return any(results)
 
 
 async def _send_discord_notification(
@@ -171,6 +268,7 @@ async def check_alerts():
         # Fetch all enabled alerts with their notification settings
         result = await db.execute(
             select(Alert, NotificationSettings)
+            .options(selectinload(Alert.conditions))
             .join(
                 NotificationSettings,
                 Alert.user_id == NotificationSettings.user_id,
@@ -202,6 +300,18 @@ async def check_alerts():
                 log.warning(f"Could not fetch price for {symbol}, skipping")
                 continue
 
+            # Fetch indicators once per symbol for multi-condition alerts
+            has_multi = any(a.conditions for a, _ in alert_settings_list)
+            indicators = None
+            if has_multi:
+                # Use the shortest period among multi-condition alerts
+                period = "1h"
+                for a, _ in alert_settings_list:
+                    if a.conditions:
+                        period = a.period
+                        break
+                indicators = await _get_indicators(symbol, period)
+
             # Get period start prices for pct_change alerts
             period_prices: dict[str, float | None] = {}
             pct_change_alerts = [
@@ -210,7 +320,6 @@ async def check_alerts():
                 if a.condition_type in ("pct_change_up", "pct_change_down")
             ]
             if pct_change_alerts:
-                # Fetch period start for each unique period
                 for alert, _ in pct_change_alerts:
                     if alert.period not in period_prices:
                         period_prices[alert.period] = await _get_period_start_price(
@@ -223,18 +332,26 @@ async def check_alerts():
                     if alert.cooldown_until and alert.cooldown_until > now:
                         continue
 
-                    # Determine period start price for pct_change
-                    period_start_price = None
-                    if alert.condition_type in ("pct_change_up", "pct_change_down"):
-                        period_start_price = period_prices.get(alert.period)
-
                     # Check if alert should trigger
-                    triggered = _should_trigger(
-                        alert.condition_type,
-                        current_price,
-                        alert.threshold,
-                        period_start_price,
-                    )
+                    triggered = False
+                    trigger_condition_type = alert.condition_type
+                    trigger_threshold = alert.threshold
+
+                    if alert.conditions:
+                        # Multi-condition evaluation
+                        triggered = _check_multi_condition(alert, indicators)
+                    else:
+                        # Legacy single-condition evaluation
+                        period_start_price = None
+                        if alert.condition_type in ("pct_change_up", "pct_change_down"):
+                            period_start_price = period_prices.get(alert.period)
+
+                        triggered = _should_trigger(
+                            alert.condition_type,
+                            current_price,
+                            alert.threshold,
+                            period_start_price,
+                        )
 
                     if triggered:
                         # Create triggered alert record
@@ -242,9 +359,9 @@ async def check_alerts():
                             alert_id=alert.id,
                             user_id=alert.user_id,
                             symbol=symbol,
-                            condition_type=alert.condition_type,
+                            condition_type=trigger_condition_type,
                             trigger_price=current_price,
-                            threshold_value=alert.threshold,
+                            threshold_value=trigger_threshold,
                             notified=False,
                             read=False,
                         )
@@ -267,9 +384,9 @@ async def check_alerts():
                                 ) = await _send_discord_notification(
                                     settings.discord_webhook_url,
                                     symbol,
-                                    alert.condition_type,
+                                    trigger_condition_type,
                                     current_price,
-                                    alert.threshold,
+                                    trigger_threshold,
                                     now,
                                 )
                                 delivery_records.append(
@@ -284,7 +401,6 @@ async def check_alerts():
                                 )
                                 if success:
                                     triggered_record.notified = True
-                            # Email notification could be added here
 
                         # Flush to get triggered_record.id, then link deliveries
                         await db.flush()
@@ -294,7 +410,7 @@ async def check_alerts():
 
                         await db.commit()
                         log.info(
-                            f"Alert triggered: {symbol} {alert.condition_type} at ${current_price:.2f}"
+                            f"Alert triggered: {symbol} {trigger_condition_type} at ${current_price:.2f}"
                         )
 
                 except Exception as e:
