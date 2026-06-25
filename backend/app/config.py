@@ -27,6 +27,8 @@ class Settings:
     ADMIN_EMAIL: str = _get_env("ADMIN_EMAIL", "admin@stocktoolkit.local")
     ADMIN_USERNAME: str = _get_env("ADMIN_USERNAME", "admin")
     ADMIN_PASSWORD: str = _get_env("ADMIN_PASSWORD", "Admin@1234")
+    INGEST_DELAY_SECONDS: float = float(_get_env("INGEST_DELAY_SECONDS", "1.5"))
+    INGEST_MAX_SYMBOLS: int = int(_get_env("INGEST_MAX_SYMBOLS", "200"))
 
 
 @lru_cache
