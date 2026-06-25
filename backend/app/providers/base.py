@@ -22,6 +22,10 @@ class MarketDataProvider(Protocol):
         """Return cached OHLCV DataFrame. Fallback: calls history()."""
         ...
 
+    async def get_info(self, symbol: str) -> dict:
+        """Return a cached normalized info dict. Fallback: calls info()."""
+        ...
+
 
 @runtime_checkable
 class FundamentalsProvider(Protocol):

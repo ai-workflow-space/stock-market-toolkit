@@ -30,6 +30,14 @@ def test_invite_code_model_exists():
     assert InviteCode.__tablename__ == "invite_codes"
 
 
+def test_market_provider_singleton_importable():
+    """routes/stocks.py + analysis.py import the shared market_provider singleton."""
+    from app.providers import market_provider
+
+    assert hasattr(market_provider, "get_history")
+    assert hasattr(market_provider, "get_info")
+
+
 def test_admin_invite_routes_registered():
     """The admin invite-code endpoints must be wired into the app."""
     from app.main import app

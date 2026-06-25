@@ -27,10 +27,11 @@ async def get_analysis(
     current_user: User = Depends(get_current_user),
 ):
     """Get comprehensive technical analysis for a symbol."""
-    provider = market_provider(symbol.upper())
     interval_map = {"1d": "5m", "5d": "15m"}
     interval = interval_map.get(period, "1d")
-    df = await provider.get_history(symbol.upper(), period=period, interval=interval)
+    df = await market_provider.get_history(
+        symbol.upper(), period=period, interval=interval
+    )
 
     if df.empty:
         raise HTTPException(status_code=404, detail=f"No data for {symbol}")
