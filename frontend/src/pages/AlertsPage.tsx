@@ -355,9 +355,9 @@ export default function AlertsPage() {
                   <Card key={alert.id} className={alert.enabled ? "" : "opacity-50"}>
                     <CardContent className="flex items-center gap-4 py-4">
                       <span className="font-bold text-base min-w-[60px]">{alert.symbol}</span>
-                      {alert.symbol_name && (
-                        <span className="text-sm text-muted-foreground truncate flex-1">{alert.symbol_name}</span>
-                      )}
+                      <span className="text-sm text-muted-foreground truncate flex-1">
+                        {alert.symbol_name ? `${alert.symbol_name} · ` : ""}{conditionLabel(alert.condition_type)}
+                      </span>
                       <span className="font-semibold text-sm">
                         {alert.condition_type.startsWith("pct") ? `${alert.threshold}%` : `$${fmt(alert.threshold)}`}
                       </span>
