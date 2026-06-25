@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../co
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
 
+const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "1.0.0";
+
 export default function SettingsPage() {
   const { theme, toggleTheme, timezone, setTimezone } = useTheme();
   const [yfStatus, setYfStatus] = useState<"loading" | "ok" | "error">("loading");
@@ -113,7 +115,7 @@ export default function SettingsPage() {
             <CardDescription>Stock Market Toolkit</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">v0.2.0</p>
+            <p className="text-sm text-muted-foreground">{APP_VERSION}</p>
             <p className="text-sm text-muted-foreground mt-2">
               A comprehensive stock analysis and monitoring tool.
             </p>
