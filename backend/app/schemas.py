@@ -49,6 +49,8 @@ class StockDataResponse(BaseModel):
     symbol: str
     period: str
     cached_at: str = ""
+    source: str = ""
+    as_of: Optional[datetime] = None
     timestamp: list[str]
     open: list[float | None]
     high: list[float | None]
@@ -80,6 +82,8 @@ class IndicatorsResponse(BaseModel):
 class StockInfoResponse(BaseModel):
     symbol: str
     cached_at: str = ""
+    source: str = ""
+    as_of: Optional[datetime] = None
     short_name: str
     long_name: Optional[str]
     sector: Optional[str]

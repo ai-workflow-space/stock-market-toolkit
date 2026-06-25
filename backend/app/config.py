@@ -28,6 +28,13 @@ class Settings:
     ADMIN_USERNAME: str = _get_env("ADMIN_USERNAME", "admin")
     ADMIN_PASSWORD: str = _get_env("ADMIN_PASSWORD", "Admin@1234")
 
+    # ── Provider chain configuration ──────────────────────────────────
+    PROVIDER_CHAIN: str = _get_env("PROVIDER_CHAIN", "default")
+    PROVIDER_MAX_FAILURES: int = int(_get_env("PROVIDER_MAX_FAILURES", "3"))
+    PROVIDER_COOLDOWN_SECONDS: float = float(
+        _get_env("PROVIDER_COOLDOWN_SECONDS", "60")
+    )
+
 
 @lru_cache
 def get_settings() -> Settings:

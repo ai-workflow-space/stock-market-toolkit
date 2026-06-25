@@ -12,7 +12,23 @@ from app.schemas import (
 )
 from app.auth import get_current_user
 from app.providers import market_provider
-import pandas_ta as ta
+
+try:
+    import pandas_ta as ta
+except ImportError:
+    from pandas_ta_compat import sma, ema, rsi, macd, bbands, atr
+    import sys
+
+    class _TaStub:
+        sma = staticmethod(sma)
+        ema = staticmethod(ema)
+        rsi = staticmethod(rsi)
+        macd = staticmethod(macd)
+        bbands = staticmethod(bbands)
+        atr = staticmethod(atr)
+
+    sys.modules["pandas_ta"] = _TaStub()
+    import pandas_ta as ta
 import math
 
 router = APIRouter(prefix="/api", tags=["stocks"])
@@ -41,9 +57,10 @@ async def get_stock(
 
     interval_map = {"1d": "5m", "5d": "15m"}
     interval = interval_map.get(period, "1d")
-    df = await market_provider.get_history(
+    result = await market_provider.get_history(
         symbol.upper(), period=period, interval=interval
     )
+    df = result.value
 
     if df.empty:
         raise HTTPException(status_code=404, detail=f"No data for {symbol}")
@@ -52,6 +69,8 @@ async def get_stock(
         symbol=symbol.upper(),
         period=period,
         cached_at=datetime.utcnow().isoformat(),
+        source=result.source,
+        as_of=result.as_of,
         timestamp=df.index.strftime("%Y-%m-%dT%H:%M:%S").tolist(),
         open=_clean_list(df["Open"].tolist()),
         high=_clean_list(df["High"].tolist()),
@@ -69,9 +88,10 @@ async def get_indicators(
 ):
     interval_map = {"1d": "5m", "5d": "15m"}
     interval = interval_map.get(period, "1d")
-    df = await market_provider.get_history(
+    result = await market_provider.get_history(
         symbol.upper(), period=period, interval=interval
     )
+    df = result.value
 
     if len(df) < 2:
         raise HTTPException(status_code=404, detail=f"No data for {symbol} ({period})")
@@ -145,11 +165,14 @@ async def get_stock_info(
     symbol: str,
     current_user: User = Depends(get_current_user),
 ):
-    info = await market_provider.get_info(symbol.upper())
+    result = await market_provider.get_info(symbol.upper())
+    info = result.value
 
     return StockInfoResponse(
         symbol=symbol.upper(),
         cached_at=datetime.utcnow().isoformat(),
+        source=result.source,
+        as_of=result.as_of,
         short_name=info.get("shortName", symbol.upper()),
         long_name=info.get("longName"),
         sector=info.get("sector"),
@@ -177,9 +200,10 @@ async def compare_stocks(
     interval_map = {"1d": "5m", "5d": "15m"}
     int_interval = interval_map.get(data.period, "1d")
     for symbol in data.symbols:
-        df = await market_provider.get_history(
+        result = await market_provider.get_history(
             symbol.upper(), period=data.period, interval=int_interval
         )
+        df = result.value
 
         if df.empty:
             raise HTTPException(status_code=404, detail=f"No data for {symbol}")

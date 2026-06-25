@@ -2,7 +2,6 @@
 Alert checker service - runs periodically to check price alerts and send notifications.
 """
 
-import yfinance as yf
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 import logging
@@ -11,6 +10,7 @@ import httpx
 
 from app.database import AsyncSessionLocal
 from app.models import Alert, NotificationSettings, TriggeredAlert, NotificationDelivery
+from app.providers import market_provider
 
 log = logging.getLogger(__name__)
 
@@ -50,8 +50,10 @@ async def _get_current_price(symbol: str, period: str) -> float | None:
     hist_period, interval = PERIOD_MAP[period]
 
     try:
-        ticker = yf.Ticker(symbol)
-        df = ticker.history(period=hist_period, interval=interval, auto_adjust=True)
+        result = await market_provider.get_history(
+            symbol, period=hist_period, interval=interval
+        )
+        df = result.value
         if df.empty:
             return None
         return float(df["Close"].iloc[-1])
@@ -67,8 +69,10 @@ async def _get_period_start_price(symbol: str, period: str) -> float | None:
     hist_period, interval = PERIOD_MAP[period]
 
     try:
-        ticker = yf.Ticker(symbol)
-        df = ticker.history(period=hist_period, interval=interval, auto_adjust=True)
+        result = await market_provider.get_history(
+            symbol, period=hist_period, interval=interval
+        )
+        df = result.value
         if df.empty or len(df) < 2:
             return None
         return float(df["Close"].iloc[0])
