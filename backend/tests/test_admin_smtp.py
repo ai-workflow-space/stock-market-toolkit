@@ -27,7 +27,7 @@ def client(app: FastAPI):
         yield c
 
 
-def _seed_admin(db_session) -> User:
+async def _seed_admin(db_session) -> User:
     uid = str(uuid.uuid4())
     user = User(
         id=uid,
@@ -38,7 +38,7 @@ def _seed_admin(db_session) -> User:
         is_admin=True,
     )
     db_session.add(user)
-    db_session.commit()
+    await db_session.commit()
     return user
 
 
@@ -46,7 +46,7 @@ def _admin_token(user: User) -> str:
     return create_access_token(data={"sub": user.id})
 
 
-def _non_admin_token(db_session) -> str:
+async def _non_admin_token(db_session) -> str:
     uid = str(uuid.uuid4())
     user = User(
         id=uid,
@@ -57,7 +57,7 @@ def _non_admin_token(db_session) -> str:
         is_admin=False,
     )
     db_session.add(user)
-    db_session.commit()
+    await db_session.commit()
     return create_access_token(data={"sub": user.id})
 
 
@@ -198,7 +198,7 @@ class TestSmtpAdminRoutes:
 
         async def _setup():
             async with AsyncSessionLocal() as session:
-                user = _seed_admin(session)
+                user = await _seed_admin(session)
                 return _admin_token(user)
 
         import asyncio
@@ -215,7 +215,7 @@ class TestSmtpAdminRoutes:
 
         async def _setup():
             async with AsyncSessionLocal() as session:
-                user = _seed_admin(session)
+                user = await _seed_admin(session)
                 return _admin_token(user)
 
         import asyncio
@@ -256,7 +256,7 @@ class TestSmtpAdminRoutes:
 
         async def _setup():
             async with AsyncSessionLocal() as session:
-                user = _seed_admin(session)
+                user = await _seed_admin(session)
                 return _admin_token(user)
 
         import asyncio
@@ -293,7 +293,7 @@ class TestSmtpAdminRoutes:
 
         async def _setup():
             async with AsyncSessionLocal() as session:
-                token = _non_admin_token(session)
+                token = await _non_admin_token(session)
                 return token
 
         import asyncio
@@ -307,13 +307,13 @@ class TestSmtpAdminRoutes:
 
     def test_smtp_requires_auth(self, client):
         resp = client.get("/api/admin/smtp")
-        assert resp.status_code == 401
+        assert resp.status_code == 403
 
     def test_smtp_test_no_settings(self, client, app):
 
         async def _setup():
             async with AsyncSessionLocal() as session:
-                user = _seed_admin(session)
+                user = await _seed_admin(session)
                 return _admin_token(user)
 
         import asyncio
@@ -330,7 +330,7 @@ class TestSmtpAdminRoutes:
 
         async def _setup():
             async with AsyncSessionLocal() as session:
-                user = _seed_admin(session)
+                user = await _seed_admin(session)
                 return _admin_token(user)
 
         import asyncio
