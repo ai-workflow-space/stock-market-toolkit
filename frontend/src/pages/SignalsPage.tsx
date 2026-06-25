@@ -121,7 +121,7 @@ export default function SignalsPage() {
   const [addingTicker, setAddingTicker] = useState(false);
 
   useEffect(() => {
-    const symbols = DEFAULT_TICKERS;
+    const symbols = trackedTickers;
     const token = localStorage.getItem("access_token");
 
     async function fetchSignals() {
@@ -235,7 +235,11 @@ export default function SignalsPage() {
     try {
       const signal = await fetchSignalForTicker(trimmed);
       setSignals((prev) => [...prev, signal]);
-      setTrackedTickers((prev) => [...prev, trimmed]);
+      setTrackedTickers((prev) => {
+        const next = [...prev, trimmed];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        return next;
+      });
       setAddTickerOpen(false);
       setNewTicker("");
       setSelectedSymbol("");
@@ -249,7 +253,11 @@ export default function SignalsPage() {
 
   const handleRemoveTicker = useCallback((symbol: string) => {
     setSignals((prev) => prev.filter((s) => s.symbol !== symbol));
-    setTrackedTickers((prev) => prev.filter((t) => t !== symbol));
+    setTrackedTickers((prev) => {
+      const next = prev.filter((t) => t !== symbol);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
     toast(`${symbol} removed from tracking`);
   }, []);
 
