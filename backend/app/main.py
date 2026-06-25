@@ -11,6 +11,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import logging
 
+from app import __version__
 from app.config import get_settings
 from app.database import init_db
 from app.routes import auth, stocks, alerts, mcp, analysis, admin, watchlist
@@ -34,7 +35,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Stock Market Toolkit API",
     description="Production stock market analysis API with user authentication",
-    version="1.0.0",
+    version=__version__,
     docs_url="/docs",
     redoc_url="/redoc",
     redirect_slashes=False,
@@ -67,14 +68,14 @@ app.include_router(admin.router)
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "stock-market-toolkit-api", "version": "1.0.0"}
+    return {"status": "ok", "service": "stock-market-toolkit-api", "version": __version__}
 
 
 @app.get("/")
 async def root():
     return {
         "name": "Stock Market Toolkit API",
-        "version": "1.0.0",
+        "version": __version__,
         "docs": "/docs",
     }
 

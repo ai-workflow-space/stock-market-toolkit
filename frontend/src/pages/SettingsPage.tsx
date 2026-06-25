@@ -34,6 +34,7 @@ import {
   DialogDescription,
 } from "../components/ui/dialog";
 import { Loader2, Key } from "lucide-react";
+import { APP_VERSION } from "@/lib/version";
 
 export default function SettingsPage() {
   const { theme, toggleTheme, timezone, setTimezone } = useTheme();
@@ -340,7 +341,7 @@ export default function SettingsPage() {
             <CardDescription>Stock Market Toolkit</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">v0.2.0</p>
+            <p className="text-sm text-muted-foreground">{APP_VERSION}</p>
             <p className="text-sm text-muted-foreground mt-2">
               A comprehensive stock analysis and monitoring tool.
             </p>

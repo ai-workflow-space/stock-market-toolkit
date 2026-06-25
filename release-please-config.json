@@ -1,16 +1,16 @@
 {
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "include-component-in-tag": false,
   "release-type": "python",
   "packages": {
     ".": {
-      "package-name": "stock-market-toolkit-backend",
-      "component": "backend",
-      "release-type": "python"
-    },
-    "frontend": {
-      "package-name": "stock-market-toolkit-frontend",
-      "component": "frontend",
-      "release-type": "node"
+      "package-name": "stock-market-toolkit",
+      "release-type": "python",
+      "extra-files": [
+        "backend/app/__init__.py",
+        "frontend/Dockerfile",
+        "frontend/src/lib/version.ts"
+      ]
     }
   }
 }

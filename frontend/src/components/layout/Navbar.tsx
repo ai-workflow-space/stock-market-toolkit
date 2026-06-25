@@ -13,8 +13,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
-
-const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "1.0.0";
+import { APP_VERSION } from "@/lib/version";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", end: true },
@@ -40,7 +39,7 @@ export default function Navbar() {
           </svg>
           <span className="hidden sm:inline">Stock Toolkit</span>
         </Link>
-        <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">v{APP_VERSION}</span>
+        <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{APP_VERSION}</span>
 
         <nav className="ml-2 hidden items-center gap-1 md:flex">
           {NAV_ITEMS.map(({ to, label, end }) => (
