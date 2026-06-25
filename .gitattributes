@@ -7,3 +7,4 @@ CHANGELOG.md merge=ours
 
 # Route/barrel files: prefer append-only registration to reduce parallel-feature conflicts
 # When two PRs conflict in App.tsx or similar, prefer a human/agent to resolve (no merge=ours)
+
