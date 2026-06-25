@@ -24,13 +24,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
-<<<<<<< ours
 import { APP_VERSION } from "@/lib/version";
-=======
 import { toast } from "@/components/ui/sonner";
-
-const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "1.0.0";
->>>>>>> theirs
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", end: true },

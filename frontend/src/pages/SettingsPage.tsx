@@ -33,13 +33,9 @@ import {
   DialogFooter,
   DialogDescription,
 } from "../components/ui/dialog";
-<<<<<<< ours
-import { Loader2, Key } from "lucide-react";
-import { APP_VERSION } from "@/lib/version";
-=======
 import { Loader2, Key, Pencil } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
->>>>>>> theirs
+import { APP_VERSION } from "@/lib/version";
 
 export default function SettingsPage() {
   const { theme, toggleTheme, timezone, setTimezone } = useTheme();
