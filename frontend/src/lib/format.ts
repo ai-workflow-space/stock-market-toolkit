@@ -15,3 +15,6 @@ export const compactUsd = (n: number | null | undefined): string =>
     : n >= 1e12 ? `$${(n / 1e12).toFixed(2)}T`
     : n >= 1e9 ? `$${(n / 1e9).toFixed(2)}B`
     : `$${(n / 1e6).toFixed(2)}M`;
+
+export const fmtDate = (d: string | Date | null | undefined): string =>
+  d == null ? "—" : new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
