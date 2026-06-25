@@ -218,7 +218,7 @@ export default function SignalsPage() {
       setTickerError("Select or enter a ticker symbol");
       return;
     }
-    if (!/^[A-Z0-9]{1,5}(\.[A-Z]{1,2})?$/.test(trimmed)) {
+    if (!/^[A-Z0-9]{1,10}(\.[A-Z]{1,2})?$/.test(trimmed)) {
       setTickerError("Invalid ticker symbol format");
       return;
     }
