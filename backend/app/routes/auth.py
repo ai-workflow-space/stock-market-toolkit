@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -23,6 +23,7 @@ from app.auth import (
     get_current_user,
     require_admin,  # noqa: F401 — used via Depends() in route handlers
 )
+from app.services.audit import write_audit
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -54,7 +55,7 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
+async def login(data: UserLogin, request: Request, db: AsyncSession = Depends(get_db)):
     user = await db.execute(
         select(User).where(
             (User.email == data.email_or_username)
@@ -64,14 +65,36 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
     user = user.scalar_one_or_none()
 
     if not user or not verify_password(data.password, user.hashed_password):
+        await write_audit(
+            db,
+            actor_id=None,
+            action="login.failed",
+            target=data.email_or_username,
+            request=request,
+        )
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     if not user.is_active:
+        await write_audit(
+            db,
+            actor_id=None,
+            action="login.failed",
+            target=user.email,
+            meta={"reason": "account_disabled"},
+            request=request,
+        )
         raise HTTPException(status_code=403, detail="Account disabled")
 
     access = create_access_token({"sub": user.id})
     refresh = create_refresh_token({"sub": user.id})
 
+    await write_audit(
+        db,
+        actor_id=user.id,
+        action="login.success",
+        target=user.email,
+        request=request,
+    )
     return TokenResponse(access_token=access, refresh_token=refresh)
 
 
@@ -142,6 +165,7 @@ async def list_users(
 async def update_user(
     user_id: str,
     data: UserUpdate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -150,6 +174,7 @@ async def update_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    changes = {}
     if data.email is not None:
         existing = await db.execute(
             select(User).where(User.email == data.email, User.id != user_id)
@@ -157,13 +182,33 @@ async def update_user(
         if existing.scalar_one_or_none():
             raise HTTPException(status_code=400, detail="Email already in use")
         user.email = data.email
+        changes["email"] = data.email
     if data.is_admin is not None:
         user.is_admin = data.is_admin
+        changes["is_admin"] = data.is_admin
+        await write_audit(
+            db,
+            actor_id=current_user.id,
+            action="user.role_changed",
+            target=user.id,
+            meta={"is_admin": data.is_admin, "target_user": user.email},
+            request=request,
+        )
     if data.is_active is not None:
         user.is_active = data.is_active
+        changes["is_active"] = data.is_active
 
     await db.commit()
     await db.refresh(user)
+    if changes and "is_admin" not in changes:
+        await write_audit(
+            db,
+            actor_id=current_user.id,
+            action="user.updated",
+            target=user.id,
+            meta=changes,
+            request=request,
+        )
     return user
 
 
@@ -187,6 +232,7 @@ async def delete_user(
 async def reset_user_password(
     user_id: str,
     data: ResetPasswordRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -199,6 +245,14 @@ async def reset_user_password(
     user.hashed_password = hash_password(generated_password)
     await db.commit()
 
+    await write_audit(
+        db,
+        actor_id=current_user.id,
+        action="user.password_reset",
+        target=user.id,
+        meta={"target_user": user.email},
+        request=request,
+    )
     return {"password": generated_password}
 
 
@@ -206,6 +260,7 @@ async def reset_user_password(
 async def change_user_password(
     user_id: str,
     data: ChangePasswordRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -227,6 +282,14 @@ async def change_user_password(
     user.hashed_password = hash_password(data.new_password)
     await db.commit()
 
+    await write_audit(
+        db,
+        actor_id=current_user.id,
+        action="user.password_changed",
+        target=user.id,
+        meta={"target_user": user.email},
+        request=request,
+    )
     return {"message": "Password changed successfully"}
 
 

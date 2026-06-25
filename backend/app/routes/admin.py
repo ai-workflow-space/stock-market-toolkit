@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime, timezone, timedelta
@@ -8,8 +8,14 @@ from pathlib import Path
 from typing import Optional
 from app.models import User, InviteCode
 from app.database import get_db
-from app.schemas import InviteCodeCreate, InviteCodeResponse, InviteCodeListResponse
+from app.schemas import (
+    InviteCodeCreate,
+    InviteCodeResponse,
+    InviteCodeListResponse,
+    AuditLogListResponse,
+)
 from app.auth import require_admin
+from app.services.audit import write_audit, get_audit_logs
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -22,6 +28,7 @@ def generate_code() -> str:
 @router.post("/invite-codes", response_model=InviteCodeResponse, status_code=201)
 async def create_invite_code(
     data: InviteCodeCreate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -37,6 +44,14 @@ async def create_invite_code(
     db.add(invite)
     await db.commit()
     await db.refresh(invite)
+    await write_audit(
+        db,
+        actor_id=current_user.id,
+        action="invite.created",
+        target=invite.code,
+        meta={"expires_in_days": data.expires_in_days},
+        request=request,
+    )
     return invite
 
 
@@ -58,6 +73,7 @@ async def list_invite_codes(
 @router.delete("/invite-codes/{code_id}", status_code=204)
 async def deactivate_invite_code(
     code_id: int,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -68,6 +84,14 @@ async def deactivate_invite_code(
 
     invite.is_active = False
     await db.commit()
+    await write_audit(
+        db,
+        actor_id=current_user.id,
+        action="invite.revoked",
+        target=invite.code,
+        meta={"invite_id": code_id},
+        request=request,
+    )
     return None
 
 
@@ -130,3 +154,31 @@ async def get_logs(
     entries = entries[:limit]
 
     return {"logs": entries, "total": total}
+
+
+@router.get("/audit-logs", response_model=AuditLogListResponse)
+async def list_audit_logs(
+    actor: Optional[str] = Query(None, description="Filter by actor user ID"),
+    action: Optional[str] = Query(None, description="Filter by action name"),
+    date_from: Optional[str] = Query(
+        None, description="ISO date filter (inclusive, e.g. 2026-01-01)"
+    ),
+    date_to: Optional[str] = Query(
+        None, description="ISO date filter (inclusive, e.g. 2026-06-30)"
+    ),
+    page: int = Query(1, ge=1, description="Page number"),
+    per_page: int = Query(50, ge=1, le=200, description="Items per page"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """List audit log entries with pagination and filters. Admin only."""
+    logs, total = await get_audit_logs(
+        db,
+        actor=actor,
+        action=action,
+        date_from=date_from,
+        date_to=date_to,
+        page=page,
+        per_page=per_page,
+    )
+    return AuditLogListResponse(logs=logs, total=total)

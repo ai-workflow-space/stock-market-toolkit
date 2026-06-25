@@ -140,3 +140,17 @@ class InviteCode(Base):
 
     creator = relationship("User", foreign_keys=[created_by])
     redeemer = relationship("User", foreign_keys=[used_by])
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    actor_id = Column(String, ForeignKey("users.id"), nullable=True)
+    action = Column(String, nullable=False, index=True)
+    target = Column(String, nullable=True)
+    meta = Column(Text, nullable=True)
+    ip = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    actor = relationship("User", foreign_keys=[actor_id])

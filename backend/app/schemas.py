@@ -239,6 +239,36 @@ class WatchlistCreate(BaseModel):
     symbol: str = Field(..., min_length=1, max_length=20)
 
 
+class AuditLogResponse(BaseModel):
+    id: int
+    actor_id: Optional[str] = None
+    action: str
+    target: Optional[str] = None
+    meta: Optional[dict] = None
+    ip: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+    @field_validator("meta", mode="before")
+    @classmethod
+    def parse_meta(cls, v):
+        if isinstance(v, str):
+            import json
+
+            try:
+                return json.loads(v)
+            except (json.JSONDecodeError, TypeError):
+                return None
+        return v
+
+
+class AuditLogListResponse(BaseModel):
+    logs: list[AuditLogResponse]
+    total: int
+
+
 class WatchlistResponse(BaseModel):
     id: int
     user_id: str
