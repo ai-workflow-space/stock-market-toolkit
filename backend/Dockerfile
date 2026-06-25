@@ -19,6 +19,13 @@ RUN uv pip install --system --no-cache -r requirements.txt
 # Copy application
 COPY app/ ./app/
 
+# Copy Alembic config. The migration scripts live under app/alembic (copied
+# above via COPY app/); alembic.ini sits at the backend root, so it must be
+# copied explicitly. The in-process `alembic upgrade head` in app/main.py
+# loads /app/alembic.ini whose script_location = app/alembic (relative to the
+# /app workdir).
+COPY alembic.ini ./
+
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash appuser && \
     chown -R appuser:appuser /app

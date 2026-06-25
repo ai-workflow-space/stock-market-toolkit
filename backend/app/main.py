@@ -2,6 +2,7 @@
 Stock Market Toolkit — FastAPI Backend (Production)
 """
 
+from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +14,6 @@ import logging
 
 from app import __version__
 from app.config import get_settings
-from app.database import init_db
 from app.routes import auth, stocks, alerts, mcp, analysis, admin, watchlist
 
 settings = get_settings()
@@ -25,9 +25,21 @@ limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    log.info("Initializing database...")
-    await init_db()
-    log.info("Database ready. Stock Market Toolkit API started.")
+    log.info("Running database migrations...")
+    from alembic import command
+    from alembic.config import Config
+
+    # Run Alembic in-process (no dependency on the `alembic` binary being on
+    # PATH or on the working directory). A failed migration must abort startup
+    # rather than let the app boot against a missing/half-applied schema.
+    backend_dir = Path(__file__).parent.parent
+    alembic_cfg = Config(str(backend_dir / "alembic.ini"))
+    try:
+        command.upgrade(alembic_cfg, "head")
+    except Exception:
+        log.exception("Alembic migration failed; aborting startup")
+        raise
+    log.info("Migrations complete. Stock Market Toolkit API started.")
     yield
     log.info("Shutting down Stock Market Toolkit API...")
 
@@ -68,7 +80,11 @@ app.include_router(admin.router)
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "stock-market-toolkit-api", "version": __version__}
+    return {
+        "status": "ok",
+        "service": "stock-market-toolkit-api",
+        "version": __version__,
+    }
 
 
 @app.get("/")
