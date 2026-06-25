@@ -1,4 +1,22 @@
 import { useState, useEffect } from "react";
+
+/** Drill into any FastAPI error shape and return a human-readable message.
+ *  Handles: string detail, Pydantic validation detail array, {detail:string} */
+function extractError(res: Response, fallback: string): string {
+  try {
+    const d = res.json();
+    // Pydantic 422: detail is ValidationError[]
+    if (Array.isArray(d.detail)) {
+      return d.detail.map((e: { msg?: string }) => e.msg || JSON.stringify(e)).join("; ");
+    }
+    // Plain string detail: HTTPException raised by app code
+    if (typeof d.detail === "string") return d.detail;
+    // Fallback for unexpected shapes
+    return d.detail || fallback;
+  } catch {
+    return fallback;
+  }
+}
 import { useTheme } from "../hooks/useTheme";
 import { COMMON_TIMEZONES } from "../context/timezones";
 import { useAuth } from "../hooks/useAuth";
@@ -114,8 +132,7 @@ export default function SettingsPage() {
         body: JSON.stringify({ email: addEmail, username: addUsername, password: addPassword }),
       });
       if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.detail || "Failed to add user");
+        throw new Error(extractError(res, "Failed to add user"));
       }
       const newUser = await res.json();
       setUsers(prev => [...prev, newUser]);
@@ -166,8 +183,7 @@ export default function SettingsPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.detail || "Delete failed");
+        throw new Error(extractError(res, "Delete failed"));
       }
       setUsers(prev => prev.filter(u => u.id !== deleteTarget.id));
       setDeleteTarget(null);
