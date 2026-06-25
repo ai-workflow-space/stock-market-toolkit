@@ -80,7 +80,14 @@
        — falls back to the UA `ButtonText` colour, which is dark and unreadable
        on the dark theme. Inheriting `currentColor` lets those controls pick up
        `foreground` / `muted-foreground` as intended; variants that set their
-       own text-* class still win. */
+       own text-* class still win.
+
+     - native <button> also defaults to the opaque UA `ButtonFace` background
+       (light grey), so any button lacking an explicit bg-* class — `ghost` and
+       `link` variants, inactive tab triggers, icon buttons — renders as a solid
+       light box (and with colour:inherit above, light text on it → a blank
+       white box). Reset the background to transparent so those buttons show the
+       surface behind them; bg-* variants still win. */
   a {
     color: inherit;
     text-decoration: inherit;
@@ -88,6 +95,11 @@
   button, input, optgroup, select, textarea {
     font-family: inherit;
     color: inherit;
+  }
+  button, [type='button'], [type='reset'], [type='submit'] {
+    -webkit-appearance: button;
+    background-color: transparent;
+    background-image: none;
   }
   html { font-size: 16px; }
   body {
