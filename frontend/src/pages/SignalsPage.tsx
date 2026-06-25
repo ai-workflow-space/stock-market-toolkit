@@ -120,8 +120,10 @@ export default function SignalsPage() {
   useEffect(() => {
     const symbols = watchedSymbols;
     if (symbols.length === 0) {
+      // Keep the existing reference when already empty so React can bail out of
+      // the re-render — avoids an update loop if `symbols` identity churns.
       // eslint-disable-next-line react-hooks/set-state-in-effect -- false positive: direct early-return guard
-      setSignals([]);
+      setSignals((prev) => (prev.length === 0 ? prev : []));
       setLoading(false);
       return;
     }
