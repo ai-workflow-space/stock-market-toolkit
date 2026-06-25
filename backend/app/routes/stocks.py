@@ -15,6 +15,7 @@ from app.schemas import (
 )
 from app.auth import get_current_user
 from app.providers import market_provider, fundamentals_provider
+import pandas as pd
 import pandas_ta as ta
 import math
 
