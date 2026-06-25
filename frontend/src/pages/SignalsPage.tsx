@@ -1,9 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
-import { Activity } from "lucide-react";
+import { Activity, Plus } from "lucide-react";
 import SignalCard from "@/components/SignalCard";
 import StatCard from "@/components/common/StatCard";
+import SymbolSearch from "@/components/common/SymbolSearch";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
 import type { Signal } from "@/types";
 
@@ -95,20 +105,28 @@ type AnalysisResponse = {
   timestamp?: string;
 };
 
+const DEFAULT_TICKERS = ["AAPL", "TSLA", "MSFT", "GOOGL", "AMZN", "NVDA"];
+
 /* ─── Signals Page ─── */
 export default function SignalsPage() {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [trackedTickers, setTrackedTickers] = useState<string[]>(DEFAULT_TICKERS);
+  const [addTickerOpen, setAddTickerOpen] = useState(false);
+  const [newTicker, setNewTicker] = useState("");
+  const [selectedSymbol, setSelectedSymbol] = useState("");
+  const [tickerError, setTickerError] = useState("");
+  const [addingTicker, setAddingTicker] = useState(false);
 
   useEffect(() => {
-    const symbols = ["AAPL", "TSLA", "MSFT", "GOOGL", "AMZN", "NVDA"];
+    const symbols = DEFAULT_TICKERS;
     const token = localStorage.getItem("access_token");
 
     async function fetchSignals() {
       const settled = await Promise.allSettled(
         symbols.map(async (symbol): Promise<Signal> => {
           const res = await fetch(
-            `${import.meta.env.VITE_API_URL || ""}/api/analysis/${symbol}?period=1mo`,
+            String.raw`${import.meta.env.VITE_API_URL || ""}/api/analysis/${symbol}?period=1mo`,
             { headers: { Authorization: `Bearer ${token}` } },
           );
           if (!res.ok) throw new Error(`${symbol} failed`);
@@ -159,6 +177,80 @@ export default function SignalsPage() {
     fetchSignals();
   }, []);
 
+  const fetchSignalForTicker = useCallback(async (symbol: string): Promise<Signal> => {
+    const token = localStorage.getItem("access_token");
+    const res = await fetch(
+      String.raw`${import.meta.env.VITE_API_URL || ""}/api/analysis/${symbol}?period=1mo`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!res.ok) throw new Error(`${symbol} failed`);
+    const data = (await res.json()) as AnalysisResponse;
+
+    const directionMap: Record<string, Signal["direction"]> = {
+      BUY: "bullish",
+      SELL: "bearish",
+      NEUTRAL: "neutral",
+    };
+    const direction = directionMap[data.signal ?? ""] ?? "neutral";
+    const confidence = data.confidence ?? 0.5;
+    const reasons = (data.reasons ?? []).join("; ");
+
+    const indicators = data.indicators;
+    let signal_type: Signal["signal_type"] = "macd_cross";
+    if ((indicators?.bias ?? 0) < -3 || (indicators?.bias ?? 0) > 3) signal_type = "bb_touch";
+    else if ((indicators?.volume_ratio ?? 0) > 1.3) signal_type = "volume_spike";
+
+    return {
+      id: `sig-${symbol}-${Date.now()}`,
+      symbol,
+      direction,
+      signal_type,
+      price: data.price ?? 0,
+      timestamp: data.timestamp ?? new Date().toISOString(),
+      strength: Math.round(confidence * 100),
+      description: `[${data.signal ?? "NEUTRAL"}] ${reasons} — confidence ${(confidence * 100).toFixed(0)}%`,
+    } satisfies Signal;
+  }, []);
+
+  const handleAddTicker = async () => {
+    const trimmed = (selectedSymbol || newTicker).trim().toUpperCase();
+    if (!trimmed) {
+      setTickerError("Select or enter a ticker symbol");
+      return;
+    }
+    if (!/^[A-Z0-9]{1,5}(\.[A-Z]{1,2})?$/.test(trimmed)) {
+      setTickerError("Invalid ticker symbol format");
+      return;
+    }
+    if (trackedTickers.includes(trimmed)) {
+      setTickerError(`${trimmed} is already being tracked`);
+      return;
+    }
+
+    setTickerError("");
+    setAddingTicker(true);
+
+    try {
+      const signal = await fetchSignalForTicker(trimmed);
+      setSignals((prev) => [...prev, signal]);
+      setTrackedTickers((prev) => [...prev, trimmed]);
+      setAddTickerOpen(false);
+      setNewTicker("");
+      setSelectedSymbol("");
+      toast.success(`${trimmed} added to tracking`);
+    } catch {
+      toast.error(`Failed to add ${trimmed}. Please try again.`);
+    } finally {
+      setAddingTicker(false);
+    }
+  };
+
+  const handleRemoveTicker = useCallback((symbol: string) => {
+    setSignals((prev) => prev.filter((s) => s.symbol !== symbol));
+    setTrackedTickers((prev) => prev.filter((t) => t !== symbol));
+    toast(`${symbol} removed from tracking`);
+  }, []);
+
   const handleDismissSignal = useCallback((id: string) => {
     setSignals((prev) => prev.filter((s) => s.id !== id));
     toast("Signal dismissed");
@@ -170,10 +262,48 @@ export default function SignalsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Trading signals</h1>
-        <p className="text-sm text-muted-foreground">Real-time signals based on technical indicators</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Trading signals</h1>
+          <p className="text-sm text-muted-foreground">Real-time signals based on technical indicators</p>
+        </div>
+        <Button onClick={() => setAddTickerOpen(true)} variant="outline" size="sm">
+          <Plus className="size-4" />
+          Add Ticker
+        </Button>
       </div>
+
+      <Dialog open={addTickerOpen} onOpenChange={setAddTickerOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Ticker</DialogTitle>
+            <DialogDescription>
+              Enter a stock symbol to add to your tracking list.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <SymbolSearch
+              value={selectedSymbol}
+              onSearch={(sym) => {
+                setSelectedSymbol(sym);
+                setNewTicker(sym);
+                setTickerError("");
+              }}
+            />
+            {tickerError && (
+              <p className="mt-2 text-sm text-destructive">{tickerError}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddTickerOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddTicker} disabled={addingTicker}>
+              {addingTicker ? "Adding..." : "Add Ticker"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {loading ? (
         <>
@@ -209,7 +339,7 @@ export default function SignalsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {signals.map((signal) => (
-                <SignalCard key={signal.id} signal={signal} onDismiss={handleDismissSignal} />
+                <SignalCard key={signal.id} signal={signal} onDismiss={handleDismissSignal} onRemoveTicker={handleRemoveTicker} />
               ))}
             </div>
           )}

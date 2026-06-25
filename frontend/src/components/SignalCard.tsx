@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 interface SignalCardProps {
   signal: Signal;
   onDismiss?: (id: string) => void;
+  onRemoveTicker?: (symbol: string) => void;
 }
 
 const DIRECTION_ICON = { bullish: TrendingUp, bearish: TrendingDown, neutral: Minus };
@@ -47,7 +48,7 @@ function StrengthBar({ strength }: { strength: number }) {
   );
 }
 
-export default function SignalCard({ signal, onDismiss }: SignalCardProps) {
+export default function SignalCard({ signal, onDismiss, onRemoveTicker }: SignalCardProps) {
   const Icon = DIRECTION_ICON[signal.direction];
 
   return (
@@ -59,7 +60,17 @@ export default function SignalCard({ signal, onDismiss }: SignalCardProps) {
             <span className="text-base font-semibold">{signal.symbol}</span>
             <Badge variant="secondary">{SIGNAL_TYPE_LABELS[signal.signal_type]}</Badge>
           </div>
-          {onDismiss && (
+          {onRemoveTicker ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6 text-muted-foreground hover:text-destructive"
+              onClick={() => onRemoveTicker(signal.symbol)}
+              aria-label="Stop tracking ticker"
+            >
+              <X />
+            </Button>
+          ) : onDismiss ? (
             <Button
               variant="ghost"
               size="icon"
@@ -69,7 +80,7 @@ export default function SignalCard({ signal, onDismiss }: SignalCardProps) {
             >
               <X />
             </Button>
-          )}
+          ) : null}
         </div>
 
         <div className="mb-3 flex items-center justify-between">
