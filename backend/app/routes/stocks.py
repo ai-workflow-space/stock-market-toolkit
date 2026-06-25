@@ -12,7 +12,21 @@ from app.schemas import (
 )
 from app.auth import get_current_user
 from app.providers import market_provider
-import pandas_ta as ta
+try:
+    import pandas_ta as ta
+except ImportError:
+    from pandas_ta_compat import sma, ema, rsi, macd, bbands, atr
+    import sys
+    # Build a mock 'ta' module so the code below can use ta.macd etc. uniformly
+    class _TaStub:
+        sma = staticmethod(sma)
+        ema = staticmethod(ema)
+        rsi = staticmethod(rsi)
+        macd = staticmethod(macd)
+        bbands = staticmethod(bbands)
+        atr = staticmethod(atr)
+    sys.modules["pandas_ta"] = _TaStub()
+    import pandas_ta as ta
 import math
 
 router = APIRouter(prefix="/api", tags=["stocks"])

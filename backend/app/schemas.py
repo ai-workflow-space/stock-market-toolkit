@@ -247,3 +247,37 @@ class WatchlistResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ─── SMTP schemas ───
+class SmtpSettingsResponse(BaseModel):
+    host: str
+    port: int
+    use_tls: bool
+    username: Optional[str] = None
+    password_set: bool
+    from_address: str
+    reply_to: Optional[str] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class SmtpSettingsUpdate(BaseModel):
+    host: Optional[str] = None
+    port: Optional[int] = None
+    use_tls: Optional[bool] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    from_address: Optional[str] = None
+    reply_to: Optional[str] = None
+
+
+class SmtpTestRequest(BaseModel):
+    to_email: EmailStr
+
+
+class SmtpTestResponse(BaseModel):
+    success: bool
+    message: str

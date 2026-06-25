@@ -140,3 +140,19 @@ class InviteCode(Base):
 
     creator = relationship("User", foreign_keys=[created_by])
     redeemer = relationship("User", foreign_keys=[used_by])
+
+
+class SmtpSettings(Base):
+    __tablename__ = "smtp_settings"
+
+    id = Column(Integer, primary_key=True, default=1)
+    host = Column(String, nullable=False)
+    port = Column(Integer, nullable=False, default=587)
+    use_tls = Column(Boolean, default=True)
+    username = Column(String, nullable=True)
+    password_encrypted = Column(Text, nullable=True)
+    from_address = Column(String, nullable=False)
+    reply_to = Column(String, nullable=True)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )

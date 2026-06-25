@@ -3,10 +3,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime, timezone, timedelta
 import secrets
-from app.models import User, InviteCode
+from app.models import User, InviteCode, SmtpSettings
 from app.database import get_db
-from app.schemas import InviteCodeCreate, InviteCodeResponse, InviteCodeListResponse
+from app.schemas import (
+    InviteCodeCreate,
+    InviteCodeResponse,
+    InviteCodeListResponse,
+    SmtpSettingsResponse,
+    SmtpSettingsUpdate,
+    SmtpTestRequest,
+    SmtpTestResponse,
+)
 from app.auth import require_admin
+from app.utils.crypto import encrypt
+from app.services.mailer import send_test_email
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -66,3 +76,80 @@ async def deactivate_invite_code(
     invite.is_active = False
     await db.commit()
     return None
+
+
+@router.get("/smtp", response_model=SmtpSettingsResponse)
+async def get_smtp_settings(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    result = await db.get(SmtpSettings, 1)
+    if not result:
+        raise HTTPException(status_code=404, detail="SMTP settings not configured")
+    return SmtpSettingsResponse(
+        host=result.host,
+        port=result.port,
+        use_tls=result.use_tls,
+        username=result.username,
+        password_set=bool(result.password_encrypted),
+        from_address=result.from_address,
+        reply_to=result.reply_to,
+        updated_at=result.updated_at,
+    )
+
+
+@router.put("/smtp", response_model=SmtpSettingsResponse)
+async def upsert_smtp_settings(
+    data: SmtpSettingsUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    settings = await db.get(SmtpSettings, 1)
+    if settings is None:
+        settings = SmtpSettings(id=1)
+        db.add(settings)
+
+    if data.host is not None:
+        settings.host = data.host
+    if data.port is not None:
+        settings.port = data.port
+    if data.use_tls is not None:
+        settings.use_tls = data.use_tls
+    if data.username is not None:
+        settings.username = data.username
+    if data.password is not None:
+        settings.password_encrypted = encrypt(data.password)
+    if data.from_address is not None:
+        settings.from_address = data.from_address
+    if data.reply_to is not None:
+        settings.reply_to = data.reply_to
+
+    await db.commit()
+    await db.refresh(settings)
+
+    return SmtpSettingsResponse(
+        host=settings.host,
+        port=settings.port,
+        use_tls=settings.use_tls,
+        username=settings.username,
+        password_set=bool(settings.password_encrypted),
+        from_address=settings.from_address,
+        reply_to=settings.reply_to,
+        updated_at=settings.updated_at,
+    )
+
+
+@router.post("/smtp/test", response_model=SmtpTestResponse)
+async def test_smtp_settings(
+    data: SmtpTestRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    settings = await db.get(SmtpSettings, 1)
+    if not settings:
+        raise HTTPException(status_code=404, detail="SMTP settings not configured")
+    if not settings.host or not settings.from_address:
+        raise HTTPException(status_code=400, detail="SMTP host and from_address must be configured")
+
+    success, message = await send_test_email(settings, data.to_email)
+    return SmtpTestResponse(success=success, message=message)
