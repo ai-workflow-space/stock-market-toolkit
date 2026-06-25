@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.5.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.4.0...v0.5.0) (2026-06-25)
+
+
+### Features
+
+* add top-level React ErrorBoundary to prevent whole-app blank screens ([e5ad59e](https://github.com/ai-workflow-space/stock-market-toolkit/commit/e5ad59ee7ce0dbfe812335ae522cda4acf5b64ef))
+* display release notes in Settings About card via GitHub Releases API ([15cbc7b](https://github.com/ai-workflow-space/stock-market-toolkit/commit/15cbc7b3942f71d1d79083386eca06f5eb6c4701))
+* implement [#91](https://github.com/ai-workflow-space/stock-market-toolkit/issues/91) - user menu refactor + clickable version link to GitHub release ([1036ef4](https://github.com/ai-workflow-space/stock-market-toolkit/commit/1036ef43ea998d8575b6e5d4b0ff976f8a843db9))
+
+
+### Bug Fixes
+
+* bump version.ts fallback to 0.4.0 to match released version ([6e3460e](https://github.com/ai-workflow-space/stock-market-toolkit/commit/6e3460e738b54178571597f11574e84cf2308e0b))
+* constrain and style release-notes markdown in About card ([8113279](https://github.com/ai-workflow-space/stock-market-toolkit/commit/81132799ef150435bde40d2568a71388db6ae06b))
+* increase max ticker symbol length from 5 to 10 chars ([6680828](https://github.com/ai-workflow-space/stock-market-toolkit/commit/6680828aadb3d5a933fc7e1c096cc3fae18a9c22))
+* persist tracked tickers in localStorage; remove hardcoded DEFAULT_TICKERS ([#92](https://github.com/ai-workflow-space/stock-market-toolkit/issues/92)) ([4342010](https://github.com/ai-workflow-space/stock-market-toolkit/commit/4342010d99e8a702f335bb0446365240b35b1a0e))
+* persist tracked tickers to localStorage; remove hardcoded DEFAULT_TICKERS ([122ea3c](https://github.com/ai-workflow-space/stock-market-toolkit/commit/122ea3c741dc4a3bc084c60225a3ca3e751efc11))
+* prevent blank Signals page from unstable watchlist symbols dependency ([c428de9](https://github.com/ai-workflow-space/stock-market-toolkit/commit/c428de9d0d3d8255f28db482e08efb9226ff4e58))
+* remove Changelog from user menu; use collapsible details for release notes ([366ad88](https://github.com/ai-workflow-space/stock-market-toolkit/commit/366ad88d3f014ed75ebcb5190af4e9a0d181af3e))
+* remove dead setState before reload; gate error.message behind DEV; add EOF newline ([d2c6874](https://github.com/ai-workflow-space/stock-market-toolkit/commit/d2c6874fa3901e6c627911e53358e64f70fb1046))
+* replace in-memory trackedTickers with useWatchlist hook ([6eac8ed](https://github.com/ai-workflow-space/stock-market-toolkit/commit/6eac8ed4e1eb2fff0980d0f811c3f75534a248dc))
+
 ## [0.4.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.3.0...v0.4.0) (2026-06-25)
 
 
