@@ -233,7 +233,7 @@ export default function SettingsPage() {
                   {theme === "dark" ? "Dark mode is active" : "Light mode is active"}
                 </p>
               </div>
-              <Button variant="outline" onClick={toggleTheme}>
+              <Button variant="secondary" onClick={toggleTheme}>
                 {theme === "dark" ? "Switch to Light" : "Switch to Dark"}
               </Button>
             </div>

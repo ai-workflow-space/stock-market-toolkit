@@ -43,6 +43,13 @@ and **never** raw Tailwind palette colors like `bg-blue-500`.
 | `destructive` | `0 72% 51%` | `0 72% 45%` | Errors, destructive actions |
 | `border` / `input` / `ring` | `223 30% 16%` | `220 13% 91%` | Borders, inputs, focus ring |
 
+> **Hover vs. selected — don't reuse `accent` for "selected".** In the dark theme
+> `accent`, `border`, and `input` are the *same* value (`223 30% 16%`), so a control
+> filled with `bg-accent` is indistinguishable from its own border. `accent` is for
+> transient **hover** only. For a persistent **selected/active** state (e.g. a chosen
+> toggle), use `primary` (`bg-primary text-primary-foreground`) so the state reads
+> clearly in both themes.
+
 **Semantic finance tokens** — for price/percentage direction only:
 
 | Token | Dark | Light | Tailwind |
@@ -112,7 +119,9 @@ Import from the barrel: `import { Button, Card, Badge } from "@/components/ui";`
 - **`StatCard`** — labelled metric: uppercase label, mono value, optional delta. `tone`
   (`up`/`down`/`neutral`) colors the value/delta.
 - **`ToggleBar` / `MultiToggleBar`** — pill toggle groups over `ToggleGroup` for
-  single- and multi-select (timeframe, indicators, SMA overlays).
+  single- and multi-select (timeframe, indicators, SMA overlays). The selected
+  item uses the `primary` token (`data-[state=on]:bg-primary`), not `accent`, so
+  the active option is unmistakable in dark mode.
 - **`SymbolSearch`** — Radix `Popover` + `Command` ticker combobox (no viewport overflow).
 
 ### Rules (do / don't)
@@ -135,6 +144,23 @@ Import from the barrel: `import { Button, Card, Badge } from "@/components/ui";`
 Light + dark, **dark default**. Toggle via the navbar button (persists to
 `localStorage`, applied as `data-theme` on `<html>`). Everything themes automatically
 through tokens — if you used tokens, you get both themes for free. Test both.
+
+> **Preflight is off — controls inherit `color`.** Tailwind preflight is disabled
+> (`corePlugins.preflight=false` in [`tailwind.config.js`](../frontend/tailwind.config.js)),
+> so the base layer in [`index.css`](../frontend/src/index.css) re-adds the parts of it
+> that matter:
+> - `a` → `color: inherit; text-decoration: inherit`. Without it every `<a>` (nav items,
+>   brand link) renders as a raw underlined-blue UA hyperlink. Links **opt in** to their
+>   look: the `Button` `link` variant, or `text-primary underline-offset-4 hover:underline`
+>   for inline text. Nav items are styled as buttons, not links.
+> - `button, input, select, textarea` → `color: inherit; font-family: inherit`, and
+>   `button` → `background-color: transparent`. Without these, native controls fall back
+>   to the UA `ButtonText` colour (dark) **and** the opaque `ButtonFace` background
+>   (light grey) for any control without an explicit `text-*` / `bg-*` class — the
+>   `ghost`/`link`/`outline` button variants, icon buttons, unselected `ToggleBar` items,
+>   and inactive `Tabs` triggers — so they render as dark-on-light or blank light boxes.
+>   **Takeaway:** a button that should read in a non-default colour or surface must set
+>   `text-*` / `bg-*` itself (use the `Button` variants); never rely on the UA default.
 
 ---
 

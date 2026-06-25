@@ -66,6 +66,41 @@
     border-style: solid;
     border-color: hsl(var(--border));
   }
+  /* Tailwind preflight is disabled (see tailwind.config.js), so we re-add the
+     parts of it that matter for a themed UI:
+
+     - <a> would otherwise be UA underlined-blue hyperlinks that turn
+       dark-blue/purple on :active/:visited — making nav items and brand links
+       look like raw links. Reset to inherit colour + no underline; components
+       opt into link styling via text-primary / hover:underline.
+
+     - <button>/<input>/<select>/<textarea> do NOT inherit colour or font from
+       the page without preflight, so any control lacking an explicit text-*
+       class — outline/ghost buttons, unselected toggles, inactive tab triggers
+       — falls back to the UA `ButtonText` colour, which is dark and unreadable
+       on the dark theme. Inheriting `currentColor` lets those controls pick up
+       `foreground` / `muted-foreground` as intended; variants that set their
+       own text-* class still win.
+
+     - native <button> also defaults to the opaque UA `ButtonFace` background
+       (light grey), so any button lacking an explicit bg-* class — `ghost` and
+       `link` variants, inactive tab triggers, icon buttons — renders as a solid
+       light box (and with colour:inherit above, light text on it → a blank
+       white box). Reset the background to transparent so those buttons show the
+       surface behind them; bg-* variants still win. */
+  a {
+    color: inherit;
+    text-decoration: inherit;
+  }
+  button, input, optgroup, select, textarea {
+    font-family: inherit;
+    color: inherit;
+  }
+  button, [type='button'], [type='reset'], [type='submit'] {
+    -webkit-appearance: button;
+    background-color: transparent;
+    background-image: none;
+  }
   html { font-size: 16px; }
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
