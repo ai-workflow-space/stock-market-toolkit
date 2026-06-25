@@ -19,7 +19,7 @@ services:
     image: kyleckw/stock-market-toolkit-backend:feat-test
     build:
       context: ./backend
-    pull_policy: never
+    pull_policy: build
     container_name: smt_backend
     restart: unless-stopped
     env_file:
@@ -48,7 +48,7 @@ services:
     image: kyleckw/stock-market-toolkit-frontend:feat-test
     build:
       context: ./frontend
-    pull_policy: never
+    pull_policy: build
     container_name: smt_frontend
     restart: unless-stopped
     ports:
