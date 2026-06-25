@@ -381,8 +381,16 @@ export default function SettingsPage() {
                 <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
                   Release notes
                 </summary>
-                <div className="mt-2 text-muted-foreground border-t pt-2 text-xs leading-relaxed space-y-1">
-                  <ReactMarkdown>{releaseNotes}</ReactMarkdown>
+                <div className="mt-2 max-h-72 overflow-y-auto overflow-x-hidden border-t pt-2 text-xs leading-relaxed text-muted-foreground break-words [&_a]:break-all [&_a]:underline [&_a]:underline-offset-2 [&_h1]:mt-3 [&_h1]:mb-1 [&_h1]:text-sm [&_h1]:font-semibold [&_h1]:text-foreground [&_h2]:mt-3 [&_h2]:mb-1 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:text-foreground [&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:text-xs [&_h3]:font-semibold [&_h3]:text-foreground [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:my-0.5 [&_p]:my-1">
+                  <ReactMarkdown
+                    components={{
+                      a: ({ ...props }) => (
+                        <a {...props} target="_blank" rel="noopener noreferrer" />
+                      ),
+                    }}
+                  >
+                    {releaseNotes}
+                  </ReactMarkdown>
                 </div>
               </details>
             ) : (
