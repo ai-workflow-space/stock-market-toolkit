@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Activity, Plus } from "lucide-react";
 import SignalCard from "@/components/SignalCard";
 import StatCard from "@/components/common/StatCard";
+import SymbolSearch from "@/components/common/SymbolSearch";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
 import type { Signal } from "@/types";
 
@@ -114,6 +114,7 @@ export default function SignalsPage() {
   const [trackedTickers, setTrackedTickers] = useState<string[]>(DEFAULT_TICKERS);
   const [addTickerOpen, setAddTickerOpen] = useState(false);
   const [newTicker, setNewTicker] = useState("");
+  const [selectedSymbol, setSelectedSymbol] = useState("");
   const [tickerError, setTickerError] = useState("");
   const [addingTicker, setAddingTicker] = useState(false);
 
@@ -212,13 +213,13 @@ export default function SignalsPage() {
   }, []);
 
   const handleAddTicker = async () => {
-    const trimmed = newTicker.trim().toUpperCase();
+    const trimmed = (selectedSymbol || newTicker).trim().toUpperCase();
     if (!trimmed) {
-      setTickerError("Ticker symbol is required");
+      setTickerError("Select or enter a ticker symbol");
       return;
     }
-    if (!/^[A-Z]{1,5}$/.test(trimmed)) {
-      setTickerError("Ticker must be 1-5 uppercase letters");
+    if (!/^[A-Z]{1,5}(\.[A-Z]{1,2})?$/.test(trimmed)) {
+      setTickerError("Invalid ticker symbol format");
       return;
     }
     if (trackedTickers.includes(trimmed)) {
@@ -235,6 +236,7 @@ export default function SignalsPage() {
       setTrackedTickers((prev) => [...prev, trimmed]);
       setAddTickerOpen(false);
       setNewTicker("");
+      setSelectedSymbol("");
       toast.success(`${trimmed} added to tracking`);
     } catch {
       toast.error(`Failed to add ${trimmed}. Please try again.`);
@@ -280,18 +282,13 @@ export default function SignalsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="py-2">
-            <Input
-              placeholder="e.g. AAPL"
-              value={newTicker}
-              onChange={(e) => {
-                setNewTicker(e.target.value.toUpperCase());
+            <SymbolSearch
+              value={selectedSymbol}
+              onSearch={(sym) => {
+                setSelectedSymbol(sym);
+                setNewTicker(sym);
                 setTickerError("");
               }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleAddTicker();
-              }}
-              maxLength={5}
-              autoFocus
             />
             {tickerError && (
               <p className="mt-2 text-sm text-destructive">{tickerError}</p>
