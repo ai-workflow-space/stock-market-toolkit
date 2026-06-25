@@ -57,6 +57,8 @@ class YFinanceFundamentalsProvider:
 
     name = "yfinance"
 
+    FUNDAMENTALS_TTL = 3600  # 1 hr
+
     def income_statement(self, symbol: str) -> pd.DataFrame:
         return yf.Ticker(symbol.upper()).income_stmt
 
@@ -66,5 +68,37 @@ class YFinanceFundamentalsProvider:
     def cash_flow(self, symbol: str) -> pd.DataFrame:
         return yf.Ticker(symbol.upper()).cashflow
 
-    def dividends(self, symbol: str) -> pd.DataFrame:
+    def dividends(self, symbol: str) -> pd.Series:
         return yf.Ticker(symbol.upper()).dividends
+
+    async def get_income_statement(self, symbol: str) -> pd.DataFrame:
+        key = cache_key("income_stmt", symbol)
+
+        async def loader() -> pd.DataFrame:
+            return await asyncio.to_thread(self.income_statement, symbol)
+
+        return await cached(key, self.FUNDAMENTALS_TTL, loader)
+
+    async def get_balance_sheet(self, symbol: str) -> pd.DataFrame:
+        key = cache_key("balance_sheet", symbol)
+
+        async def loader() -> pd.DataFrame:
+            return await asyncio.to_thread(self.balance_sheet, symbol)
+
+        return await cached(key, self.FUNDAMENTALS_TTL, loader)
+
+    async def get_cash_flow(self, symbol: str) -> pd.DataFrame:
+        key = cache_key("cash_flow", symbol)
+
+        async def loader() -> pd.DataFrame:
+            return await asyncio.to_thread(self.cash_flow, symbol)
+
+        return await cached(key, self.FUNDAMENTALS_TTL, loader)
+
+    async def get_dividends(self, symbol: str) -> pd.Series:
+        key = cache_key("dividends", symbol)
+
+        async def loader() -> pd.Series:
+            return await asyncio.to_thread(self.dividends, symbol)
+
+        return await cached(key, self.FUNDAMENTALS_TTL, loader)

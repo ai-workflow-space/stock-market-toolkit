@@ -44,6 +44,33 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 
+class FundamentalsResponse(BaseModel):
+    symbol: str
+    cached_at: str = ""
+    f_score: int
+    roe: Optional[float] = None
+    roa: Optional[float] = None
+    gross_margin: Optional[float] = None
+    op_margin: Optional[float] = None
+    net_margin: Optional[float] = None
+    eps_growth: Optional[float] = None
+    rev_growth: Optional[float] = None
+
+
+class YearlyDividend(BaseModel):
+    year: int
+    total: float
+
+
+class DividendsResponse(BaseModel):
+    symbol: str
+    cached_at: str = ""
+    yearly: list[YearlyDividend]
+    yield_pct: Optional[float] = None
+    payout_ratio: Optional[float] = None
+    streak: int
+
+
 # ─── Stock schemas ───
 class StockDataResponse(BaseModel):
     symbol: str
