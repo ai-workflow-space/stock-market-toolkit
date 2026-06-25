@@ -37,7 +37,8 @@ async def get_db() -> AsyncSession:
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    await bootstrap_default_user()
+    # bootstrap_default_user disabled — first admin created via /api/auth/bootstrap
+    # await bootstrap_default_user()
 
 
 async def bootstrap_default_user():
