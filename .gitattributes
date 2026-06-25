@@ -1,0 +1,9 @@
+# Prevent merge conflicts in lockfiles — resolve by regenerating, not 3-way merging
+package-lock.json merge=ours linguist-generated=true
+
+# Bot-managed on main; feature branches must not touch them
+CHANGELOG.md merge=ours
+.release-please-manifest.json merge=ours
+
+# Route/barrel files: prefer append-only registration to reduce parallel-feature conflicts
+# When two PRs conflict in App.tsx or similar, prefer a human/agent to resolve (no merge=ours)
