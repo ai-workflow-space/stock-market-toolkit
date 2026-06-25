@@ -8,6 +8,7 @@ class UserRegister(BaseModel):
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=100)
     password: str = Field(..., min_length=8, max_length=128)
+    invite_token: Optional[str] = None
 
     @field_validator("username")
     @classmethod
@@ -214,6 +215,7 @@ class NotificationDeliveryResponse(BaseModel):
 # ─── Invite code schemas ───
 class InviteCodeCreate(BaseModel):
     expires_in_days: int = Field(default=7, ge=1, le=365)
+    email: Optional[str] = None
 
 
 class InviteCodeResponse(BaseModel):
@@ -225,6 +227,8 @@ class InviteCodeResponse(BaseModel):
     expires_at: datetime
     is_active: bool
     created_at: Optional[datetime] = None
+    email: Optional[str] = None
+    token: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -233,6 +237,21 @@ class InviteCodeResponse(BaseModel):
 class InviteCodeListResponse(BaseModel):
     codes: list[InviteCodeResponse]
     total: int
+
+
+class InviteSendRequest(BaseModel):
+    email: EmailStr
+
+
+class InviteSendResponse(BaseModel):
+    message: str
+    invite_code: str
+    token: str
+    invite_link: Optional[str] = None
+
+
+class InviteRevokeRequest(BaseModel):
+    token: str
 
 
 class WatchlistCreate(BaseModel):
