@@ -4,6 +4,7 @@ yfinance==1.4.1
 pandas>=2.3.2
 # pandas-ta 0.4.x requires Python 3.12+; install manually if needed
 # pandas-ta==0.4.71b0
+ta>=0.10.0
 python-dateutil==2.9.0
 requests==2.32.0
 
