@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from datetime import datetime, timezone
 
 from app.database import get_db
 from app.models import (
     User,
     Alert,
+    AlertCondition,
     NotificationSettings,
     TriggeredAlert,
     NotificationDelivery,
@@ -54,16 +56,43 @@ async def create_alert(
             detail=f"Maximum of {MAX_ALERTS_PER_USER} alerts per user reached",
         )
 
-    alert = Alert(
-        user_id=current_user.id,
-        symbol=data.symbol.upper(),
-        symbol_name=data.symbol_name,
-        condition_type=data.condition_type,
-        threshold=data.threshold,
-        period=data.period,
-        enabled=True,
-    )
-    db.add(alert)
+    conditions = data.conditions or []
+
+    if conditions:
+        alert = Alert(
+            user_id=current_user.id,
+            symbol=data.symbol.upper(),
+            symbol_name=data.symbol_name,
+            condition_type="multi",
+            threshold=data.threshold or 0.0,
+            period=data.period,
+            combinator=data.combinator,
+            enabled=True,
+        )
+        db.add(alert)
+        await db.flush()
+        for c in conditions:
+            db.add(
+                AlertCondition(
+                    alert_id=alert.id,
+                    metric=c.metric,
+                    operator=c.operator,
+                    value=c.value,
+                )
+            )
+    else:
+        alert = Alert(
+            user_id=current_user.id,
+            symbol=data.symbol.upper(),
+            symbol_name=data.symbol_name,
+            condition_type=data.condition_type,
+            threshold=data.threshold,
+            period=data.period,
+            combinator=data.combinator,
+            enabled=True,
+        )
+        db.add(alert)
+
     await db.commit()
     await db.refresh(alert)
     return alert
@@ -76,6 +105,7 @@ async def list_alerts(
 ):
     result = await db.execute(
         select(Alert)
+        .options(selectinload(Alert.conditions))
         .where(Alert.user_id == current_user.id)
         .order_by(Alert.created_at.desc())
     )
@@ -234,7 +264,9 @@ async def get_alert(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(Alert).where(Alert.id == alert_id, Alert.user_id == current_user.id)
+        select(Alert)
+        .options(selectinload(Alert.conditions))
+        .where(Alert.id == alert_id, Alert.user_id == current_user.id)
     )
     alert = result.scalar_one_or_none()
     if not alert:
@@ -269,6 +301,14 @@ async def update_alert(
 
     await db.commit()
     await db.refresh(alert)
+    # Reload with conditions for response
+    result = await db.execute(
+        select(Alert)
+        .options(selectinload(Alert.conditions))
+        .where(Alert.id == alert.id)
+    )
+    alert = result.scalar_one()
+    return alert
     return alert
 
 

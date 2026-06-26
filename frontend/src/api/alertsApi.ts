@@ -12,15 +12,25 @@ function authHeaders() {
 }
 
 // ─── Alert Types ───
+export interface AlertCondition {
+  id: number;
+  alert_id: number;
+  metric: "price" | "rsi" | "macd_hist" | "signal" | "pct_change";
+  operator: "gt" | "lt" | "crosses_above" | "eq";
+  value: number;
+}
+
 export interface Alert {
   id: number;
   user_id: string;
   symbol: string;
   symbol_name?: string;
-  condition_type: "above" | "below" | "pct_change_up" | "pct_change_down";
+  condition_type: string;
   threshold: number;
   period: string;
   enabled: boolean;
+  combinator?: "all" | "any";
+  conditions: AlertCondition[];
   cooldown_until: string | null;
   created_at: string;
 }
@@ -50,17 +60,25 @@ export interface NotificationSettings {
   updated_at: string | null;
 }
 
+export interface AlertConditionCreate {
+  metric: "price" | "rsi" | "macd_hist" | "signal" | "pct_change";
+  operator: "gt" | "lt" | "crosses_above" | "eq";
+  value: number;
+}
+
 export interface AlertCreate {
   symbol: string;
   symbol_name?: string;
-  condition_type: "above" | "below" | "pct_change_up" | "pct_change_down";
-  threshold: number;
+  condition_type?: "above" | "below" | "pct_change_up" | "pct_change_down";
+  threshold?: number;
   period?: string;
+  combinator?: "all" | "any";
+  conditions?: AlertConditionCreate[];
 }
 
 export interface AlertUpdate {
   symbol?: string;
-  condition_type?: "above" | "below" | "pct_change_up" | "pct_change_down";
+  condition_type?: string;
   threshold?: number;
   period?: string;
   enabled?: boolean;
