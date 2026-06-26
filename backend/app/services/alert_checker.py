@@ -37,6 +37,28 @@ CONDITION_LABELS = {
 }
 
 
+def _build_email_body(
+    symbol: str,
+    alert: Alert,
+    current_price: float,
+    triggered_at: datetime,
+) -> str:
+    condition_label = CONDITION_LABELS.get(alert.condition_type, alert.condition_type)
+    threshold_str = (
+        f"${alert.threshold:.2f}"
+        if alert.condition_type in ("above", "below")
+        else f"{alert.threshold:.1f}%"
+    )
+    return f"""<h2>Price Alert Triggered</h2>
+<p><b>Symbol:</b> {symbol}</p>
+<p><b>Condition:</b> {condition_label}</p>
+<p><b>Current Price:</b> ${current_price:.2f}</p>
+<p><b>Threshold:</b> {threshold_str}</p>
+<p><b>Triggered At:</b> {triggered_at.strftime("%Y-%m-%d %H:%M UTC")}</p>
+<hr>
+<p>View and manage your alerts at <a href="https://stock-toolkit.app/alerts">stock-toolkit.app</a>.</p>"""
+
+
 def _clean(v):
     """Replace NaN/inf with None."""
     if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
@@ -159,28 +181,6 @@ async def _send_discord_notification(
     except Exception as e:
         log.error(f"Failed to send Discord notification: {e}")
         return (False, None, str(e))
-
-
-def _build_email_body(
-    symbol: str,
-    alert: Alert,
-    current_price: float,
-    triggered_at: datetime,
-) -> str:
-    condition_label = CONDITION_LABELS.get(alert.condition_type, alert.condition_type)
-    threshold_str = (
-        f"${alert.threshold:.2f}"
-        if alert.condition_type in ("above", "below")
-        else f"{alert.threshold:.1f}%"
-    )
-    return f"""<h2>Price Alert Triggered</h2>
-<p><b>Symbol:</b> {symbol}</p>
-<p><b>Condition:</b> {condition_label}</p>
-<p><b>Current Price:</b> ${current_price:.2f}</p>
-<p><b>Threshold:</b> {threshold_str}</p>
-<p><b>Triggered At:</b> {triggered_at.strftime("%Y-%m-%d %H:%M UTC")}</p>
-<hr>
-<p>View and manage your alerts at <a href="https://stock-toolkit.app/alerts">stock-toolkit.app</a>.</p>"""
 
 
 async def check_alerts():
@@ -307,6 +307,7 @@ async def check_alerts():
                                 )
                                 if success:
                                     triggered_record.notified = True
+                            # Email notification
                             if (
                                 settings.email_enabled
                                 and settings.email_address
@@ -319,7 +320,7 @@ async def check_alerts():
                                     email_success = await send_email(
                                         smtp_cfg,
                                         settings.email_address,
-                                        subject=f"Price Alert: {symbol} {alert.condition_type}",
+                                        f"Price Alert: {symbol}",
                                         html_body=email_body,
                                     )
                                     delivery_records.append(

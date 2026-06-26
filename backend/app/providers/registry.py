@@ -11,6 +11,8 @@ from app.providers.yfinance import (
 )
 
 if TYPE_CHECKING:
+    # For annotations only; the runtime import is lazy in _get_finmind() so a
+    # missing FinMind package degrades gracefully to the yfinance fallback.
     from app.providers.finmind import FinMindProvider
 
 log = logging.getLogger(__name__)
@@ -23,10 +25,10 @@ def _is_taiwan(symbol: str) -> bool:
 
 # Singleton fundamentals provider instances
 _yf_fundamentals = YFinanceFundamentalsProvider()
-_finmind_fundamentals: "FinMindProvider | None" = None
+_finmind_fundamentals: "FinMindProvider | None" = None  # type: ignore[name-defined]
 
 
-def _get_finmind() -> "FinMindProvider | None":
+def _get_finmind() -> "FinMindProvider | None":  # type: ignore[name-defined]
     """Lazily instantiate FinMindProvider, returning None if package not installed."""
     global _finmind_fundamentals
     if _finmind_fundamentals is None:
@@ -39,7 +41,7 @@ def _get_finmind() -> "FinMindProvider | None":
     return _finmind_fundamentals
 
 
-def get_fundamentals_provider(symbol: str) -> "YFinanceFundamentalsProvider | FinMindProvider":
+def get_fundamentals_provider(symbol: str) -> "YFinanceFundamentalsProvider | FinMindProvider":  # type: ignore[name-defined]
     """
     Return the appropriate fundamentals provider for the given symbol.
 
