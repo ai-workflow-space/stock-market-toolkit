@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.6.0...v0.6.1) (2026-06-26)
+
+
+### Bug Fixes
+
+* restore public derive_key alias in crypto (unbreaks test_admin_smtp on main) ([b27104d](https://github.com/ai-workflow-space/stock-market-toolkit/commit/b27104d0a448e97876a7dd66bb91d761ebc2fccc))
+
 ## [0.6.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.5.1...v0.6.0) (2026-06-26)
 
 
