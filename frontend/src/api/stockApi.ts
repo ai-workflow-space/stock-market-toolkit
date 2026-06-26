@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { StockData, Indicators, StockInfo } from "../types";
+import type { StockData, Indicators, StockInfo, Fundamentals, DividendData } from "../types";
 
 const API = import.meta.env.VITE_API_URL || "";
 
@@ -30,6 +30,20 @@ export async function getIndicators(symbol: string, period: string): Promise<Ind
 
 export async function getStockInfo(symbol: string): Promise<StockInfo> {
   const res = await axios.get(`${API}/api/stock/${symbol}/info`, {
+    headers: authHeaders(),
+  });
+  return res.data;
+}
+
+export async function getFundamentals(symbol: string): Promise<Fundamentals> {
+  const res = await axios.get(`${API}/api/stock/${symbol}/fundamentals`, {
+    headers: authHeaders(),
+  });
+  return res.data;
+}
+
+export async function getDividends(symbol: string): Promise<DividendData> {
+  const res = await axios.get(`${API}/api/stock/${symbol}/dividends`, {
     headers: authHeaders(),
   });
   return res.data;

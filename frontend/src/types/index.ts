@@ -58,6 +58,33 @@ export const TIMEFRAMES = [
   { label: "Max", value: "max" },
 ];
 
+export interface Fundamentals {
+  symbol: string;
+  cached_at: string;
+  f_score: number;
+  roe: number | null;
+  roa: number | null;
+  gross_margin: number | null;
+  op_margin: number | null;
+  net_margin: number | null;
+  eps_growth: number | null;
+  rev_growth: number | null;
+}
+
+export interface YearlyDividend {
+  year: number;
+  total: number;
+}
+
+export interface DividendData {
+  symbol: string;
+  cached_at: string;
+  yearly: YearlyDividend[];
+  yield_pct: number | null;
+  payout_ratio: number | null;
+  streak: number;
+}
+
 export type SignalDirection = "bullish" | "bearish" | "neutral";
 
 export type SignalType = 

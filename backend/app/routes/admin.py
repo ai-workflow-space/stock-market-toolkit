@@ -6,7 +6,7 @@ import secrets
 import json
 from pathlib import Path
 from typing import Optional
-from app.models import User, InviteCode
+from app.models import User, InviteCode, SmtpSettings
 from app.database import get_db
 from app.schemas import (
     InviteCodeCreate,
@@ -15,9 +15,15 @@ from app.schemas import (
     InviteSendRequest,
     InviteSendResponse,
     InviteRevokeRequest,
+    SmtpSettingsResponse,
+    SmtpSettingsUpdate,
+    SmtpTestRequest,
+    SmtpTestResponse,
     AuditLogListResponse,
 )
 from app.auth import require_admin
+from app.utils.crypto import encrypt
+from app.services.mailer import send_test_email
 from app.services.audit import write_audit, get_audit_logs
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -171,6 +177,81 @@ async def revoke_invite(
         request=request,
     )
     return {"message": "Invitation revoked"}
+@router.get("/smtp", response_model=SmtpSettingsResponse)
+async def get_smtp_settings(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    result = await db.get(SmtpSettings, 1)
+    if not result:
+        raise HTTPException(status_code=404, detail="SMTP settings not configured")
+    return SmtpSettingsResponse(
+        host=result.host,
+        port=result.port,
+        use_tls=result.use_tls,
+        username=result.username,
+        password_set=bool(result.password_encrypted),
+        from_address=result.from_address,
+        reply_to=result.reply_to,
+        updated_at=result.updated_at,
+    )
+
+
+@router.put("/smtp", response_model=SmtpSettingsResponse)
+async def upsert_smtp_settings(
+    data: SmtpSettingsUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    settings = await db.get(SmtpSettings, 1)
+    if settings is None:
+        settings = SmtpSettings(id=1)
+        db.add(settings)
+
+    if data.host is not None:
+        settings.host = data.host
+    if data.port is not None:
+        settings.port = data.port
+    if data.use_tls is not None:
+        settings.use_tls = data.use_tls
+    if data.username is not None:
+        settings.username = data.username
+    if data.password is not None:
+        settings.password_encrypted = encrypt(data.password)
+    if data.from_address is not None:
+        settings.from_address = data.from_address
+    if data.reply_to is not None:
+        settings.reply_to = data.reply_to
+
+    await db.commit()
+    await db.refresh(settings)
+
+    return SmtpSettingsResponse(
+        host=settings.host,
+        port=settings.port,
+        use_tls=settings.use_tls,
+        username=settings.username,
+        password_set=bool(settings.password_encrypted),
+        from_address=settings.from_address,
+        reply_to=settings.reply_to,
+        updated_at=settings.updated_at,
+    )
+
+
+@router.post("/smtp/test", response_model=SmtpTestResponse)
+async def test_smtp_settings(
+    data: SmtpTestRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    settings = await db.get(SmtpSettings, 1)
+    if not settings:
+        raise HTTPException(status_code=404, detail="SMTP settings not configured")
+    if not settings.host or not settings.from_address:
+        raise HTTPException(status_code=400, detail="SMTP host and from_address must be configured")
+
+    success, message = await send_test_email(settings, data.to_email)
+    return SmtpTestResponse(success=success, message=message)
 
 
 @router.get("/logs")
@@ -260,3 +341,65 @@ async def list_audit_logs(
         per_page=per_page,
     )
     return AuditLogListResponse(logs=logs, total=total)
+
+
+@router.get("/access-logs")
+async def get_access_logs(
+    since: Optional[str] = Query(
+        None, description="ISO datetime filter (logs after this time)"
+    ),
+    limit: int = Query(100, ge=1, le=10000, description="Max number of log entries"),
+    search: Optional[str] = Query(None, description="Text search across log entries"),
+    status: Optional[int] = Query(
+        None, description="Filter by HTTP status code"
+    ),
+    current_user: User = Depends(require_admin),
+):
+    log_file = Path(__file__).resolve().parent.parent.parent / "logs" / "app.json"
+
+    if not log_file.exists():
+        return {"logs": [], "total": 0}
+
+    entries: list[dict] = []
+    try:
+        with open(log_file, "r") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    parsed = json.loads(line)
+                    if parsed.get("type") == "access":
+                        entries.append(parsed)
+                except json.JSONDecodeError:
+                    continue
+    except OSError:
+        return {"logs": [], "total": 0}
+
+    if status is not None:
+        entries = [e for e in entries if e.get("status") == status]
+
+    if since:
+        try:
+            since_dt = datetime.fromisoformat(since)
+            entries = [
+                e
+                for e in entries
+                if e.get("timestamp")
+                and datetime.fromisoformat(e["timestamp"]) >= since_dt
+            ]
+        except ValueError:
+            pass
+
+    if search:
+        search_lower = search.lower()
+        entries = [
+            e for e in entries if search_lower in json.dumps(e, default=str).lower()
+        ]
+
+    entries.sort(key=lambda e: e.get("timestamp", ""), reverse=True)
+
+    total = len(entries)
+    entries = entries[:limit]
+
+    return {"logs": entries, "total": total}
