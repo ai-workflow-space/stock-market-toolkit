@@ -97,8 +97,11 @@ export default function SignalsPage() {
           { headers: { Authorization: `Bearer ${token}` } },
         );
         if (!res.ok) throw new Error("Failed to fetch signals");
-        const data = (await res.json()) as AnalysisResponse[];
-        const mapped = data.map((d) => mapAnalysisToSignal(d));
+        const raw = await res.json();
+        const data = Array.isArray(raw)
+          ? { signals: raw as AnalysisResponse[], errors: [] as { symbol: string; error: string }[] }
+          : (raw as { signals: AnalysisResponse[]; errors: { symbol: string; error: string }[] });
+        const mapped = data.signals.map((d) => mapAnalysisToSignal(d));
         setSignals(mapped);
         if (mapped.length < symbols.length) {
           toast(`Loaded ${mapped.length} of ${symbols.length} symbols`);
