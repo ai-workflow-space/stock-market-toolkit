@@ -3,10 +3,17 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
+
 from app.providers.yfinance import (
     YFinanceMarketDataProvider,
     YFinanceFundamentalsProvider,
 )
+
+if TYPE_CHECKING:
+    # For annotations only; the runtime import is lazy in _get_finmind() so a
+    # missing FinMind package degrades gracefully to the yfinance fallback.
+    from app.providers.finmind import FinMindProvider
 
 log = logging.getLogger(__name__)
 
