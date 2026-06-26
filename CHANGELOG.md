@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.6.1](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.6.0...v0.6.1) (2026-06-26)
+
+
+### Bug Fixes
+
+* restore public derive_key alias in crypto (unbreaks test_admin_smtp on main) ([b27104d](https://github.com/ai-workflow-space/stock-market-toolkit/commit/b27104d0a448e97876a7dd66bb91d761ebc2fccc))
+
+## [0.6.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.5.1...v0.6.0) (2026-06-26)
+
+
+### Features
+
+* adopt Alembic migrations (BE-3) ([12b72c8](https://github.com/ai-workflow-space/stock-market-toolkit/commit/12b72c82de1c4b597762f8c0311d2a397670d5df)), closes [#105](https://github.com/ai-workflow-space/stock-market-toolkit/issues/105)
+* **DATA-1:** FinMind provider for Taiwan fundamentals & dividends ([c6e17b3](https://github.com/ai-workflow-space/stock-market-toolkit/commit/c6e17b34660c1edd89c18ce5c0e621183a63c5ef)), closes [#108](https://github.com/ai-workflow-space/stock-market-toolkit/issues/108)
+* **DATA-5:** replace mock signals with real signal generation ([57bec1f](https://github.com/ai-workflow-space/stock-market-toolkit/commit/57bec1f519d71c98afd204f4d6fe3ffa063b3208)), closes [#111](https://github.com/ai-workflow-space/stock-market-toolkit/issues/111)
+* **FE-3:** merge Watchlist into Signals with view toggle ([4ea2cfb](https://github.com/ai-workflow-space/stock-market-toolkit/commit/4ea2cfb393dcec51dec0b0414bbee1a9bc45453f)), closes [#119](https://github.com/ai-workflow-space/stock-market-toolkit/issues/119)
+* **FE-4:** fundamentals & dividend dashboard cards + DATA-3/DATA-4 API ([9c9c25f](https://github.com/ai-workflow-space/stock-market-toolkit/commit/9c9c25feec0e685c84c11a219c78c1b06e710c78)), closes [#118](https://github.com/ai-workflow-space/stock-market-toolkit/issues/118)
+* **NOTIF-3:** wire functional email notifications via SMTP ([4a9ea91](https://github.com/ai-workflow-space/stock-market-toolkit/commit/4a9ea918c115b0185d5746dc602c07bdf77526af))
+* notification delivery history (NOTIF-1) ([da5a035](https://github.com/ai-workflow-space/stock-market-toolkit/commit/da5a0355ba0d1e44d28b9d0dfba2e007cd24d6d5)), closes [#113](https://github.com/ai-workflow-space/stock-market-toolkit/issues/113)
+* **OBS-1:** structured system logging + admin viewer ([eebcad7](https://github.com/ai-workflow-space/stock-market-toolkit/commit/eebcad7fe6c209f7a589e36ee69d043a26f69df5))
+* **OBS-2:** audit log for security-relevant actions + admin viewer ([a7fca3b](https://github.com/ai-workflow-space/stock-market-toolkit/commit/a7fca3b1f445e42eab6bb7620264cb168f27d53b))
+* **OBS-2:** audit log for security-relevant actions + viewer (with OBS-1 infra) ([#146](https://github.com/ai-workflow-space/stock-market-toolkit/issues/146)) ([5e69779](https://github.com/ai-workflow-space/stock-market-toolkit/commit/5e697796011f0dfc2d1158f0f5cc466333f2c7a3))
+* **OBS-3:** access logs middleware + GET /api/admin/access-logs ([9bc0557](https://github.com/ai-workflow-space/stock-market-toolkit/commit/9bc0557f00dde3e9772fb37c858979bd763b8893)), closes [#125](https://github.com/ai-workflow-space/stock-market-toolkit/issues/125)
+* **OBS-4:** unified LogsPage with System/Audit/Access tabs ([0e61d40](https://github.com/ai-workflow-space/stock-market-toolkit/commit/0e61d407c97be42c8c8629230e975ef6c01f4556)), closes [#126](https://github.com/ai-workflow-space/stock-market-toolkit/issues/126)
+* server-side caching + provider abstraction (BE-1, BE-2) ([ee2c021](https://github.com/ai-workflow-space/stock-market-toolkit/commit/ee2c0210ec551201a5362cc1cdc98515dc35a7e4))
+* show current price & distance-to-threshold in alert dialog (FE-1) ([57e820b](https://github.com/ai-workflow-space/stock-market-toolkit/commit/57e820b17e3b6b0875b511d05dfe5cca577c9a31)), closes [#116](https://github.com/ai-workflow-space/stock-market-toolkit/issues/116)
+* show ticker name in alerts dialog and list (FE-2) ([8699392](https://github.com/ai-workflow-space/stock-market-toolkit/commit/86993929695b3d475920e39b706a83a439912b4a))
+* show user registration date in admin user management table ([e85382a](https://github.com/ai-workflow-space/stock-market-toolkit/commit/e85382ab198d442cfd7bf07b578f1682b8d90d5f))
+
+
+### Bug Fixes
+
+* **alembic:** consolidate migrations into app/alembic/versions (single head) ([9a9061f](https://github.com/ai-workflow-space/stock-market-toolkit/commit/9a9061f3d85b6a93c082abfb8189482930dda69a))
+* batch signal fetches with 500ms delay between batches to avoid rate limiting ([1a67669](https://github.com/ai-workflow-space/stock-market-toolkit/commit/1a6766900c20856c298487a6e1ae6751e023ede7))
+* copy alembic.ini into image + add psycopg2-binary so migrations run in container ([88aef95](https://github.com/ai-workflow-space/stock-market-toolkit/commit/88aef95d9ce9b45de149140c4c5ae4836a788272))
+* correct alembic migration signature + chain; keep condition label in alerts list ([07accca](https://github.com/ai-workflow-space/stock-market-toolkit/commit/07accca35ea39e1c9340d363426b2c28eba1fa6e))
+* **DATA-1:** unbreak CI — TYPE_CHECKING import + revert out-of-scope TA-lib swap ([de85c3e](https://github.com/ai-workflow-space/stock-market-toolkit/commit/de85c3e95cb9807714d43813779a920d0f076bda))
+* export market_provider singleton from app.providers; use it directly in routes ([658d8f8](https://github.com/ai-workflow-space/stock-market-toolkit/commit/658d8f819cee669faa8b3ac81df35ac2aabb8066))
+* import pandas as pd for _fs_val type hints ([05e42a9](https://github.com/ai-workflow-space/stock-market-toolkit/commit/05e42a934ab6181374f70b6903f597e9b514991d))
+* move alembic/ into app/ so COPY app/ includes it; update script_location to app/alembic ([994a521](https://github.com/ai-workflow-space/stock-market-toolkit/commit/994a52118931874ebe5bd5d085e6fc3c22bfdc24))
+* **OBS-1:** disable react-hooks/set-state-in-effect for loadLogs effect ([a92a91b](https://github.com/ai-workflow-space/stock-market-toolkit/commit/a92a91bffd7b71d4939fa522adbfcd2a86d50a95))
+* restore httpx to requirements.txt ([65e3d6c](https://github.com/ai-workflow-space/stock-market-toolkit/commit/65e3d6c3696c6bdeb5f8e7970d3e18d370e74034))
+* restore httpx, ta, cryptography dependencies ([a2e3376](https://github.com/ai-workflow-space/stock-market-toolkit/commit/a2e3376c42d3138aff814c81312ba974fec1d9ab))
+* run Alembic in-process and fail closed on migration error ([3bd70e5](https://github.com/ai-workflow-space/stock-market-toolkit/commit/3bd70e5f5c0dfbc4106d6f2225a03b52cc334131))
+
 ## [0.5.1](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.5.0...v0.5.1) (2026-06-25)
 
 

@@ -1,7 +1,7 @@
 """add_ingestion_tables
 
 Revision ID: c4d5e6f7a8b9
-Revises: b2c3d4e5f6a1
+Revises: 3c4d5e6f7a8b
 Create Date: 2026-06-26 00:00:00.000000
 
 """
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "c4d5e6f7a8b9"
-down_revision: Union[str, None] = "b2c3d4e5f6a1"
+down_revision: Union[str, None] = "3c4d5e6f7a8b"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

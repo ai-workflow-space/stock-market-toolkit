@@ -31,7 +31,6 @@ const NAV_ITEMS = [
   { to: "/", label: "Dashboard", end: true },
   { to: "/signals", label: "Signals", end: false },
   { to: "/compare", label: "Compare", end: false },
-  { to: "/watchlist", label: "Watchlist", end: false },
   { to: "/alerts", label: "Alerts", end: false },
   { to: "/settings", label: "Settings", end: false },
 ];
@@ -144,6 +143,11 @@ export default function Navbar() {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>{user.username}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                {user?.is_admin && (
+                  <DropdownMenuItem onClick={() => navigate("/admin/logs")}>
+                    Log Viewer
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => navigate("/admin/invites")}>
                   Invitation Codes
                 </DropdownMenuItem>

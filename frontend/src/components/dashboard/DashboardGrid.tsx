@@ -1,20 +1,24 @@
-import type { StockData, Indicators, StockInfo } from "@/types";
+import type { StockData, Indicators, StockInfo, Fundamentals, DividendData } from "@/types";
 import ChartCard from "@/components/common/ChartCard";
 import PriceChart from "./PriceChart";
 import RsiChart from "./RsiChart";
 import MacdChart from "./MacdChart";
 import StockInfoCard from "./StockInfoCard";
 import HistoryTable from "./HistoryTable";
+import FundamentalsCard from "./FundamentalsCard";
+import DividendCard from "./DividendCard";
 import WatchlistButton from "@/components/common/WatchlistButton";
 
 export interface DashboardGridProps {
   stock: StockData;
   indicators: Indicators;
   info: StockInfo;
+  fundamentals: Fundamentals | null;
+  dividends: DividendData | null;
   active: Set<string>;
 }
 
-export default function DashboardGrid({ stock, indicators, info, active }: DashboardGridProps) {
+export default function DashboardGrid({ stock, indicators, info, fundamentals, dividends, active }: DashboardGridProps) {
   const dates = stock.timestamp.map((t) =>
     new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
   );
@@ -52,6 +56,18 @@ export default function DashboardGrid({ stock, indicators, info, active }: Dashb
       <div className="col-span-12 lg:col-span-8">
         <HistoryTable stock={stock} />
       </div>
+
+      {fundamentals && (
+        <div className="col-span-12 lg:col-span-4">
+          <FundamentalsCard data={fundamentals} />
+        </div>
+      )}
+
+      {dividends && (
+        <div className="col-span-12 lg:col-span-4">
+          <DividendCard data={dividends} />
+        </div>
+      )}
     </div>
   );
 }

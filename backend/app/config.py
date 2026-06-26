@@ -29,6 +29,11 @@ class Settings:
     ADMIN_PASSWORD: str = _get_env("ADMIN_PASSWORD", "Admin@1234")
     INGEST_DELAY_SECONDS: float = float(_get_env("INGEST_DELAY_SECONDS", "1.5"))
     INGEST_MAX_SYMBOLS: int = int(_get_env("INGEST_MAX_SYMBOLS", "200"))
+    ENCRYPTION_KEY: str = _get_env(
+        "ENCRYPTION_KEY",
+        "dev-encryption-key-stocktoolkit-change-in-production-openssl-rand-hex-64",
+    )
+    FINMIND_TOKEN: str = _get_env("FINMIND_TOKEN", "")
 
 
 @lru_cache

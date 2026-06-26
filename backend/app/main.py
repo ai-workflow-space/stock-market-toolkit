@@ -11,7 +11,9 @@ from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+import structlog
 import logging
+from logging.handlers import RotatingFileHandler
 
 from app import __version__
 from app.config import get_settings
@@ -23,18 +25,67 @@ from app.routes import (
     analysis,
     admin,
     watchlist,
-    fundamentals,
 )
+from app.middleware.request_id import RequestIDMiddleware
+from app.middleware.access_log import AccessLogMiddleware
 
 settings = get_settings()
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
 
+def setup_logging() -> None:
+    log_dir = Path(__file__).resolve().parent.parent / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    SECRET_WORDS = {"password", "token", "secret", "key", "authorization"}
+
+    def scrub_secrets(logger, method_name, event_dict):
+        for key in list(event_dict.keys()):
+            if isinstance(key, str):
+                key_lower = key.lower()
+                if any(w in key_lower for w in SECRET_WORDS):
+                    event_dict[key] = "***"
+        return event_dict
+
+    structlog.configure(
+        processors=[
+            structlog.stdlib.filter_by_level,
+            structlog.stdlib.add_logger_name,
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.PositionalArgumentsFormatter(),
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            scrub_secrets,
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
+
+    file_handler = RotatingFileHandler(
+        log_dir / "app.json",
+        maxBytes=10 * 1024 * 1024,
+        backupCount=5,
+    )
+    file_handler.setLevel(logging.DEBUG)
+
+    json_formatter = structlog.stdlib.ProcessorFormatter(
+        processor=structlog.processors.JSONRenderer(),
+    )
+    file_handler.setFormatter(json_formatter)
+
+    root_logger = logging.getLogger()
+    root_logger.addHandler(file_handler)
+    root_logger.setLevel(getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    setup_logging()
     log.info("Running database migrations...")
     from alembic import command
     from alembic.config import Config
@@ -74,6 +125,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(RequestIDMiddleware)
+app.add_middleware(AccessLogMiddleware)
+
 # Rate limit exceeded handler
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -86,7 +140,6 @@ app.include_router(mcp.router)
 app.include_router(analysis.router)
 app.include_router(watchlist.router)
 app.include_router(admin.router)
-app.include_router(fundamentals.router)
 
 
 @app.get("/health")

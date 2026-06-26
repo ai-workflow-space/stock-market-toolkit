@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, startTransition, lazy, Suspense } from "react";
 import { LayoutGrid, List } from "lucide-react";
-import { getStock, getIndicators, getStockInfo } from "@/api/stockApi";
-import type { StockData, Indicators, StockInfo } from "@/types";
+import { getStock, getIndicators, getStockInfo, getFundamentals, getDividends } from "@/api/stockApi";
+import type { StockData, Indicators, StockInfo, Fundamentals, DividendData } from "@/types";
 import { TIMEFRAMES } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,6 +41,8 @@ export default function DashboardPage() {
   const [stock, setStock] = useState<StockData | null>(null);
   const [indicators, setIndicators] = useState<Indicators | null>(null);
   const [info, setInfo] = useState<StockInfo | null>(null);
+  const [fundamentals, setFundamentals] = useState<Fundamentals | null>(null);
+  const [dividends, setDividends] = useState<DividendData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [active, setActive] = useState<string[]>(["sma20", "rsi", "macd"]);
@@ -53,16 +55,20 @@ export default function DashboardPage() {
     let cancelled = false;
     (async () => {
       try {
-        const [st, ind, inf] = await Promise.all([
+        const [st, ind, inf, fund, divs] = await Promise.all([
           getStock(symbol, period),
           getIndicators(symbol, period),
           getStockInfo(symbol),
+          getFundamentals(symbol),
+          getDividends(symbol),
         ]);
         if (cancelled) return;
         startTransition(() => {
           setStock(st);
           setIndicators(ind);
           setInfo(inf);
+          setFundamentals(fund);
+          setDividends(divs);
           setError("");
         });
       } catch (e: unknown) {
@@ -71,6 +77,8 @@ export default function DashboardPage() {
         setStock(null);
         setIndicators(null);
         setInfo(null);
+        setFundamentals(null);
+        setDividends(null);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -114,10 +122,10 @@ export default function DashboardPage() {
       ) : ready && stock && indicators && info ? (
         editMode ? (
           <Suspense fallback={<DashboardSkeleton />}>
-            <EditableGrid stock={stock} indicators={indicators} info={info} active={activeSet} />
+            <EditableGrid stock={stock} indicators={indicators} info={info} fundamentals={fundamentals} dividends={dividends} active={activeSet} />
           </Suspense>
         ) : (
-          <DashboardGrid stock={stock} indicators={indicators} info={info} active={activeSet} />
+          <DashboardGrid stock={stock} indicators={indicators} info={info} fundamentals={fundamentals} dividends={dividends} active={activeSet} />
         )
       ) : (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-16 text-center text-sm text-muted-foreground">

@@ -10,7 +10,8 @@ import math
 import httpx
 
 from app.database import AsyncSessionLocal
-from app.models import Alert, NotificationSettings, TriggeredAlert, NotificationDelivery
+from app.models import Alert, NotificationSettings, TriggeredAlert, NotificationDelivery, SmtpSettings
+from app.services.mailer import send_email
 
 log = logging.getLogger(__name__)
 
@@ -34,6 +35,28 @@ CONDITION_LABELS = {
     "pct_change_up": "📈 +% Up",
     "pct_change_down": "📉 -% Down",
 }
+
+
+def _build_email_body(
+    symbol: str,
+    alert: Alert,
+    current_price: float,
+    triggered_at: datetime,
+) -> str:
+    condition_label = CONDITION_LABELS.get(alert.condition_type, alert.condition_type)
+    threshold_str = (
+        f"${alert.threshold:.2f}"
+        if alert.condition_type in ("above", "below")
+        else f"{alert.threshold:.1f}%"
+    )
+    return f"""<h2>Price Alert Triggered</h2>
+<p><b>Symbol:</b> {symbol}</p>
+<p><b>Condition:</b> {condition_label}</p>
+<p><b>Current Price:</b> ${current_price:.2f}</p>
+<p><b>Threshold:</b> {threshold_str}</p>
+<p><b>Triggered At:</b> {triggered_at.strftime("%Y-%m-%d %H:%M UTC")}</p>
+<hr>
+<p>View and manage your alerts at <a href="https://stock-toolkit.app/alerts">stock-toolkit.app</a>.</p>"""
 
 
 def _clean(v):
@@ -284,7 +307,33 @@ async def check_alerts():
                                 )
                                 if success:
                                     triggered_record.notified = True
-                            # Email notification could be added here
+                            # Email notification
+                            if (
+                                settings.email_enabled
+                                and settings.email_address
+                            ):
+                                smtp_cfg = await db.get(SmtpSettings, 1)
+                                if smtp_cfg and smtp_cfg.host:
+                                    email_body = _build_email_body(
+                                        symbol, alert, current_price, now
+                                    )
+                                    email_success = await send_email(
+                                        smtp_cfg,
+                                        settings.email_address,
+                                        f"Price Alert: {symbol}",
+                                        html_body=email_body,
+                                    )
+                                    delivery_records.append(
+                                        NotificationDelivery(
+                                            triggered_alert_id=None,
+                                            user_id=alert.user_id,
+                                            channel="email",
+                                            status="success" if email_success else "failed",
+                                            error=None if email_success else "Email send failed",
+                                        )
+                                    )
+                                    if email_success:
+                                        triggered_record.notified = True
 
                         # Flush to get triggered_record.id, then link deliveries
                         await db.flush()
