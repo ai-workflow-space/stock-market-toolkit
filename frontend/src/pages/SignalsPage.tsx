@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { Activity, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Activity, Plus, Star, TrendingUp, BarChart3, Loader2 } from "lucide-react";
 import SignalCard from "@/components/SignalCard";
 import StatCard from "@/components/common/StatCard";
 import SymbolSearch from "@/components/common/SymbolSearch";
+import WatchlistButton from "@/components/common/WatchlistButton";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +18,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
+import { cn } from "@/lib/utils";
 import type { Signal } from "@/types";
 
 type AnalysisResponse = {
@@ -57,7 +60,17 @@ function mapAnalysisToSignal(data: AnalysisResponse, symbolOverride?: string): S
 
 /* ─── Signals Page ─── */
 export default function SignalsPage() {
-  const { symbols: watchedSymbols, add: addToWatchlist, remove: removeFromWatchlist, isWatched } = useWatchlist();
+  const navigate = useNavigate();
+  const {
+    symbols: watchedSymbols,
+    add: addToWatchlist,
+    remove: removeFromWatchlist,
+    isWatched,
+    items,
+    loading: watchlistLoading,
+    error: watchlistError,
+    refresh: refreshWatchlist,
+  } = useWatchlist();
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [addTickerOpen, setAddTickerOpen] = useState(false);
@@ -65,6 +78,7 @@ export default function SignalsPage() {
   const [selectedSymbol, setSelectedSymbol] = useState("");
   const [tickerError, setTickerError] = useState("");
   const [addingTicker, setAddingTicker] = useState(false);
+  const [viewMode, setViewMode] = useState<"signals" | "list">("signals");
 
   useEffect(() => {
     const symbols = watchedSymbols;
@@ -161,6 +175,75 @@ export default function SignalsPage() {
   const bearish = signals.filter((s) => s.direction === "bearish");
   const neutral = signals.filter((s) => s.direction === "neutral");
 
+  const listViewContent = (
+    <div className="mx-auto max-w-3xl">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Tracked Symbols</h2>
+        <Button variant="outline" size="sm" onClick={refreshWatchlist} disabled={watchlistLoading}>
+          {watchlistLoading ? <Loader2 className="mr-1 size-4 animate-spin" /> : null}
+          Refresh
+        </Button>
+      </div>
+
+      {watchlistError && <p className="mb-4 text-sm text-destructive">{watchlistError}</p>}
+
+      {watchlistLoading ? (
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+            <Star className="size-8 text-muted-foreground" />
+            <p className="text-muted-foreground">No tracked symbols</p>
+            <p className="text-xs text-muted-foreground">
+              Add tickers to start tracking them here
+            </p>
+            <Button variant="outline" size="sm" onClick={() => setAddTickerOpen(true)}>
+              <Plus className="mr-1 size-4" />
+              Add Ticker
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {items.map((item) => (
+            <Card key={item.id}>
+              <CardContent className="flex items-center gap-4 py-4">
+                <WatchlistButton symbol={item.symbol} className="!text-yellow-500" />
+                <span
+                  className="flex-1 cursor-pointer font-bold text-base hover:underline"
+                  onClick={() => navigate(`/?symbol=${item.symbol}`)}
+                >
+                  {item.symbol}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Added {new Date(item.created_at).toLocaleDateString()}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(`/?symbol=${item.symbol}`)}
+                >
+                  <TrendingUp />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(`/compare?symbols=${item.symbol}`)}
+                >
+                  <BarChart3 />
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -172,6 +255,33 @@ export default function SignalsPage() {
           <Plus className="size-4" />
           Add Ticker
         </Button>
+      </div>
+
+      <div className="flex items-center gap-1 self-start rounded-lg border bg-muted p-1">
+        <button
+          type="button"
+          onClick={() => setViewMode("signals")}
+          className={cn(
+            "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+            viewMode === "signals"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          Signals
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode("list")}
+          className={cn(
+            "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+            viewMode === "list"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          Tracked
+        </button>
       </div>
 
       <Dialog open={addTickerOpen} onOpenChange={setAddTickerOpen}>
@@ -206,7 +316,7 @@ export default function SignalsPage() {
         </DialogContent>
       </Dialog>
 
-      {loading ? (
+      {viewMode === "list" ? listViewContent : loading ? (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Skeleton className="h-[76px] rounded-xl" />
