@@ -39,9 +39,37 @@ class UserResponse(BaseModel):
     is_active: bool
     is_admin: bool = False
     created_at: Optional[datetime] = None
+    last_login_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+
+class FundamentalsResponse(BaseModel):
+    symbol: str
+    cached_at: str = ""
+    f_score: int
+    roe: Optional[float] = None
+    roa: Optional[float] = None
+    gross_margin: Optional[float] = None
+    op_margin: Optional[float] = None
+    net_margin: Optional[float] = None
+    eps_growth: Optional[float] = None
+    rev_growth: Optional[float] = None
+
+
+class YearlyDividend(BaseModel):
+    year: int
+    total: float
+
+
+class DividendsResponse(BaseModel):
+    symbol: str
+    cached_at: str = ""
+    yearly: list[YearlyDividend]
+    yield_pct: Optional[float] = None
+    payout_ratio: Optional[float] = None
+    streak: int
 
 
 # ─── Stock schemas ───
@@ -277,3 +305,37 @@ class WatchlistResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ─── SMTP schemas ───
+class SmtpSettingsResponse(BaseModel):
+    host: str
+    port: int
+    use_tls: bool
+    username: Optional[str] = None
+    password_set: bool
+    from_address: str
+    reply_to: Optional[str] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class SmtpSettingsUpdate(BaseModel):
+    host: Optional[str] = None
+    port: Optional[int] = None
+    use_tls: Optional[bool] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    from_address: Optional[str] = None
+    reply_to: Optional[str] = None
+
+
+class SmtpTestRequest(BaseModel):
+    to_email: EmailStr
+
+
+class SmtpTestResponse(BaseModel):
+    success: bool
+    message: str

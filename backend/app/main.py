@@ -18,6 +18,7 @@ from app import __version__
 from app.config import get_settings
 from app.routes import auth, stocks, alerts, mcp, analysis, admin, watchlist
 from app.middleware.request_id import RequestIDMiddleware
+from app.middleware.access_log import AccessLogMiddleware
 
 settings = get_settings()
 log = structlog.get_logger(__name__)
@@ -116,6 +117,7 @@ app.add_middleware(
 )
 
 app.add_middleware(RequestIDMiddleware)
+app.add_middleware(AccessLogMiddleware)
 
 # Rate limit exceeded handler
 app.state.limiter = limiter

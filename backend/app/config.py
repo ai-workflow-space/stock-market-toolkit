@@ -31,6 +31,8 @@ class Settings:
         "ENCRYPTION_KEY",
         "dev-encryption-key-stocktoolkit-change-in-production-openssl-rand-hex-64",
     )
+    FINMIND_TOKEN: str = _get_env("FINMIND_TOKEN", "")
+
 
 @lru_cache
 def get_settings() -> Settings:

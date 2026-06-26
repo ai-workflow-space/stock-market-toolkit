@@ -6,12 +6,16 @@ from app.schemas import (
     StockDataResponse,
     IndicatorsResponse,
     StockInfoResponse,
+    FundamentalsResponse,
+    DividendsResponse,
+    YearlyDividend,
     CompareRequest,
     CompareResponse,
     CompareStockData,
 )
 from app.auth import get_current_user
-from app.providers import market_provider
+from app.providers import market_provider, fundamentals_provider
+import pandas as pd
 import pandas_ta as ta
 import math
 
@@ -165,6 +169,175 @@ async def get_stock_info(
         beta=info.get("beta"),
         week_52_high=info.get("fiftyTwoWeekHigh"),
         week_52_low=info.get("fiftyTwoWeekLow"),
+    )
+
+
+def _fs_val(df: pd.DataFrame, row_name: str, col_idx: int = 0):
+    """Extract a value from a financial statement DataFrame."""
+    try:
+        val = df.loc[row_name]
+        if isinstance(val, pd.Series):
+            if col_idx < len(val):
+                v = val.iloc[col_idx]
+                return v if pd.notna(v) else None
+        return None
+    except (KeyError, IndexError, TypeError):
+        return None
+
+
+@router.get("/stock/{symbol}/fundamentals", response_model=FundamentalsResponse)
+async def get_fundamentals(
+    symbol: str,
+    current_user: User = Depends(get_current_user),
+):
+    income = await fundamentals_provider.get_income_statement(symbol.upper())
+    balance = await fundamentals_provider.get_balance_sheet(symbol.upper())
+    cashflow = await fundamentals_provider.get_cash_flow(symbol.upper())
+
+    if income.empty or balance.empty:
+        raise HTTPException(status_code=404, detail=f"No fundamentals data for {symbol}")
+
+    f_score = 0
+
+    ni_cur = _fs_val(income, "Net Income", 0)
+    ni_prev = _fs_val(income, "Net Income", 1)
+    rev_cur = _fs_val(income, "Total Revenue", 0)
+    rev_prev = _fs_val(income, "Total Revenue", 1)
+    gp_cur = _fs_val(income, "Gross Profit", 0)
+    gp_prev = _fs_val(income, "Gross Profit", 1)
+    oi_cur = _fs_val(income, "Operating Income", 0)
+    eps_cur = _fs_val(income, "Diluted EPS", 0)
+    eps_prev = _fs_val(income, "Diluted EPS", 1)
+
+    ta_cur = _fs_val(balance, "Total Assets", 0)
+    ta_prev = _fs_val(balance, "Total Assets", 1)
+    tl_cur = _fs_val(balance, "Total Liabilities Net Minority Interest", 0)
+    tl_prev = _fs_val(balance, "Total Liabilities Net Minority Interest", 1)
+    ca_cur = _fs_val(balance, "Current Assets", 0)
+    ca_prev = _fs_val(balance, "Current Assets", 1)
+    cl_cur = _fs_val(balance, "Current Liabilities", 0)
+    cl_prev = _fs_val(balance, "Current Liabilities", 1)
+    eq_cur = _fs_val(balance, "Stockholders Equity", 0)
+
+    cfo_cur = _fs_val(cashflow, "Operating Cash Flow", 0) if not cashflow.empty else None
+
+    roa = round(ni_cur / ta_cur * 100, 2) if ni_cur and ta_cur else None
+    roa_prev = round(ni_prev / ta_prev * 100, 2) if ni_prev and ta_prev else None
+    roe = round(ni_cur / eq_cur * 100, 2) if ni_cur and eq_cur else None
+    gross_margin = round(gp_cur / rev_cur * 100, 2) if gp_cur and rev_cur else None
+    op_margin = round(oi_cur / rev_cur * 100, 2) if oi_cur and rev_cur else None
+    net_margin = round(ni_cur / rev_cur * 100, 2) if ni_cur and rev_cur else None
+    eps_growth = round((eps_cur - eps_prev) / abs(eps_prev) * 100, 2) if eps_cur and eps_prev and eps_prev != 0 else None
+    rev_growth = round((rev_cur - rev_prev) / abs(rev_prev) * 100, 2) if rev_cur and rev_prev and rev_prev != 0 else None
+
+    # Piotroski F-Score
+    # 1. ROA > 0
+    if roa and roa > 0:
+        f_score += 1
+    # 2. CFO > 0
+    if cfo_cur and cfo_cur > 0:
+        f_score += 1
+    # 3. ROA improving
+    if roa and roa_prev and roa > roa_prev:
+        f_score += 1
+    # 4. Accruals (CFO > NI)
+    if cfo_cur and ni_cur and cfo_cur > ni_cur:
+        f_score += 1
+    # 5. Leverage ratio decreasing
+    lv_cur = tl_cur / ta_cur if tl_cur and ta_cur else None
+    lv_prev = tl_prev / ta_prev if tl_prev and ta_prev else None
+    if lv_cur and lv_prev and lv_cur < lv_prev:
+        f_score += 1
+    # 6. Current ratio improving
+    cr_cur = ca_cur / cl_cur if ca_cur and cl_cur else None
+    cr_prev = ca_prev / cl_prev if ca_prev and cl_prev else None
+    if cr_cur and cr_prev and cr_cur > cr_prev:
+        f_score += 1
+    # 7. No share dilution
+    sh_cur = _fs_val(balance, "Ordinary Shares Number", 0)
+    sh_prev = _fs_val(balance, "Ordinary Shares Number", 1)
+    if sh_cur and sh_prev and sh_cur <= sh_prev:
+        f_score += 1
+    # 8. Gross margin improving
+    gm_cur = gp_cur / rev_cur if gp_cur and rev_cur else None
+    gm_prev = gp_prev / rev_prev if gp_prev and rev_prev else None
+    if gm_cur and gm_prev and gm_cur > gm_prev:
+        f_score += 1
+    # 9. Asset turnover improving
+    at_cur = rev_cur / ta_cur if rev_cur and ta_cur else None
+    at_prev = rev_prev / ta_prev if rev_prev and ta_prev else None
+    if at_cur and at_prev and at_cur > at_prev:
+        f_score += 1
+
+    return FundamentalsResponse(
+        symbol=symbol.upper(),
+        cached_at=datetime.utcnow().isoformat(),
+        f_score=f_score,
+        roe=roe,
+        roa=roa,
+        gross_margin=gross_margin,
+        op_margin=op_margin,
+        net_margin=net_margin,
+        eps_growth=eps_growth,
+        rev_growth=rev_growth,
+    )
+
+
+@router.get("/stock/{symbol}/dividends", response_model=DividendsResponse)
+async def get_dividends(
+    symbol: str,
+    current_user: User = Depends(get_current_user),
+):
+    divs = await fundamentals_provider.get_dividends(symbol.upper())
+
+    if divs.empty:
+        return DividendsResponse(
+            symbol=symbol.upper(),
+            cached_at=datetime.utcnow().isoformat(),
+            yearly=[],
+            streak=0,
+        )
+
+    # Yearly totals
+    yearly_totals = divs.groupby(divs.index.year).sum()
+    yearly = [
+        YearlyDividend(year=int(year), total=round(float(total), 4))
+        for year, total in yearly_totals.items()
+    ]
+    yearly.sort(key=lambda y: y.year)
+
+    # Consecutive streak (from latest year backwards)
+    streak = 0
+    if yearly:
+        all_years = sorted(set(divs.index.year))
+        latest = all_years[-1]
+        y = latest
+        while y in all_years:
+            streak += 1
+            y -= 1
+
+    # Yield & payout ratio (using most recent year's total)
+    latest_total = yearly[-1].total if yearly else 0
+    yield_pct = None
+    payout_ratio = None
+    try:
+        info = await market_provider.get_info(symbol.upper())
+        price = info.get("currentPrice") or info.get("regularMarketPrice")
+        if price and latest_total:
+            yield_pct = round(latest_total / price * 100, 2)
+        eps = info.get("trailingEps")
+        if eps and latest_total:
+            payout_ratio = round(latest_total / eps * 100, 2)
+    except Exception:
+        pass
+
+    return DividendsResponse(
+        symbol=symbol.upper(),
+        cached_at=datetime.utcnow().isoformat(),
+        yearly=yearly,
+        yield_pct=yield_pct,
+        payout_ratio=payout_ratio,
+        streak=streak,
     )
 
 

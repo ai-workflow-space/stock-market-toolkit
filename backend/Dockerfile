@@ -19,6 +19,9 @@ RUN uv pip install --system --no-cache -r requirements.txt
 # Copy application
 COPY app/ ./app/
 
+# pandas_ta_compat.py lives at the backend root (not under app/)
+COPY pandas_ta_compat.py ./
+
 # Copy Alembic config. The migration scripts live under app/alembic (copied
 # above via COPY app/); alembic.ini sits at the backend root, so it must be
 # copied explicitly. The in-process `alembic upgrade head` in app/main.py
