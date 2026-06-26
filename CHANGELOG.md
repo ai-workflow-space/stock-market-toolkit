@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.7.0...v0.8.0) (2026-06-26)
+
+
+### Features
+
+* **BE-4:** nightly batch ingestion + score materialization ([#147](https://github.com/ai-workflow-space/stock-market-toolkit/issues/147)) ([8d61f1d](https://github.com/ai-workflow-space/stock-market-toolkit/commit/8d61f1dfb6db3b14c5959179c2f3be5df0289d2c))
+
 ## [0.7.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.6.1...v0.7.0) (2026-06-26)
 
 
