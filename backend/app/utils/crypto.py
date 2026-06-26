@@ -11,6 +11,11 @@ def _derive_key() -> bytes:
     return base64.urlsafe_b64encode(key)
 
 
+# Public alias kept for the SMTP/admin tests and callers importing the
+# non-underscore name.
+derive_key = _derive_key
+
+
 _fernet = Fernet(_derive_key())
 
 
