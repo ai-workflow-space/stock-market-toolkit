@@ -31,22 +31,46 @@ function FScoreGauge({ score }: { score: number }) {
   );
 }
 
+function DividendQualityBadge({ score }: { score: number }) {
+  const color =
+    score >= 2 ? "text-green-500"
+    : score === 1 ? "text-yellow-500"
+    : "text-red-500";
+  return <span className={cn("text-lg font-bold tabular-nums", color)}>{score}<span className="text-xs text-muted-foreground"> / 3</span></span>;
+}
+
 export default function FundamentalsCard({ data }: { data: Fundamentals }) {
+  const p = data.profitability;
   const rows: { label: string; value: string; tone?: "up" | "down" | "neutral" }[] = [
-    { label: "ROE", value: data.roe != null ? pct(data.roe / 100) : "—" },
-    { label: "ROA", value: data.roa != null ? pct(data.roa / 100) : "—" },
-    { label: "Gross margin", value: data.gross_margin != null ? pct(data.gross_margin / 100) : "—" },
-    { label: "Operating margin", value: data.op_margin != null ? pct(data.op_margin / 100) : "—" },
-    { label: "Net margin", value: data.net_margin != null ? pct(data.net_margin / 100) : "—" },
+    { label: "ROE", value: p.roe != null ? pct(p.roe) : "—" },
+    { label: "ROA", value: p.roa != null ? pct(p.roa) : "—" },
+    { label: "Gross margin", value: p.gross_margin != null ? pct(p.gross_margin) : "—" },
+    { label: "Operating margin", value: p.op_margin != null ? pct(p.op_margin) : "—" },
+    { label: "Net margin", value: p.net_margin != null ? pct(p.net_margin) : "—" },
     {
       label: "EPS growth",
-      value: data.eps_growth != null ? pct(data.eps_growth / 100) : "—",
-      tone: data.eps_growth != null ? (data.eps_growth >= 0 ? "up" : "down") : undefined,
+      value: p.eps_growth != null ? pct(p.eps_growth) : "—",
+      tone: p.eps_growth != null ? (p.eps_growth >= 0 ? "up" : "down") : undefined,
     },
     {
       label: "Revenue growth",
-      value: data.rev_growth != null ? pct(data.rev_growth / 100) : "—",
-      tone: data.rev_growth != null ? (data.rev_growth >= 0 ? "up" : "down") : undefined,
+      value: p.rev_growth != null ? pct(p.rev_growth) : "—",
+      tone: p.rev_growth != null ? (p.rev_growth >= 0 ? "up" : "down") : undefined,
+    },
+  ];
+
+  const dq = data.dividend_quality;
+  const dqRows: { label: string; value: string; tone?: "up" | "down" | "neutral" }[] = [
+    { label: "Consistent", value: dq.consistent ? "Yes" : "No", tone: dq.consistent ? "up" : "down" },
+    {
+      label: "Growth",
+      value: dq.growth != null ? pct(dq.growth) : "—",
+      tone: dq.growth != null ? (dq.growth >= 0 ? "up" : "down") : undefined,
+    },
+    {
+      label: "Payout ratio",
+      value: dq.payout_ratio != null ? pct(dq.payout_ratio) : "—",
+      tone: dq.payout_ratio != null ? (dq.payout_ratio < 0.6 ? "up" : "down") : undefined,
     },
   ];
 
@@ -59,11 +83,22 @@ export default function FundamentalsCard({ data }: { data: Fundamentals }) {
         </div>
         <FScoreGauge score={data.f_score} />
       </CardHeader>
-      <CardContent className="flex-1 px-4 pb-4 pt-0">
+      <CardContent className="flex-1 space-y-4 px-4 pb-4 pt-0">
         <div className="grid grid-cols-2 gap-2">
           {rows.map((r) => (
             <StatCard key={r.label} label={r.label} value={r.value} tone={r.tone} />
           ))}
+        </div>
+        <div className="border-t pt-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">Dividend Quality</span>
+            <DividendQualityBadge score={dq.score} />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {dqRows.map((r) => (
+              <StatCard key={r.label} label={r.label} value={r.value} tone={r.tone} />
+            ))}
+          </div>
         </div>
       </CardContent>
     </Card>

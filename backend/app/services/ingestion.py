@@ -150,9 +150,7 @@ async def run_nightly_ingest(job_run_id: Optional[int] = None) -> int:
                 await upsert_dividends(db, symbol, div_df)
 
                 p_score = piotroski_f_score(cur, prev)
-                await upsert_symbol_score(
-                    db, symbol, "piotroski", p_score["score"], p_score["details"]
-                )
+                await upsert_symbol_score(db, symbol, "piotroski", p_score, None)
 
                 p_metrics = profitability_metrics(cur, prev)
                 await upsert_symbol_score(db, symbol, "profitability", None, p_metrics)
