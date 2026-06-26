@@ -23,6 +23,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_login_at = Column(DateTime(timezone=True), nullable=True)
 
     # watchlists = relationship("Watchlist", back_populates="user")
     alerts = relationship("Alert", back_populates="user", cascade="all, delete-orphan")
@@ -137,6 +138,38 @@ class InviteCode(Base):
     expires_at = Column(DateTime(timezone=True), nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    email = Column(String, nullable=True)
+    token = Column(String, nullable=True, unique=True, index=True)
 
     creator = relationship("User", foreign_keys=[created_by])
     redeemer = relationship("User", foreign_keys=[used_by])
+
+
+class SmtpSettings(Base):
+    __tablename__ = "smtp_settings"
+
+    id = Column(Integer, primary_key=True, default=1)
+    host = Column(String, nullable=False)
+    port = Column(Integer, nullable=False, default=587)
+    use_tls = Column(Boolean, default=True)
+    username = Column(String, nullable=True)
+    password_encrypted = Column(Text, nullable=True)
+    from_address = Column(String, nullable=False)
+    reply_to = Column(String, nullable=True)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    actor_id = Column(String, ForeignKey("users.id"), nullable=True)
+    action = Column(String, nullable=False, index=True)
+    target = Column(String, nullable=True)
+    meta = Column(Text, nullable=True)
+    ip = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    actor = relationship("User", foreign_keys=[actor_id])

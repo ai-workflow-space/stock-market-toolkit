@@ -8,6 +8,7 @@ class UserRegister(BaseModel):
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=100)
     password: str = Field(..., min_length=8, max_length=128)
+    invite_token: Optional[str] = None
 
     @field_validator("username")
     @classmethod
@@ -39,9 +40,37 @@ class UserResponse(BaseModel):
     is_active: bool
     is_admin: bool = False
     created_at: Optional[datetime] = None
+    last_login_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+
+class FundamentalsResponse(BaseModel):
+    symbol: str
+    cached_at: str = ""
+    f_score: int
+    roe: Optional[float] = None
+    roa: Optional[float] = None
+    gross_margin: Optional[float] = None
+    op_margin: Optional[float] = None
+    net_margin: Optional[float] = None
+    eps_growth: Optional[float] = None
+    rev_growth: Optional[float] = None
+
+
+class YearlyDividend(BaseModel):
+    year: int
+    total: float
+
+
+class DividendsResponse(BaseModel):
+    symbol: str
+    cached_at: str = ""
+    yearly: list[YearlyDividend]
+    yield_pct: Optional[float] = None
+    payout_ratio: Optional[float] = None
+    streak: int
 
 
 # ─── Stock schemas ───
@@ -218,6 +247,7 @@ class NotificationDeliveryResponse(BaseModel):
 # ─── Invite code schemas ───
 class InviteCodeCreate(BaseModel):
     expires_in_days: int = Field(default=7, ge=1, le=365)
+    email: Optional[str] = None
 
 
 class InviteCodeResponse(BaseModel):
@@ -229,6 +259,8 @@ class InviteCodeResponse(BaseModel):
     expires_at: datetime
     is_active: bool
     created_at: Optional[datetime] = None
+    email: Optional[str] = None
+    token: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -239,8 +271,53 @@ class InviteCodeListResponse(BaseModel):
     total: int
 
 
+class InviteSendRequest(BaseModel):
+    email: EmailStr
+
+
+class InviteSendResponse(BaseModel):
+    message: str
+    invite_code: str
+    token: str
+    invite_link: Optional[str] = None
+
+
+class InviteRevokeRequest(BaseModel):
+    token: str
+
+
 class WatchlistCreate(BaseModel):
     symbol: str = Field(..., min_length=1, max_length=20)
+
+
+class AuditLogResponse(BaseModel):
+    id: int
+    actor_id: Optional[str] = None
+    action: str
+    target: Optional[str] = None
+    meta: Optional[dict] = None
+    ip: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+    @field_validator("meta", mode="before")
+    @classmethod
+    def parse_meta(cls, v):
+        if isinstance(v, str):
+            import json
+
+            try:
+                return json.loads(v)
+            except (json.JSONDecodeError, TypeError):
+                return None
+        return v
+
+
+class AuditLogListResponse(BaseModel):
+    logs: list[AuditLogResponse]
+    total: int
 
 
 class WatchlistResponse(BaseModel):
@@ -251,3 +328,37 @@ class WatchlistResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ─── SMTP schemas ───
+class SmtpSettingsResponse(BaseModel):
+    host: str
+    port: int
+    use_tls: bool
+    username: Optional[str] = None
+    password_set: bool
+    from_address: str
+    reply_to: Optional[str] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class SmtpSettingsUpdate(BaseModel):
+    host: Optional[str] = None
+    port: Optional[int] = None
+    use_tls: Optional[bool] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    from_address: Optional[str] = None
+    reply_to: Optional[str] = None
+
+
+class SmtpTestRequest(BaseModel):
+    to_email: EmailStr
+
+
+class SmtpTestResponse(BaseModel):
+    success: bool
+    message: str

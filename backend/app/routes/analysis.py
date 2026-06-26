@@ -20,13 +20,8 @@ def _clean_list(lst):
     return [_clean(v) for v in lst]
 
 
-@router.get("/analysis/{symbol}")
-async def get_analysis(
-    symbol: str,
-    period: str = Query("3mo"),
-    current_user: User = Depends(get_current_user),
-):
-    """Get comprehensive technical analysis for a symbol."""
+async def _compute_analysis(symbol: str, period: str = "3mo") -> dict:
+    """Get comprehensive technical analysis for a symbol (no auth dependency)."""
     interval_map = {"1d": "5m", "5d": "15m"}
     interval = interval_map.get(period, "1d")
     result = await market_provider.get_history(
@@ -171,3 +166,32 @@ async def get_analysis(
             ),
         },
     }
+
+
+@router.get("/analysis/signals")
+async def get_batch_signals(
+    symbols: str = Query(..., description="Comma-separated list of symbols (max 25)"),
+    period: str = Query("1mo"),
+    current_user: User = Depends(get_current_user),
+):
+    """Get signals for multiple symbols."""
+    symbol_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
+    if len(symbol_list) > 25:
+        raise HTTPException(status_code=400, detail="Maximum 25 symbols allowed")
+    results = []
+    for sym in symbol_list:
+        try:
+            results.append(await _compute_analysis(sym, period))
+        except HTTPException:
+            pass
+    return results
+
+
+@router.get("/analysis/{symbol}")
+async def get_analysis(
+    symbol: str,
+    period: str = Query("3mo"),
+    current_user: User = Depends(get_current_user),
+):
+    """Get comprehensive technical analysis for a symbol."""
+    return await _compute_analysis(symbol, period)

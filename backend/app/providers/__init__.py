@@ -14,6 +14,7 @@ from app.providers.yfinance import (
     YFinanceMarketDataProvider,
     YFinanceFundamentalsProvider,
 )
+from app.providers.registry import get_fundamentals_provider, get_market_provider
 
 _settings = get_settings()
 
@@ -33,6 +34,8 @@ __all__ = [
     "market_provider",
     "fundamentals_provider",
     "FallbackChain",
+    "get_fundamentals_provider",
+    "get_market_provider",
     "YFinanceMarketDataProvider",
     "YFinanceFundamentalsProvider",
 ]
