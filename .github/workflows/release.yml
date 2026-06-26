@@ -20,6 +20,10 @@ jobs:
         uses: google-github-actions/release-please-action@v4
         with:
           token: ${{ secrets.RELEASE_PAT }}
-          release-type: python
-          package-name: stock-market-toolkit
-          include-component-in-tag: false
+          # Use the manifest + config files so the config's `extra-files`
+          # (backend/app/__init__.py, frontend/Dockerfile, version.ts) are
+          # version-bumped on every release. Passing `release-type` inline
+          # makes v4 ignore release-please-config.json, which left those
+          # markers stuck at an old version.
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
