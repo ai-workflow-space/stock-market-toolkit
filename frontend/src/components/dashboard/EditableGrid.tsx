@@ -9,9 +9,11 @@ import RsiChart from "./RsiChart";
 import MacdChart from "./MacdChart";
 import StockInfoCard from "./StockInfoCard";
 import HistoryTable from "./HistoryTable";
+import FundamentalsCard from "./FundamentalsCard";
+import DividendCard from "./DividendCard";
 import type { DashboardGridProps } from "./DashboardGrid";
 
-export default function EditableGrid({ stock, indicators, info, active }: DashboardGridProps) {
+export default function EditableGrid({ stock, indicators, info, fundamentals, dividends, active }: DashboardGridProps) {
   const { containerRef, width } = useContainerWidth();
   const dates = stock.timestamp.map((t) =>
     new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
@@ -60,6 +62,16 @@ export default function EditableGrid({ stock, indicators, info, active }: Dashbo
         <div key="table" className="h-full overflow-auto">
           <HistoryTable stock={stock} />
         </div>
+        {fundamentals && (
+          <div key="fundamentals" className="h-full overflow-auto">
+            <FundamentalsCard data={fundamentals} />
+          </div>
+        )}
+        {dividends && (
+          <div key="dividends" className="h-full overflow-auto">
+            <DividendCard data={dividends} />
+          </div>
+        )}
       </GridLayout>
     </div>
   );
