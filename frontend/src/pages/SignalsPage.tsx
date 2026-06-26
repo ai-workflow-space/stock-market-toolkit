@@ -57,7 +57,7 @@ function mapAnalysisToSignal(data: AnalysisResponse, symbolOverride?: string): S
 }
 
 /** Placeholder for a tracked symbol whose analysis is unavailable. */
-function pendingSignal(symbol: string): Signal {
+function pendingSignal(symbol: string, reason?: string): Signal {
   return {
     id: `sig-${symbol}-pending`,
     symbol,
@@ -66,7 +66,7 @@ function pendingSignal(symbol: string): Signal {
     price: 0,
     timestamp: new Date().toISOString(),
     strength: 0,
-    description: "No signal data available for this symbol yet.",
+    description: reason ?? "No signal data available for this symbol yet.",
   };
 }
 
@@ -84,6 +84,7 @@ export default function SignalsPage() {
     refresh: refreshWatchlist,
   } = useWatchlist();
   const [signals, setSignals] = useState<Signal[]>([]);
+  const [signalErrors, setSignalErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [addTickerOpen, setAddTickerOpen] = useState(false);
   const [newTicker, setNewTicker] = useState("");
@@ -96,6 +97,7 @@ export default function SignalsPage() {
     if (symbols.length === 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- false positive: early-return guard
       setSignals((prev) => (prev.length === 0 ? prev : []));
+      setSignalErrors({});
       setLoading(false);
       return;
     }
@@ -114,11 +116,15 @@ export default function SignalsPage() {
           : (raw as { signals: AnalysisResponse[]; errors: { symbol: string; error: string }[] });
         const mapped = data.signals.map((d) => mapAnalysisToSignal(d));
         setSignals(mapped);
+        setSignalErrors(
+          Object.fromEntries((data.errors ?? []).map((e) => [e.symbol, e.error])),
+        );
         if (mapped.length < symbols.length) {
           toast(`Loaded ${mapped.length} of ${symbols.length} symbols`);
         }
       } catch {
         setSignals([]);
+        setSignalErrors({});
       } finally {
         setLoading(false);
       }
@@ -133,7 +139,15 @@ export default function SignalsPage() {
       `${import.meta.env.VITE_API_URL || ""}/api/analysis/${symbol}?period=1mo`,
       { headers: { Authorization: `Bearer ${token}` } },
     );
-    if (!res.ok) throw new Error(`${symbol} failed`);
+    if (!res.ok) {
+      let detail = `No signal data for ${symbol}`;
+      try {
+        detail = (await res.json())?.detail ?? detail;
+      } catch {
+        // non-JSON error body — keep the default reason
+      }
+      throw new Error(detail);
+    }
     const data = (await res.json()) as AnalysisResponse;
     return {
       ...mapAnalysisToSignal(data, symbol),
@@ -161,14 +175,32 @@ export default function SignalsPage() {
 
     try {
       await addToWatchlist(trimmed);
-      const signal = await fetchSignalForTicker(trimmed);
-      setSignals((prev) => [...prev, signal]);
-      setAddTickerOpen(false);
-      setNewTicker("");
-      setSelectedSymbol("");
-      toast.success(`${trimmed} added to tracking`);
     } catch {
       toast.error(`Failed to add ${trimmed}. Please try again.`);
+      setAddingTicker(false);
+      return;
+    }
+
+    // The symbol is now tracked regardless of whether analysis is available,
+    // so close the dialog and surface any signal reason on the card itself.
+    setAddTickerOpen(false);
+    setNewTicker("");
+    setSelectedSymbol("");
+
+    try {
+      const signal = await fetchSignalForTicker(trimmed);
+      setSignals((prev) => [...prev, signal]);
+      setSignalErrors((prev) => {
+        if (!(trimmed in prev)) return prev;
+        const next = { ...prev };
+        delete next[trimmed];
+        return next;
+      });
+      toast.success(`${trimmed} added to tracking`);
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : "Analysis unavailable";
+      setSignalErrors((prev) => ({ ...prev, [trimmed]: reason }));
+      toast(`${trimmed} added — no signal data available`);
     } finally {
       setAddingTicker(false);
     }
@@ -177,6 +209,12 @@ export default function SignalsPage() {
   const handleRemoveTicker = useCallback(async (symbol: string) => {
     await removeFromWatchlist(symbol);
     setSignals((prev) => prev.filter((s) => s.symbol !== symbol));
+    setSignalErrors((prev) => {
+      if (!(symbol in prev)) return prev;
+      const next = { ...prev };
+      delete next[symbol];
+      return next;
+    });
     toast(`${symbol} removed from tracking`);
   }, [removeFromWatchlist]);
 
@@ -195,10 +233,12 @@ export default function SignalsPage() {
   const trackedSignals = useMemo(
     () =>
       items.map((item) => ({
-        signal: signalBySymbol.get(item.symbol) ?? pendingSignal(item.symbol),
+        signal:
+          signalBySymbol.get(item.symbol) ??
+          pendingSignal(item.symbol, signalErrors[item.symbol]),
         pending: !signalBySymbol.has(item.symbol),
       })),
-    [items, signalBySymbol],
+    [items, signalBySymbol, signalErrors],
   );
 
   const bullish = signals.filter((s) => s.direction === "bullish");
