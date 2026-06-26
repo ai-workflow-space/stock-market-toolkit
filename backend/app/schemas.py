@@ -351,6 +351,20 @@ class WatchlistResponse(BaseModel):
         from_attributes = True
 
 
+# ─── Ingestion schemas ───
+class FinancialStatementResponse(BaseModel):
+    id: int
+    symbol: str
+    period: str
+    fiscal_year: Optional[int] = None
+    fiscal_quarter: Optional[int] = None
+    data: dict
+    fetched_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
 # ─── SMTP schemas ───
 class SmtpSettingsResponse(BaseModel):
     host: str
@@ -364,6 +378,61 @@ class SmtpSettingsResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class DividendResponse(BaseModel):
+    id: int
+    symbol: str
+    amount: float
+    ex_date: datetime
+    fetched_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class SymbolScoreResponse(BaseModel):
+    id: int
+    symbol: str
+    score_type: str
+    score: Optional[float] = None
+    details: Optional[dict] = None
+    calculated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class MonthlyRevenueResponse(BaseModel):
+    id: int
+    symbol: str
+    year: int
+    month: int
+    revenue: Optional[float] = None
+    fetched_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class JobRunResponse(BaseModel):
+    id: int
+    job_type: str
+    status: str
+    symbols_processed: int = 0
+    total_symbols: int = 0
+    errors: int = 0
+    error_details: Optional[str] = None
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class IngestStatusResponse(BaseModel):
+    last_run: Optional[JobRunResponse] = None
+    is_running: bool = False
 
 
 class SmtpSettingsUpdate(BaseModel):
