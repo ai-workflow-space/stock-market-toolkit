@@ -48,6 +48,15 @@ services:
     image: kyleckw/stock-market-toolkit-frontend:feat-test
     build:
       context: ./frontend
+      args:
+        # Mirror the CI image build (.github/workflows/docker.yml) so a locally
+        # built image reports the real version, commit, and build time instead
+        # of the Dockerfile fallbacks. Each is overridable from the environment,
+        # e.g.  VITE_GIT_SHA=$(git rev-parse --short HEAD) docker compose \
+        #         -f docker-compose.feat-test.yml up --build
+        VITE_APP_VERSION: ${VITE_APP_VERSION:-0.9.3}
+        VITE_GIT_SHA: ${VITE_GIT_SHA:-local}
+        VITE_BUILD_TIME: ${VITE_BUILD_TIME:-}
     pull_policy: build
     container_name: smt_frontend
     restart: unless-stopped
