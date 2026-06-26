@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.3](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.2...v0.9.3) (2026-06-26)
+
+
+### Bug Fixes
+
+* **frontend:** strip leading "v" from injected version so release links resolve ([2ac20cf](https://github.com/ai-workflow-space/stock-market-toolkit/commit/2ac20cfb758f450d720ba087a2761de1792c184d))
+
 ## [0.9.2](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.1...v0.9.2) (2026-06-26)
 
 
