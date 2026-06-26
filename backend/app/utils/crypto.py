@@ -1,20 +1,39 @@
 import base64
 import hashlib
+
 from cryptography.fernet import Fernet
 from app.config import get_settings
 
 
-def derive_key() -> bytes:
+def _derive_key() -> bytes:
     settings = get_settings()
-    key = hashlib.sha256(settings.SECRET_KEY.encode()).digest()
+    key = hashlib.sha256(settings.ENCRYPTION_KEY.encode()).digest()
     return base64.urlsafe_b64encode(key)
 
 
-def encrypt(plaintext: str) -> str:
-    f = Fernet(derive_key())
-    return f.encrypt(plaintext.encode()).decode()
+_fernet = Fernet(_derive_key())
 
 
-def decrypt(ciphertext: str) -> str:
-    f = Fernet(derive_key())
-    return f.decrypt(ciphertext.encode()).decode()
+def encrypt(plaintext: str | None) -> str | None:
+    """Encrypt a string. Returns None if input is None."""
+    if plaintext is None:
+        return None
+    return _fernet.encrypt(plaintext.encode()).decode()
+
+
+def decrypt(ciphertext: str | None) -> str | None:
+    """Decrypt a string. Returns None if input is None."""
+    if ciphertext is None:
+        return None
+    return _fernet.decrypt(ciphertext.encode()).decode()
+
+
+def mask_url(url: str | None) -> str | None:
+    """Mask a URL to show only the hostname, hiding path/token."""
+    if not url:
+        return None
+    if url.startswith("http"):
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        return f"{parsed.scheme}://{parsed.netloc}/****"
+    return "****"
