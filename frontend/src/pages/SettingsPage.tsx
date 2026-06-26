@@ -49,6 +49,7 @@ export default function SettingsPage() {
     email: string;
     username: string;
     created_at?: string;
+    last_login_at?: string;
     is_admin: boolean;
     is_active: boolean;
   }>>([]);
@@ -338,6 +339,9 @@ export default function SettingsPage() {
                       {u.created_at && (
                         <span className="text-xs text-muted-foreground truncate">Registered {fmtDate(u.created_at)}</span>
                       )}
+                      <span className="text-xs text-muted-foreground truncate">
+                        Last login {u.last_login_at ? fmtDate(u.last_login_at) : "—"}
+                      </span>
                     </div>
                     <div className="flex items-center gap-4 shrink-0">
                       <Button

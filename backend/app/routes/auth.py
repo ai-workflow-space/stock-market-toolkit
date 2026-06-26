@@ -85,6 +85,9 @@ async def login(data: UserLogin, request: Request, db: AsyncSession = Depends(ge
         )
         raise HTTPException(status_code=403, detail="Account disabled")
 
+    user.last_login_at = func.now()
+    await db.commit()
+
     access = create_access_token({"sub": user.id})
     refresh = create_refresh_token({"sub": user.id})
 
