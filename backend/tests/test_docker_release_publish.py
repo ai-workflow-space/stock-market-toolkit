@@ -13,9 +13,7 @@ from pathlib import Path
 
 import yaml
 
-WORKFLOW = (
-    Path(__file__).resolve().parents[2] / ".github" / "workflows" / "docker.yml"
-)
+WORKFLOW = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "docker.yml"
 
 
 def _load():
@@ -60,4 +58,6 @@ def test_publish_job_fetches_tags():
     checkout = next(
         s for s in job["steps"] if str(s.get("uses", "")).startswith("actions/checkout")
     )
-    assert checkout.get("with", {}).get("fetch-depth") == 0, "publish needs fetch-depth: 0"
+    assert checkout.get("with", {}).get("fetch-depth") == 0, (
+        "publish needs fetch-depth: 0"
+    )

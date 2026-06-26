@@ -10,7 +10,13 @@ import math
 import httpx
 
 from app.database import AsyncSessionLocal
-from app.models import Alert, NotificationSettings, TriggeredAlert, NotificationDelivery, SmtpSettings
+from app.models import (
+    Alert,
+    NotificationSettings,
+    TriggeredAlert,
+    NotificationDelivery,
+    SmtpSettings,
+)
 from app.services.mailer import send_email
 
 log = logging.getLogger(__name__)
@@ -308,10 +314,7 @@ async def check_alerts():
                                 if success:
                                     triggered_record.notified = True
                             # Email notification
-                            if (
-                                settings.email_enabled
-                                and settings.email_address
-                            ):
+                            if settings.email_enabled and settings.email_address:
                                 smtp_cfg = await db.get(SmtpSettings, 1)
                                 if smtp_cfg and smtp_cfg.host:
                                     email_body = _build_email_body(
@@ -328,8 +331,12 @@ async def check_alerts():
                                             triggered_alert_id=None,
                                             user_id=alert.user_id,
                                             channel="email",
-                                            status="success" if email_success else "failed",
-                                            error=None if email_success else "Email send failed",
+                                            status="success"
+                                            if email_success
+                                            else "failed",
+                                            error=None
+                                            if email_success
+                                            else "Email send failed",
                                         )
                                     )
                                     if email_success:

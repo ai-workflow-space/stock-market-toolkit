@@ -27,11 +27,14 @@ class FinMindProvider:
         if self._token:
             try:
                 from FinMind.data import DataLoader
+
                 self._api = DataLoader()
                 self._api.login_by_token(api_token=self._token)
                 log.info("FinMind provider initialized with API token")
             except ImportError:
-                log.warning("FinMind package not installed; Taiwan fundamentals unavailable")
+                log.warning(
+                    "FinMind package not installed; Taiwan fundamentals unavailable"
+                )
                 self._token = None
             except Exception as exc:
                 log.warning("FinMind login failed: %s; operating without token", exc)
@@ -84,9 +87,12 @@ class FinMindProvider:
 
         try:
             from FinMind.datasets import TaiwanStockFinancialStatements
+
             ds = TaiwanStockFinancialStatements()
             return self._fetch_and_pivot(
-                lambda stock_id, start_date: ds.query(stock_id=stock_id, start_date=start_date),
+                lambda stock_id, start_date: ds.query(
+                    stock_id=stock_id, start_date=start_date
+                ),
                 symbol,
                 start,
             )
@@ -101,9 +107,12 @@ class FinMindProvider:
 
         try:
             from FinMind.datasets import TaiwanStockBalanceSheet
+
             ds = TaiwanStockBalanceSheet()
             return self._fetch_and_pivot(
-                lambda stock_id, start_date: ds.query(stock_id=stock_id, start_date=start_date),
+                lambda stock_id, start_date: ds.query(
+                    stock_id=stock_id, start_date=start_date
+                ),
                 symbol,
                 start,
             )
@@ -118,9 +127,12 @@ class FinMindProvider:
 
         try:
             from FinMind.datasets import TaiwanStockCashFlowsStatement
+
             ds = TaiwanStockCashFlowsStatement()
             return self._fetch_and_pivot(
-                lambda stock_id, start_date: ds.query(stock_id=stock_id, start_date=start_date),
+                lambda stock_id, start_date: ds.query(
+                    stock_id=stock_id, start_date=start_date
+                ),
                 symbol,
                 start,
             )
@@ -129,19 +141,24 @@ class FinMindProvider:
             return pd.DataFrame()
 
     def dividends(self, symbol: str, start: str = "2015-01-01") -> pd.DataFrame:
-        """Return dividend history as wide-format DataFrame."""
+        """Return dividend history with cash/stock dividend columns."""
         if not self._token or not self._api:
             return pd.DataFrame()
 
         stock_id = self._id(symbol)
         try:
             from FinMind.datasets import TaiwanStockDividend
+
             ds = TaiwanStockDividend()
             raw = ds.query(stock_id=stock_id, start_date=start)
             if raw.empty:
                 return pd.DataFrame()
             if "date" in raw.columns:
                 raw = raw.set_index("date").sort_index(ascending=False)
+            # Ensure required columns exist; fill missing with 0
+            for col in ("cash_dividend", "stock_dividend"):
+                if col not in raw.columns:
+                    raw[col] = 0.0
             return raw
         except Exception as exc:
             log.warning("dividends failed for %s: %s", symbol, exc)
@@ -150,24 +167,32 @@ class FinMindProvider:
     # Public async wrappers with caching
     async def get_income_statement(self, symbol: str) -> pd.DataFrame:
         key = cache_key("finmind_income", symbol)
+
         async def loader() -> pd.DataFrame:
             return self.income_statement(symbol)
+
         return await cached(key, FUNDAMENTALS_TTL, loader)
 
     async def get_balance_sheet(self, symbol: str) -> pd.DataFrame:
         key = cache_key("finmind_balance", symbol)
+
         async def loader() -> pd.DataFrame:
             return self.balance_sheet(symbol)
+
         return await cached(key, FUNDAMENTALS_TTL, loader)
 
     async def get_cash_flow(self, symbol: str) -> pd.DataFrame:
         key = cache_key("finmind_cashflow", symbol)
+
         async def loader() -> pd.DataFrame:
             return self.cash_flow(symbol)
+
         return await cached(key, FUNDAMENTALS_TTL, loader)
 
     async def get_dividends(self, symbol: str) -> pd.DataFrame:
         key = cache_key("finmind_dividends", symbol)
+
         async def loader() -> pd.DataFrame:
             return self.dividends(symbol)
+
         return await cached(key, FUNDAMENTALS_TTL, loader)

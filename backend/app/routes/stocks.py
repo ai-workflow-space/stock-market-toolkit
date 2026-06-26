@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.models import User
@@ -9,12 +9,14 @@ from app.schemas import (
     FundamentalsResponse,
     DividendsResponse,
     YearlyDividend,
+    DividendEvent,
     CompareRequest,
     CompareResponse,
     CompareStockData,
 )
 from app.auth import get_current_user
 from app.providers import market_provider, fundamentals_provider
+from app.providers.registry import get_fundamentals_provider
 import pandas as pd
 import pandas_ta as ta
 import math
@@ -195,7 +197,9 @@ async def get_fundamentals(
     cashflow = await fundamentals_provider.get_cash_flow(symbol.upper())
 
     if income.empty or balance.empty:
-        raise HTTPException(status_code=404, detail=f"No fundamentals data for {symbol}")
+        raise HTTPException(
+            status_code=404, detail=f"No fundamentals data for {symbol}"
+        )
 
     f_score = 0
 
@@ -219,7 +223,9 @@ async def get_fundamentals(
     cl_prev = _fs_val(balance, "Current Liabilities", 1)
     eq_cur = _fs_val(balance, "Stockholders Equity", 0)
 
-    cfo_cur = _fs_val(cashflow, "Operating Cash Flow", 0) if not cashflow.empty else None
+    cfo_cur = (
+        _fs_val(cashflow, "Operating Cash Flow", 0) if not cashflow.empty else None
+    )
 
     roa = round(ni_cur / ta_cur * 100, 2) if ni_cur and ta_cur else None
     roa_prev = round(ni_prev / ta_prev * 100, 2) if ni_prev and ta_prev else None
@@ -227,8 +233,16 @@ async def get_fundamentals(
     gross_margin = round(gp_cur / rev_cur * 100, 2) if gp_cur and rev_cur else None
     op_margin = round(oi_cur / rev_cur * 100, 2) if oi_cur and rev_cur else None
     net_margin = round(ni_cur / rev_cur * 100, 2) if ni_cur and rev_cur else None
-    eps_growth = round((eps_cur - eps_prev) / abs(eps_prev) * 100, 2) if eps_cur and eps_prev and eps_prev != 0 else None
-    rev_growth = round((rev_cur - rev_prev) / abs(rev_prev) * 100, 2) if rev_cur and rev_prev and rev_prev != 0 else None
+    eps_growth = (
+        round((eps_cur - eps_prev) / abs(eps_prev) * 100, 2)
+        if eps_cur and eps_prev and eps_prev != 0
+        else None
+    )
+    rev_growth = (
+        round((rev_cur - rev_prev) / abs(rev_prev) * 100, 2)
+        if rev_cur and rev_prev and rev_prev != 0
+        else None
+    )
 
     # Piotroski F-Score
     # 1. ROA > 0
@@ -288,55 +302,109 @@ async def get_dividends(
     symbol: str,
     current_user: User = Depends(get_current_user),
 ):
-    divs = await fundamentals_provider.get_dividends(symbol.upper())
+    provider = get_fundamentals_provider(symbol.upper())
+    divs = await provider.get_dividends(symbol.upper())
 
-    if divs.empty:
+    empty = bool(divs.empty) if hasattr(divs, "empty") else True
+    if empty:
         return DividendsResponse(
             symbol=symbol.upper(),
             cached_at=datetime.utcnow().isoformat(),
-            yearly=[],
-            streak=0,
         )
 
-    # Yearly totals
-    yearly_totals = divs.groupby(divs.index.year).sum()
-    yearly = [
-        YearlyDividend(year=int(year), total=round(float(total), 4))
-        for year, total in yearly_totals.items()
-    ]
-    yearly.sort(key=lambda y: y.year)
+    # Normalize raw data into unified event list
+    events: list[dict] = []
+    if isinstance(divs, pd.Series):
+        for date_val, amount in divs.items():
+            if pd.isna(amount) or float(amount) <= 0:
+                continue
+            date_str = (
+                str(date_val.date()) if hasattr(date_val, "date") else str(date_val)
+            )
+            events.append(
+                {"date": date_str, "amount": round(float(amount), 4), "type": "cash"}
+            )
+    else:
+        for date_val, row in divs.iterrows():
+            date_str = (
+                str(date_val.date()) if hasattr(date_val, "date") else str(date_val)
+            )
+            for col, div_type in (
+                ("cash_dividend", "cash"),
+                ("stock_dividend", "stock"),
+            ):
+                val = row[col] if col in row and pd.notna(row[col]) else 0
+                if float(val) > 0:
+                    events.append(
+                        {
+                            "date": date_str,
+                            "amount": round(float(val), 4),
+                            "type": div_type,
+                        }
+                    )
 
-    # Consecutive streak (from latest year backwards)
+    events.sort(key=lambda e: e["date"], reverse=True)
+
+    # Yearly totals (cash / stock split)
+    yearly_map: dict[int, dict[str, float]] = {}
+    for e in events:
+        year = int(e["date"][:4])
+        if year not in yearly_map:
+            yearly_map[year] = {"total": 0.0, "cash": 0.0, "stock": 0.0}
+        yearly_map[year]["total"] += e["amount"]
+        yearly_map[year][e["type"]] += e["amount"]
+
+    yearly = [
+        YearlyDividend(
+            year=year,
+            total=round(v["total"], 4),
+            cash=round(v["cash"], 4) if v["cash"] else None,
+            stock=round(v["stock"], 4) if v["stock"] else None,
+        )
+        for year, v in sorted(yearly_map.items())
+    ]
+
+    # Consecutive payment streak (latest year backwards)
     streak = 0
     if yearly:
-        all_years = sorted(set(divs.index.year))
-        latest = all_years[-1]
-        y = latest
-        while y in all_years:
+        years_set = {y.year for y in yearly}
+        y = yearly[-1].year
+        while y in years_set:
             streak += 1
             y -= 1
 
-    # Yield & payout ratio (using most recent year's total)
-    latest_total = yearly[-1].total if yearly else 0
+    # Trailing 12-month yield & payout ratio
     yield_pct = None
     payout_ratio = None
+    payout_health = None
+    cut = (datetime.utcnow() - timedelta(days=365)).strftime("%Y-%m-%d")
+    trailing = sum(e["amount"] for e in events if e["date"] >= cut)
     try:
         info = await market_provider.get_info(symbol.upper())
         price = info.get("currentPrice") or info.get("regularMarketPrice")
-        if price and latest_total:
-            yield_pct = round(latest_total / price * 100, 2)
+        if price and trailing:
+            yield_pct = round(trailing / price * 100, 2)
         eps = info.get("trailingEps")
-        if eps and latest_total:
-            payout_ratio = round(latest_total / eps * 100, 2)
+        if eps and trailing:
+            payout_ratio = round(trailing / eps * 100, 2)
+            payout_health = (
+                "low"
+                if payout_ratio < 30
+                else "healthy"
+                if payout_ratio <= 70
+                else "high"
+            )
     except Exception:
         pass
 
     return DividendsResponse(
         symbol=symbol.upper(),
         cached_at=datetime.utcnow().isoformat(),
+        events=[DividendEvent(**e) for e in events],
         yearly=yearly,
         yield_pct=yield_pct,
         payout_ratio=payout_ratio,
+        payout_health=payout_health,
         streak=streak,
     )
 

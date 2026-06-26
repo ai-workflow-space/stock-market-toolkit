@@ -74,14 +74,24 @@ export interface Fundamentals {
 export interface YearlyDividend {
   year: number;
   total: number;
+  cash?: number | null;
+  stock?: number | null;
+}
+
+export interface DividendEvent {
+  date: string;
+  amount: number;
+  type: "cash" | "stock";
 }
 
 export interface DividendData {
   symbol: string;
   cached_at: string;
+  events: DividendEvent[];
   yearly: YearlyDividend[];
   yield_pct: number | null;
   payout_ratio: number | null;
+  payout_health: "low" | "healthy" | "high" | null;
   streak: number;
 }
 

@@ -1,21 +1,26 @@
-import type { DividendData } from "@/types";
-import { fmt, pct } from "@/lib/format";
+import type { DividendData, DividendEvent } from "@/types";
+import { fmt, pct, fmtDate } from "@/lib/format";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import StatCard from "@/components/common/StatCard";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
-export default function DividendCard({ data }: { data: DividendData }) {
+const HEALTH_LABEL: Record<string, { label: string; cls: string }> = {
+  low: { label: "Low", cls: "text-blue-500" },
+  healthy: { label: "Healthy", cls: "text-green-600" },
+  high: { label: "High", cls: "text-orange-500" },
+};
 
+export default function DividendCard({ data }: { data: DividendData }) {
   const chartData = data.yearly.map((y) => ({
     name: String(y.year),
     dividend: y.total,
   }));
 
-  const stats: { label: string; value: string }[] = [
-    { label: "Dividend yield", value: data.yield_pct != null ? pct(data.yield_pct / 100) : "—" },
-    { label: "Payout ratio", value: data.payout_ratio != null ? pct(data.payout_ratio / 100) : "—" },
-    { label: "Streak", value: data.streak > 0 ? `${data.streak} yr` : "—" },
-  ];
+  const health = data.payout_health ? HEALTH_LABEL[data.payout_health] : null;
+
+  const payoutValue = data.payout_ratio != null ? pct(data.payout_ratio / 100) : "—";
+
+  const recent = data.events.slice(0, 10);
 
   return (
     <Card className="flex h-full flex-col">
@@ -55,11 +60,44 @@ export default function DividendCard({ data }: { data: DividendData }) {
           </div>
         )}
         <div className="grid grid-cols-3 gap-2">
-          {stats.map((s) => (
-            <StatCard key={s.label} label={s.label} value={s.value} />
-          ))}
+          <StatCard label="Dividend yield" value={data.yield_pct != null ? pct(data.yield_pct / 100) : "—"} />
+          <div className="rounded-md bg-secondary/50 p-3">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Payout ratio</div>
+            <div className="mt-1 flex items-center gap-1.5 font-mono text-sm font-medium tabular-nums text-foreground">
+              <span>{payoutValue}</span>
+              {health && <span className={`text-[11px] font-medium ${health.cls}`}>{health.label}</span>}
+            </div>
+          </div>
+          <StatCard label="Streak" value={data.streak > 0 ? `${data.streak} yr` : "—"} />
         </div>
+        {recent.length > 0 && (
+          <div className="mt-1">
+            <div className="mb-1.5 text-xs font-medium text-muted-foreground">Recent dividends</div>
+            <div className="max-h-36 space-y-0.5 overflow-y-auto">
+              {recent.map((ev, i) => (
+                <EventRow key={`${ev.date}-${ev.type}-${i}`} event={ev} />
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+function EventRow({ event }: { event: DividendEvent }) {
+  const typeLabel = event.type === "stock" ? "stock" : null;
+  return (
+    <div className="flex items-center justify-between rounded px-2 py-1 text-xs hover:bg-secondary/50">
+      <span className="text-muted-foreground">{fmtDate(event.date)}</span>
+      <span className="flex items-center gap-1.5 font-mono tabular-nums">
+        {typeLabel && (
+          <span className="rounded bg-secondary/70 px-1 py-0.5 text-[10px] uppercase text-muted-foreground">
+            {typeLabel}
+          </span>
+        )}
+        <span>${fmt(event.amount)}</span>
+      </span>
+    </div>
   );
 }

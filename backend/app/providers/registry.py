@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+
 # TW symbol detection: 4-digit numeric OR ends with .TW/.TWO
 def _is_taiwan(symbol: str) -> bool:
     s = symbol.upper()
@@ -34,14 +35,19 @@ def _get_finmind() -> "FinMindProvider | None":  # type: ignore[name-defined]
     if _finmind_fundamentals is None:
         try:
             from app.providers.finmind import FinMindProvider
+
             _finmind_fundamentals = FinMindProvider()
         except ImportError:
-            log.debug("FinMind not installed; TW fundamentals will use yfinance fallback")
+            log.debug(
+                "FinMind not installed; TW fundamentals will use yfinance fallback"
+            )
             return None
     return _finmind_fundamentals
 
 
-def get_fundamentals_provider(symbol: str) -> "YFinanceFundamentalsProvider | FinMindProvider":  # type: ignore[name-defined]
+def get_fundamentals_provider(
+    symbol: str,
+) -> "YFinanceFundamentalsProvider | FinMindProvider":  # type: ignore[name-defined]
     """
     Return the appropriate fundamentals provider for the given symbol.
 

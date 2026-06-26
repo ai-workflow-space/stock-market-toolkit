@@ -191,9 +191,7 @@ async def get_access_logs(
     ),
     limit: int = Query(100, ge=1, le=10000, description="Max number of log entries"),
     search: Optional[str] = Query(None, description="Text search across log entries"),
-    status: Optional[int] = Query(
-        None, description="Filter by HTTP status code"
-    ),
+    status: Optional[int] = Query(None, description="Filter by HTTP status code"),
     current_user: User = Depends(require_admin),
 ):
     log_file = Path(__file__).resolve().parent.parent.parent / "logs" / "app.json"

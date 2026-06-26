@@ -60,15 +60,25 @@ class FundamentalsResponse(BaseModel):
 class YearlyDividend(BaseModel):
     year: int
     total: float
+    cash: Optional[float] = None
+    stock: Optional[float] = None
+
+
+class DividendEvent(BaseModel):
+    date: str
+    amount: float
+    type: str = "cash"
 
 
 class DividendsResponse(BaseModel):
     symbol: str
     cached_at: str = ""
-    yearly: list[YearlyDividend]
+    events: list[DividendEvent] = []
+    yearly: list[YearlyDividend] = []
     yield_pct: Optional[float] = None
     payout_ratio: Optional[float] = None
-    streak: int
+    payout_health: Optional[str] = None
+    streak: int = 0
 
 
 # ─── Stock schemas ───

@@ -1,0 +1,15 @@
+## Summary
+- **GET /api/stock/{symbol}/dividends**: full dividend history now returns individual `DividendEvent` records (date, amount, type: cash/stock) alongside yearly aggregates
+- **Trailing 12m yield**: computed as sum(last 365d dividends) / current price (was using latest full-year total)
+- **Payout ratio band health**: new `payout_health` field — low (<30%), healthy (30-70%), high (>70%)
+- **TW routing fix**: dividends route now uses `get_fundamentals_provider()` registry so TW symbols route to FinMind instead of yfinance
+- **TW cash vs stock split**: yearly totals now include separate cash/stock columns; events distinguish type
+- **Frontend DividendCard**: added scrollable "Recent dividends" events table + color-coded payout health badge (blue/green/orange)
+
+## Fixes
+Fixes #109
+
+## Testing
+- `ruff check . && ruff format .` — clean
+- `npm run lint && npm run build` — clean (frontend TS warning pre-existing)
+- `docker compose -f docker-compose.feat-test.yml up --build -d backend` — Postgres migrations applied, app boots, schema verified

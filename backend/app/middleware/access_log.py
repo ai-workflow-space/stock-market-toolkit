@@ -4,12 +4,14 @@ from typing import Optional
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
-EXCLUDED_PATHS = frozenset({
-    "/health",
-    "/api/admin/logs",
-    "/api/admin/audit-logs",
-    "/api/admin/access-logs",
-})
+EXCLUDED_PATHS = frozenset(
+    {
+        "/health",
+        "/api/admin/logs",
+        "/api/admin/audit-logs",
+        "/api/admin/access-logs",
+    }
+)
 
 log = structlog.get_logger(__name__)
 
@@ -22,6 +24,7 @@ def _try_get_user_id(request: Request) -> Optional[str]:
     try:
         from jose import jwt
         from app.config import get_settings
+
         settings = get_settings()
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
