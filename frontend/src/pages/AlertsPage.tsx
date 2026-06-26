@@ -9,6 +9,7 @@ import {
   getNotificationSettings,
   updateNotificationSettings,
   type Alert,
+  type AlertConditionCreate,
   type TriggeredAlert,
   type NotificationSettings,
 } from "../api/alertsApi";
@@ -34,7 +35,7 @@ import {
   TabsTrigger,
 } from "../components/ui/tabs";
 import { Skeleton } from "../components/ui/skeleton";
-import { Bell, CheckCircle2, X } from "lucide-react";
+import { Bell, CheckCircle2, X, Plus, Trash2 } from "lucide-react";
 import SymbolSearch from "@/components/common/SymbolSearch";
 import { fmt } from "../lib/format";
 
@@ -54,9 +55,34 @@ const PERIOD_OPTIONS = [
   { value: "1d", label: "1 day" },
 ];
 
+const METRIC_OPTIONS = [
+  { value: "price", label: "Price" },
+  { value: "rsi", label: "RSI" },
+  { value: "macd_hist", label: "MACD Histogram" },
+  { value: "signal", label: "Signal" },
+  { value: "pct_change", label: "% Change" },
+];
+
+const OPERATOR_OPTIONS = [
+  { value: "gt", label: ">" },
+  { value: "lt", label: "<" },
+  { value: "crosses_above", label: "Crosses Above" },
+  { value: "eq", label: "=" },
+];
+
 function conditionLabel(ct: string): string {
   const opt = CONDITION_OPTIONS.find(o => o.value === ct);
   return opt?.label || ct;
+}
+
+function metricLabel(m: string): string {
+  const opt = METRIC_OPTIONS.find(o => o.value === m);
+  return opt?.label || m;
+}
+
+function operatorLabel(o: string): string {
+  const opt = OPERATOR_OPTIONS.find(x => x.value === o);
+  return opt?.label || o;
 }
 
 /* ─── Create Alert Dialog ─── */
@@ -72,8 +98,10 @@ function CreateAlertDialog({
   const [symbol, setSymbol] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState("");
   const [symbolName, setSymbolName] = useState("");
-  const [conditionType, setConditionType] = useState<string>("above");
-  const [threshold, setThreshold] = useState("");
+  const [combinator, setCombinator] = useState<"all" | "any">("all");
+  const [conditions, setConditions] = useState<AlertConditionCreate[]>([
+    { metric: "price", operator: "gt", value: 0 },
+  ]);
   const [period, setPeriod] = useState("1h");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -92,18 +120,27 @@ function CreateAlertDialog({
     return () => { cancelled = true; };
   }, [selectedSymbol]);
 
-  const thresh = parseFloat(threshold);
-  const isPct = conditionType.startsWith("pct");
-  const distance = (currentPrice != null && !isNaN(thresh) && thresh > 0)
-    ? ((thresh - currentPrice) / currentPrice * 100)
-    : null;
+  const updateCondition = (idx: number, field: keyof AlertConditionCreate, value: string | number) => {
+    setConditions(prev => prev.map((c, i) => i === idx ? { ...c, [field]: field === "value" ? Number(value) : value } : c));
+  };
+
+  const addCondition = () => {
+    setConditions(prev => [...prev, { metric: "price", operator: "gt", value: 0 }]);
+  };
+
+  const removeCondition = (idx: number) => {
+    setConditions(prev => prev.filter((_, i) => i !== idx));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!symbol.trim()) { setError("Symbol is required"); return; }
-    const thresh = parseFloat(threshold);
-    if (isNaN(thresh) || thresh <= 0) { setError("Enter a valid threshold"); return; }
-    if (conditionType.startsWith("pct") && thresh > 100) { setError("Percentage must be ≤ 100"); return; }
+
+    // Validate conditions
+    for (const c of conditions) {
+      if (isNaN(c.value)) { setError("Enter a valid value for all conditions"); return; }
+    }
+    if (conditions.length === 0) { setError("Add at least one condition"); return; }
 
     setLoading(true);
     setError("");
@@ -111,9 +148,9 @@ function CreateAlertDialog({
       const alert = await createAlert({
         symbol: symbol.trim().toUpperCase(),
         symbol_name: symbolName || undefined,
-        condition_type: conditionType as Alert["condition_type"],
-        threshold: thresh,
         period,
+        combinator,
+        conditions,
       });
       onCreated(alert);
       onClose();
@@ -126,11 +163,11 @@ function CreateAlertDialog({
 
   return (
     <Dialog open={open} onOpenChange={o => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Create Price Alert</DialogTitle>
           <DialogDescription>
-            Set up a price alert for any stock symbol
+            Set up multi-condition price alerts for any stock symbol
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -146,46 +183,78 @@ function CreateAlertDialog({
                 onSelect={(result) => setSymbolName(result.name)}
               />
             </div>
+
             <div className="grid gap-2">
-              <Label htmlFor="condition">Condition</Label>
-              <select
-                id="condition"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                value={conditionType}
-                onChange={e => setConditionType(e.target.value)}
-              >
-                {CONDITION_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-              <p className="text-xs text-muted-foreground">
-                {CONDITION_OPTIONS.find(o => o.value === conditionType)?.description}
-              </p>
+              <Label>Combinator</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={combinator === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCombinator("all")}
+                >
+                  AND (all conditions)
+                </Button>
+                <Button
+                  type="button"
+                  variant={combinator === "any" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCombinator("any")}
+                >
+                  OR (any condition)
+                </Button>
+              </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="threshold">
-                {isPct ? "Percentage (%)" : "Price Threshold ($)"}
-              </Label>
-              <Input
-                id="threshold"
-                type="number"
-                step={isPct ? "0.1" : "0.01"}
-                min="0"
-                max={isPct ? "100" : undefined}
-                placeholder={isPct ? "5.0" : "200.00"}
-                value={threshold}
-                onChange={e => setThreshold(e.target.value)}
-              />
-              {currentPrice != null && thresh > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Current: ${currentPrice.toFixed(2)} &nbsp;|&nbsp;
-                  {isPct
-                    ? `Target: ${thresh}%`
-                    : `Distance: ${distance != null ? (distance >= 0 ? "+" : "") + distance.toFixed(1) + "%" : "—"} from current`
-                  }
-                </p>
-              )}
+
+            <div className="grid gap-3">
+              <div className="flex items-center justify-between">
+                <Label>Conditions</Label>
+                <Button type="button" variant="outline" size="sm" onClick={addCondition}>
+                  <Plus className="size-3.5 mr-1" /> Add
+                </Button>
+              </div>
+              {conditions.map((c, idx) => (
+                <div key={idx} className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <select
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                      value={c.metric}
+                      onChange={e => updateCondition(idx, "metric", e.target.value)}
+                    >
+                      {METRIC_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-28">
+                    <select
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                      value={c.operator}
+                      onChange={e => updateCondition(idx, "operator", e.target.value)}
+                    >
+                      {OPERATOR_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-28">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Value"
+                      value={c.value}
+                      onChange={e => updateCondition(idx, "value", e.target.value)}
+                    />
+                  </div>
+                  {conditions.length > 1 && (
+                    <Button type="button" variant="ghost" size="icon" onClick={() => removeCondition(idx)} className="text-muted-foreground hover:text-destructive shrink-0">
+                      <Trash2 className="size-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="period">Period</Label>
               <select
@@ -199,6 +268,13 @@ function CreateAlertDialog({
                 ))}
               </select>
             </div>
+
+            {currentPrice != null && (
+              <p className="text-xs text-muted-foreground">
+                Current price: ${currentPrice.toFixed(2)}
+              </p>
+            )}
+
             {error && (
               <p className="text-sm text-destructive">{error}</p>
             )}
@@ -383,29 +459,47 @@ export default function AlertsPage() {
               <div className="flex flex-col gap-3">
                 {alerts.map(alert => (
                   <Card key={alert.id} className={alert.enabled ? "" : "opacity-50"}>
-                    <CardContent className="flex items-center gap-4 py-4">
-                      <span className="font-bold text-base min-w-[60px]">{alert.symbol}</span>
-                      <span className="text-sm text-muted-foreground truncate flex-1">
-                        {alert.symbol_name ? `${alert.symbol_name} · ` : ""}{conditionLabel(alert.condition_type)}
-                      </span>
-                      <span className="font-semibold text-sm">
-                        {alert.condition_type.startsWith("pct") ? `${alert.threshold}%` : `$${fmt(alert.threshold)}`}
-                      </span>
-                      <span className="text-xs text-muted-foreground uppercase">{alert.period}</span>
-                      <Switch
-                        aria-label={`${alert.enabled ? "Disable" : "Enable"} ${alert.symbol} alert`}
-                        checked={alert.enabled}
-                        onCheckedChange={() => handleToggle(alert)}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(alert.id)}
-                        className="text-muted-foreground hover:text-destructive"
-                        aria-label={`Delete ${alert.symbol} alert`}
-                      >
-                        <X />
-                      </Button>
+                    <CardContent className="py-4">
+                      <div className="flex items-center gap-4">
+                        <span className="font-bold text-base min-w-[60px]">{alert.symbol}</span>
+                        <span className="text-sm text-muted-foreground truncate flex-1">
+                          {alert.symbol_name ? `${alert.symbol_name} · ` : ""}
+                          {alert.conditions?.length > 0
+                            ? `${alert.combinator === "any" ? "ANY" : "ALL"} (${alert.conditions.length} conditions)`
+                            : conditionLabel(alert.condition_type)
+                          }
+                        </span>
+                        <span className="font-semibold text-sm">
+                          {alert.conditions?.length > 0
+                            ? ""
+                            : alert.condition_type.startsWith("pct") ? `${alert.threshold}%` : `$${fmt(alert.threshold)}`
+                          }
+                        </span>
+                        <span className="text-xs text-muted-foreground uppercase">{alert.period}</span>
+                        <Switch
+                          aria-label={`${alert.enabled ? "Disable" : "Enable"} ${alert.symbol} alert`}
+                          checked={alert.enabled}
+                          onCheckedChange={() => handleToggle(alert)}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(alert.id)}
+                          className="text-muted-foreground hover:text-destructive"
+                          aria-label={`Delete ${alert.symbol} alert`}
+                        >
+                          <X />
+                        </Button>
+                      </div>
+                      {alert.conditions?.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {alert.conditions.map((c, i) => (
+                            <Badge key={c.id || i} variant="secondary" className="text-xs">
+                              {metricLabel(c.metric)} {operatorLabel(c.operator)} {c.value}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}

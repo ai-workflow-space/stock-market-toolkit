@@ -5,6 +5,7 @@ Stock Market Toolkit — FastAPI Backend (Production)
 from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
+from sqlalchemy import select
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -16,7 +17,15 @@ from logging.handlers import RotatingFileHandler
 
 from app import __version__
 from app.config import get_settings
-from app.routes import auth, stocks, alerts, mcp, analysis, admin, watchlist
+from app.routes import (
+    auth,
+    stocks,
+    alerts,
+    mcp,
+    analysis,
+    admin,
+    watchlist,
+)
 from app.middleware.request_id import RequestIDMiddleware
 from app.middleware.access_log import AccessLogMiddleware
 
@@ -167,3 +176,65 @@ async def cron_check_alerts():
 
     await check_alerts()
     return {"status": "ok", "message": "Alerts checked"}
+
+
+@app.post("/cron/ingest")
+async def cron_ingest():
+    """Cron endpoint to trigger nightly fundamentals ingestion."""
+    from app.database import AsyncSessionLocal
+    from app.models import JobRun
+
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(JobRun)
+            .where(JobRun.job_type == "nightly_ingest", JobRun.status == "running")
+            .limit(1)
+        )
+        if result.scalar_one_or_none():
+            return {"status": "skipped", "message": "Ingestion already running"}
+
+        job = JobRun(
+            job_type="nightly_ingest",
+            status="running",
+            total_symbols=0,
+        )
+        db.add(job)
+        await db.commit()
+        job_run_id = job.id
+
+    from app.services.ingestion import run_nightly_ingest
+
+    processed = await run_nightly_ingest(job_run_id=job_run_id)
+    return {"status": "ok", "symbols_processed": processed}
+
+
+@app.get("/cron/ingest/status")
+async def cron_ingest_status():
+    """Return status of the last nightly ingestion run."""
+    from app.database import AsyncSessionLocal
+    from app.services.ingestion import get_latest_job_run
+
+    async with AsyncSessionLocal() as db:
+        last_run = await get_latest_job_run(db)
+
+    if last_run is None:
+        return {"last_run": None, "is_running": False}
+
+    return {
+        "last_run": {
+            "id": last_run.id,
+            "job_type": last_run.job_type,
+            "status": last_run.status,
+            "symbols_processed": last_run.symbols_processed or 0,
+            "total_symbols": last_run.total_symbols or 0,
+            "errors": last_run.errors or 0,
+            "error_details": last_run.error_details,
+            "started_at": (
+                last_run.started_at.isoformat() if last_run.started_at else None
+            ),
+            "completed_at": (
+                last_run.completed_at.isoformat() if last_run.completed_at else None
+            ),
+        },
+        "is_running": last_run.status == "running" if last_run else False,
+    }

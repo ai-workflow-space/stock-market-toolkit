@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.6.1...v0.7.0) (2026-06-26)
+
+
+### Features
+
+* **NOTIF-2:** multi-condition alerts with AND/OR combinator ([#154](https://github.com/ai-workflow-space/stock-market-toolkit/issues/154)) ([7d1dc2d](https://github.com/ai-workflow-space/stock-market-toolkit/commit/7d1dc2d8c18d4e02c0ea8594d415299def34c053)), closes [#115](https://github.com/ai-workflow-space/stock-market-toolkit/issues/115)
+
 ## [0.6.1](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.6.0...v0.6.1) (2026-06-26)
 
 

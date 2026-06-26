@@ -7,6 +7,8 @@ from sqlalchemy import (
     Text,
     Integer,
     ForeignKey,
+    JSON,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -56,17 +58,38 @@ class Alert(Base):
     symbol_name = Column(String, nullable=True)
     condition_type = Column(
         String, nullable=False
-    )  # above, below, pct_change_up, pct_change_down
+    )  # above, below, pct_change_up, pct_change_down, multi
     threshold = Column(Float, nullable=False)
     period = Column(String, nullable=False, default="1h")  # 5m, 15m, 30m, 1h, 4h, 1d
     enabled = Column(Boolean, default=True)
+    combinator = Column(String, default="all")  # all (AND) or any (OR)
     cooldown_until = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="alerts")
+    conditions = relationship(
+        "AlertCondition",
+        back_populates="alert",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
     triggered = relationship(
         "TriggeredAlert", back_populates="alert", cascade="all, delete-orphan"
     )
+
+
+class AlertCondition(Base):
+    __tablename__ = "alert_conditions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    alert_id = Column(
+        Integer, ForeignKey("alerts.id", ondelete="CASCADE"), nullable=False
+    )
+    metric = Column(String, nullable=False)  # price, rsi, macd_hist, signal, pct_change
+    operator = Column(String, nullable=False)  # gt, lt, crosses_above, eq
+    value = Column(Float, nullable=False)
+
+    alert = relationship("Alert", back_populates="conditions")
 
 
 class NotificationSettings(Base):
@@ -143,6 +166,91 @@ class InviteCode(Base):
 
     creator = relationship("User", foreign_keys=[created_by])
     redeemer = relationship("User", foreign_keys=[used_by])
+
+
+# ─── Ingestion / Fundamentals data models ───
+
+
+class FinancialStatement(Base):
+    __tablename__ = "financial_statements"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    symbol = Column(String, nullable=False, index=True)
+    period = Column(String, nullable=False)  # "annual" | "quarterly"
+    fiscal_year = Column(Integer, nullable=True)
+    fiscal_quarter = Column(Integer, nullable=True)
+    data = Column(JSON, nullable=False)
+    fetched_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint(
+            "symbol", "period", name="uq_financial_statements_symbol_period"
+        ),
+    )
+
+
+class Dividend(Base):
+    __tablename__ = "dividends"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    symbol = Column(String, nullable=False, index=True)
+    amount = Column(Float, nullable=False)
+    ex_date = Column(DateTime(timezone=True), nullable=False)
+    fetched_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("symbol", "ex_date", name="uq_dividends_symbol_ex_date"),
+    )
+
+
+class SymbolScore(Base):
+    __tablename__ = "symbol_scores"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    symbol = Column(String, nullable=False, index=True)
+    score_type = Column(
+        String, nullable=False
+    )  # "piotroski" | "profitability" | "dividend_quality"
+    score = Column(Float, nullable=True)
+    details = Column(JSON, nullable=True)
+    calculated_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint(
+            "symbol", "score_type", name="uq_symbol_scores_symbol_score_type"
+        ),
+    )
+
+
+class MonthlyRevenue(Base):
+    __tablename__ = "monthly_revenue"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    symbol = Column(String, nullable=False, index=True)
+    year = Column(Integer, nullable=False)
+    month = Column(Integer, nullable=False)
+    revenue = Column(Float, nullable=True)
+    fetched_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint(
+            "symbol", "year", "month", name="uq_monthly_revenue_symbol_year_month"
+        ),
+    )
+
+
+class JobRun(Base):
+    __tablename__ = "job_runs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    job_type = Column(String, nullable=False, index=True)  # "nightly_ingest"
+    status = Column(String, nullable=False)  # "running" | "completed" | "failed"
+    symbols_processed = Column(Integer, default=0)
+    total_symbols = Column(Integer, default=0)
+    errors = Column(Integer, default=0)
+    error_details = Column(Text, nullable=True)
+    started_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime(timezone=True), nullable=True)
 
 
 class SmtpSettings(Base):
