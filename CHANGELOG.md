@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.2](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.1...v0.9.2) (2026-06-26)
+
+
+### Bug Fixes
+
+* guard baseline index creation for idempotency (pre-Alembic adoption) ([#166](https://github.com/ai-workflow-space/stock-market-toolkit/issues/166)) ([a363e34](https://github.com/ai-workflow-space/stock-market-toolkit/commit/a363e3424c6459950698cd742826fb89636eb461))
+
 ## [0.9.1](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.0...v0.9.1) (2026-06-26)
 
 
