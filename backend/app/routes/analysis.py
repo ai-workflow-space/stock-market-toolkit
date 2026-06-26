@@ -24,9 +24,10 @@ async def _compute_analysis(symbol: str, period: str = "3mo") -> dict:
     """Get comprehensive technical analysis for a symbol (no auth dependency)."""
     interval_map = {"1d": "5m", "5d": "15m"}
     interval = interval_map.get(period, "1d")
-    df = await market_provider.get_history(
+    result = await market_provider.get_history(
         symbol.upper(), period=period, interval=interval
     )
+    df = result.value
 
     if df.empty:
         raise HTTPException(status_code=404, detail=f"No data for {symbol}")

@@ -1,9 +1,9 @@
-"""Provider registry — symbol-based routing to the right provider instance."""
+"""Provider registry — symbol-based routing and provider fallback chains."""
 
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import Sequence, TYPE_CHECKING
 
 from app.providers.yfinance import (
     YFinanceMarketDataProvider,
@@ -16,6 +16,21 @@ if TYPE_CHECKING:
     from app.providers.finmind import FinMindProvider
 
 log = logging.getLogger(__name__)
+
+
+# Each entry is an ordered list of provider *name* attributes (matching
+# the ``.name`` on provider instances).  The first name is the primary;
+# subsequent names are fallbacks tried in order when the primary fails.
+PROVIDER_CHAINS: dict[str, Sequence[str]] = {
+    "default": ["yfinance"],
+    "with_fallback": ["yfinance"],
+}
+
+
+def get_chain(name: str = "default") -> Sequence[str]:
+    """Return the ordered provider list for *name*."""
+    return PROVIDER_CHAINS.get(name, PROVIDER_CHAINS["default"])
+
 
 # TW symbol detection: 4-digit numeric OR ends with .TW/.TWO
 def _is_taiwan(symbol: str) -> bool:

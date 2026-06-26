@@ -2,7 +2,6 @@
 Alert checker service - runs periodically to check price alerts and send notifications.
 """
 
-import yfinance as yf
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -11,6 +10,7 @@ import math
 import httpx
 
 from app.database import AsyncSessionLocal
+import yfinance as yf
 from app.models import (
     Alert,
     AlertCondition,
@@ -19,6 +19,7 @@ from app.models import (
     NotificationDelivery,
     SmtpSettings,
 )
+from app.providers import market_provider
 from app.services.cache import cached, cache_key
 from app.services.mailer import send_email
 
@@ -81,16 +82,14 @@ async def _get_current_price(symbol: str, period: str) -> float | None:
         period = "1h"
     hist_period, interval = PERIOD_MAP[period]
 
-    async def _load():
-        ticker = yf.Ticker(symbol)
-        df = ticker.history(period=hist_period, interval=interval, auto_adjust=True)
+    try:
+        result = await market_provider.get_history(
+            symbol, period=hist_period, interval=interval
+        )
+        df = result.value
         if df.empty:
             return None
         return float(df["Close"].iloc[-1])
-
-    key = cache_key("price", symbol, period)
-    try:
-        return await cached(key, ttl=120, loader=_load)
     except Exception as e:
         log.warning(f"Failed to fetch price for {symbol}: {e}")
         return None
@@ -102,16 +101,14 @@ async def _get_period_start_price(symbol: str, period: str) -> float | None:
         period = "1h"
     hist_period, interval = PERIOD_MAP[period]
 
-    async def _load():
-        ticker = yf.Ticker(symbol)
-        df = ticker.history(period=hist_period, interval=interval, auto_adjust=True)
+    try:
+        result = await market_provider.get_history(
+            symbol, period=hist_period, interval=interval
+        )
+        df = result.value
         if df.empty or len(df) < 2:
             return None
         return float(df["Close"].iloc[0])
-
-    key = cache_key("price_start", symbol, period)
-    try:
-        return await cached(key, ttl=300, loader=_load)
     except Exception as e:
         log.warning(f"Failed to fetch period start price for {symbol}: {e}")
         return None
