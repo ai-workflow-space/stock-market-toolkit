@@ -174,17 +174,18 @@ async def get_batch_signals(
     period: str = Query("1mo"),
     current_user: User = Depends(get_current_user),
 ):
-    """Get signals for multiple symbols."""
+    """Get signals for multiple symbols. Returns partial results with per-symbol error info."""
     symbol_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
     if len(symbol_list) > 25:
         raise HTTPException(status_code=400, detail="Maximum 25 symbols allowed")
-    results = []
+    results: list[dict] = []
+    errors: list[dict] = []
     for sym in symbol_list:
         try:
             results.append(await _compute_analysis(sym, period))
-        except HTTPException:
-            pass
-    return results
+        except HTTPException as exc:
+            errors.append({"symbol": sym, "error": exc.detail})
+    return {"signals": results, "errors": errors}
 
 
 @router.get("/analysis/{symbol}")
