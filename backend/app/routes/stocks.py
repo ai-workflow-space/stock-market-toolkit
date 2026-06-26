@@ -22,7 +22,6 @@ from app.services.scoring import (
     profitability_metrics,
     dividend_quality,
 )
-import pandas as pd
 import pandas_ta as ta
 import math
 
@@ -184,19 +183,6 @@ async def get_stock_info(
         week_52_high=info.get("fiftyTwoWeekHigh"),
         week_52_low=info.get("fiftyTwoWeekLow"),
     )
-
-
-def _fs_val(df: pd.DataFrame, row_name: str, col_idx: int = 0):
-    """Extract a value from a financial statement DataFrame."""
-    try:
-        val = df.loc[row_name]
-        if isinstance(val, pd.Series):
-            if col_idx < len(val):
-                v = val.iloc[col_idx]
-                return v if pd.notna(v) else None
-        return None
-    except (KeyError, IndexError, TypeError):
-        return None
 
 
 @router.get("/stock/{symbol}/fundamentals", response_model=FundamentalsResponse)
