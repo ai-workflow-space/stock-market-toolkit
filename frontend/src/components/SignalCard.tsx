@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Minus, X } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, X, LineChart, BarChart3 } from "lucide-react";
 import type { Signal, SignalDirection, SignalType } from "@/types";
 import { fmt } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -8,8 +8,12 @@ import { cn } from "@/lib/utils";
 
 interface SignalCardProps {
   signal: Signal;
+  /** When true, analysis data is not available for this tracked symbol. */
+  pending?: boolean;
   onDismiss?: (id: string) => void;
   onRemoveTicker?: (symbol: string) => void;
+  onView?: (symbol: string) => void;
+  onCompare?: (symbol: string) => void;
 }
 
 const DIRECTION_ICON = { bullish: TrendingUp, bearish: TrendingDown, neutral: Minus };
@@ -48,7 +52,14 @@ function StrengthBar({ strength }: { strength: number }) {
   );
 }
 
-export default function SignalCard({ signal, onDismiss, onRemoveTicker }: SignalCardProps) {
+export default function SignalCard({
+  signal,
+  pending = false,
+  onDismiss,
+  onRemoveTicker,
+  onView,
+  onCompare,
+}: SignalCardProps) {
   const Icon = DIRECTION_ICON[signal.direction];
 
   return (
@@ -57,45 +68,89 @@ export default function SignalCard({ signal, onDismiss, onRemoveTicker }: Signal
         <div className="mb-3 flex items-start justify-between">
           <div className="flex items-center gap-2">
             <Icon className={cn("size-4", DIRECTION_CLASS[signal.direction])} />
-            <span className="text-base font-semibold">{signal.symbol}</span>
-            <Badge variant="secondary">{SIGNAL_TYPE_LABELS[signal.signal_type]}</Badge>
+            {onView ? (
+              <button
+                type="button"
+                className="cursor-pointer text-base font-semibold hover:underline"
+                onClick={() => onView(signal.symbol)}
+              >
+                {signal.symbol}
+              </button>
+            ) : (
+              <span className="text-base font-semibold">{signal.symbol}</span>
+            )}
+            {pending ? (
+              <Badge variant="outline">No signal</Badge>
+            ) : (
+              <Badge variant="secondary">{SIGNAL_TYPE_LABELS[signal.signal_type]}</Badge>
+            )}
           </div>
-          {onRemoveTicker ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-6 text-muted-foreground hover:text-destructive"
-              onClick={() => onRemoveTicker(signal.symbol)}
-              aria-label="Stop tracking ticker"
-            >
-              <X />
-            </Button>
-          ) : onDismiss ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-6 text-muted-foreground"
-              onClick={() => onDismiss(signal.id)}
-              aria-label="Dismiss signal"
-            >
-              <X />
-            </Button>
-          ) : null}
+          <div className="flex items-center gap-1">
+            {onView ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-6 text-muted-foreground"
+                onClick={() => onView(signal.symbol)}
+                aria-label="View on dashboard"
+              >
+                <LineChart />
+              </Button>
+            ) : null}
+            {onCompare ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-6 text-muted-foreground"
+                onClick={() => onCompare(signal.symbol)}
+                aria-label="Compare ticker"
+              >
+                <BarChart3 />
+              </Button>
+            ) : null}
+            {onRemoveTicker ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-6 text-muted-foreground hover:text-destructive"
+                onClick={() => onRemoveTicker(signal.symbol)}
+                aria-label="Stop tracking ticker"
+              >
+                <X />
+              </Button>
+            ) : onDismiss ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-6 text-muted-foreground"
+                onClick={() => onDismiss(signal.id)}
+                aria-label="Dismiss signal"
+              >
+                <X />
+              </Button>
+            ) : null}
+          </div>
         </div>
 
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <p className="mb-0.5 text-xs uppercase text-muted-foreground">Price</p>
-            <p className="font-mono font-semibold tabular-nums">${fmt(signal.price)}</p>
-          </div>
-          <div className="text-right">
-            <p className="mb-0.5 text-xs uppercase text-muted-foreground">Signal strength</p>
-            <StrengthBar strength={signal.strength} />
-          </div>
-        </div>
+        {pending ? (
+          <p className="py-2 text-sm text-muted-foreground">{signal.description}</p>
+        ) : (
+          <>
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <p className="mb-0.5 text-xs uppercase text-muted-foreground">Price</p>
+                <p className="font-mono font-semibold tabular-nums">${fmt(signal.price)}</p>
+              </div>
+              <div className="text-right">
+                <p className="mb-0.5 text-xs uppercase text-muted-foreground">Signal strength</p>
+                <StrengthBar strength={signal.strength} />
+              </div>
+            </div>
 
-        <p className="mb-2 text-sm leading-relaxed text-muted-foreground">{signal.description}</p>
-        <p className="text-xs text-muted-foreground">{formatTime(signal.timestamp)}</p>
+            <p className="mb-2 text-sm leading-relaxed text-muted-foreground">{signal.description}</p>
+            <p className="text-xs text-muted-foreground">{formatTime(signal.timestamp)}</p>
+          </>
+        )}
       </CardContent>
     </Card>
   );
