@@ -3,9 +3,10 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from sqlalchemy import select, func
+from datetime import datetime, timezone
 import uuid
 import secrets
-from app.models import User
+from app.models import User, InviteCode
 from app.database import get_db
 from app.schemas import (
     UserRegister,
@@ -29,7 +30,7 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=UserResponse, status_code=201)
-async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
+async def register(data: UserRegister, request: Request, db: AsyncSession = Depends(get_db)):
     # Check existing email
     existing = await db.execute(
         select(User).where(
@@ -41,6 +42,29 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
             status_code=400, detail="Email or username already registered"
         )
 
+    # Validate invite token if provided
+    if data.invite_token:
+        result = await db.execute(
+            select(InviteCode).where(InviteCode.token == data.invite_token)
+        )
+        invite = result.scalar_one_or_none()
+        if not invite:
+            raise HTTPException(
+                status_code=400, detail="Invalid invitation token"
+            )
+        if not invite.is_active:
+            raise HTTPException(
+                status_code=400, detail="Invitation has been revoked"
+            )
+        if invite.expires_at and invite.expires_at < datetime.now(timezone.utc):
+            raise HTTPException(
+                status_code=400, detail="Invitation token has expired"
+            )
+        if invite.used_by is not None:
+            raise HTTPException(
+                status_code=400, detail="Invitation token has already been used"
+            )
+
     user = User(
         id=str(uuid.uuid4()),
         email=data.email,
@@ -49,6 +73,20 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
         created_at=func.now(),
     )
     db.add(user)
+    await db.flush()
+
+    if data.invite_token:
+        invite.used_by = user.id
+        invite.used_at = datetime.now(timezone.utc)
+        await write_audit(
+            db,
+            actor_id=user.id,
+            action="invite.redeemed",
+            target=invite.code,
+            meta={"token": data.invite_token},
+            request=request,
+        )
+
     await db.commit()
     await db.refresh(user)
     return user
@@ -84,6 +122,9 @@ async def login(data: UserLogin, request: Request, db: AsyncSession = Depends(ge
             request=request,
         )
         raise HTTPException(status_code=403, detail="Account disabled")
+
+    user.last_login_at = func.now()
+    await db.commit()
 
     access = create_access_token({"sub": user.id})
     refresh = create_refresh_token({"sub": user.id})

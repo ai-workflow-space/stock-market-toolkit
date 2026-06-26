@@ -42,7 +42,7 @@ export default function WatchlistButton({
           size={size || "icon"}
           onClick={handleClick}
           className={cn("text-muted-foreground hover:text-yellow-500", className)}
-          aria-label={watched ? `Remove ${symbol} from watchlist` : `Add ${symbol} to watchlist`}
+          aria-label={watched ? `Remove ${symbol} from tracked` : `Add ${symbol} to tracked`}
         >
           <Star
             className={cn("size-4", watched && "fill-yellow-500 text-yellow-500")}
@@ -50,7 +50,7 @@ export default function WatchlistButton({
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        {watched ? "Remove from watchlist" : "Add to watchlist"}
+        {watched ? "Remove from tracked" : "Add to tracked"}
       </TooltipContent>
     </Tooltip>
   );

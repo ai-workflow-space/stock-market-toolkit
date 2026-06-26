@@ -27,6 +27,11 @@ class Settings:
     ADMIN_EMAIL: str = _get_env("ADMIN_EMAIL", "admin@stocktoolkit.local")
     ADMIN_USERNAME: str = _get_env("ADMIN_USERNAME", "admin")
     ADMIN_PASSWORD: str = _get_env("ADMIN_PASSWORD", "Admin@1234")
+    ENCRYPTION_KEY: str = _get_env(
+        "ENCRYPTION_KEY",
+        "dev-encryption-key-stocktoolkit-change-in-production-openssl-rand-hex-64",
+    )
+    FINMIND_TOKEN: str = _get_env("FINMIND_TOKEN", "")
 
 
 @lru_cache

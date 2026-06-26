@@ -1,7 +1,7 @@
 """add_alert_conditions_and_combinator
 
 Revision ID: d4e5f6a1b2c3
-Revises: c3d4e5f6a1b2
+Revises: 3c4d5e6f7a8b
 Create Date: 2026-06-26 12:00:00.000000
 
 """
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "d4e5f6a1b2c3"
-down_revision: Union[str, None] = "c3d4e5f6a1b2"
+down_revision: Union[str, None] = "3c4d5e6f7a8b"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
