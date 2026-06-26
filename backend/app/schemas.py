@@ -143,16 +143,39 @@ class CompareResponse(BaseModel):
 
 
 # ─── Alert schemas ───
+class AlertConditionCreate(BaseModel):
+    metric: str = Field(
+        ..., pattern="^(price|rsi|macd_hist|signal|pct_change)$"
+    )
+    operator: str = Field(
+        ..., pattern="^(gt|lt|crosses_above|eq)$"
+    )
+    value: float
+
+
+class AlertConditionResponse(BaseModel):
+    id: int
+    alert_id: int
+    metric: str
+    operator: str
+    value: float
+
+    class Config:
+        from_attributes = True
+
+
 class AlertCreate(BaseModel):
     symbol: str = Field(..., min_length=1, max_length=20)
     symbol_name: Optional[str] = Field(None, max_length=200)
-    condition_type: str = Field(
-        ..., pattern="^(above|below|pct_change_up|pct_change_down)$"
+    condition_type: Optional[str] = Field(
+        None, pattern="^(above|below|pct_change_up|pct_change_down)$"
     )
-    threshold: float = Field(
-        ..., description="Price threshold or percentage change threshold"
+    threshold: Optional[float] = Field(
+        None, description="Price threshold or percentage change threshold"
     )
     period: str = Field(default="1h", pattern="^(5m|15m|30m|1h|4h|1d)$")
+    combinator: str = Field(default="all", pattern="^(all|any)$")
+    conditions: list[AlertConditionCreate] = []
 
     @field_validator("symbol")
     @classmethod
@@ -163,7 +186,7 @@ class AlertCreate(BaseModel):
 class AlertUpdate(BaseModel):
     symbol: Optional[str] = Field(None, min_length=1, max_length=20)
     condition_type: Optional[str] = Field(
-        None, pattern="^(above|below|pct_change_up|pct_change_down)$"
+        None, pattern="^(above|below|pct_change_up|pct_change_down|multi)$"
     )
     threshold: Optional[float] = None
     period: Optional[str] = Field(None, pattern="^(5m|15m|30m|1h|4h|1d)$")
@@ -179,6 +202,8 @@ class AlertResponse(BaseModel):
     threshold: float
     period: str
     enabled: bool
+    combinator: Optional[str] = "all"
+    conditions: list[AlertConditionResponse] = []
     cooldown_until: Optional[datetime] = None
     created_at: Optional[datetime] = None
 

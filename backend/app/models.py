@@ -58,17 +58,38 @@ class Alert(Base):
     symbol_name = Column(String, nullable=True)
     condition_type = Column(
         String, nullable=False
-    )  # above, below, pct_change_up, pct_change_down
+    )  # above, below, pct_change_up, pct_change_down, multi
     threshold = Column(Float, nullable=False)
     period = Column(String, nullable=False, default="1h")  # 5m, 15m, 30m, 1h, 4h, 1d
     enabled = Column(Boolean, default=True)
+    combinator = Column(String, default="all")  # all (AND) or any (OR)
     cooldown_until = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="alerts")
+    conditions = relationship(
+        "AlertCondition",
+        back_populates="alert",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
     triggered = relationship(
         "TriggeredAlert", back_populates="alert", cascade="all, delete-orphan"
     )
+
+
+class AlertCondition(Base):
+    __tablename__ = "alert_conditions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    alert_id = Column(
+        Integer, ForeignKey("alerts.id", ondelete="CASCADE"), nullable=False
+    )
+    metric = Column(String, nullable=False)  # price, rsi, macd_hist, signal, pct_change
+    operator = Column(String, nullable=False)  # gt, lt, crosses_above, eq
+    value = Column(Float, nullable=False)
+
+    alert = relationship("Alert", back_populates="conditions")
 
 
 class NotificationSettings(Base):
