@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.0...v0.9.1) (2026-06-26)
+
+
+### Bug Fixes
+
+* 4 bugs in PR [#163](https://github.com/ai-workflow-space/stock-market-toolkit/issues/163) initial_baseline migration + signals API ([#164](https://github.com/ai-workflow-space/stock-market-toolkit/issues/164)) ([21c1f43](https://github.com/ai-workflow-space/stock-market-toolkit/commit/21c1f4381c6bc1871c8a31850d3c7c936c322564))
+
 ## [0.9.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.8.0...v0.9.0) (2026-06-26)
 
 
