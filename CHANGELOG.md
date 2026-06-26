@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.8.0...v0.9.0) (2026-06-26)
+
+
+### Features
+
+* **DATA-6:** provider fallback chain with circuit breakers and source tagging ([#143](https://github.com/ai-workflow-space/stock-market-toolkit/issues/143)) ([11e8adb](https://github.com/ai-workflow-space/stock-market-toolkit/commit/11e8adbf73ba6aaff44327fb4512a98f58053e05))
+
 ## [0.8.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.7.0...v0.8.0) (2026-06-26)
 
 
