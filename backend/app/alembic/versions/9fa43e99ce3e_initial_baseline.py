@@ -25,6 +25,13 @@ def _table_exists(table_name: str) -> bool:
     return inspector.has_table(table_name)
 
 
+def _index_exists(table_name: str, index_name: str) -> bool:
+    if not _table_exists(table_name):
+        return False
+    inspector = inspect(op.get_bind())
+    return any(ix["name"] == index_name for ix in inspector.get_indexes(table_name))
+
+
 def upgrade() -> None:
     # Users
     if not _table_exists("users"):
@@ -44,8 +51,10 @@ def upgrade() -> None:
             ),
             sa.PrimaryKeyConstraint("id"),
         )
-    op.create_index("ix_users_email", "users", ["email"], unique=True)
-    op.create_index("ix_users_username", "users", ["username"], unique=True)
+    if not _index_exists("users", "ix_users_email"):
+        op.create_index("ix_users_email", "users", ["email"], unique=True)
+    if not _index_exists("users", "ix_users_username"):
+        op.create_index("ix_users_username", "users", ["username"], unique=True)
 
     # Watchlists
     if not _table_exists("watchlists"):
@@ -150,7 +159,8 @@ def upgrade() -> None:
             ),
             sa.ForeignKeyConstraint(["created_by"], ["users.id"]),
         )
-    op.create_index("ix_invite_codes_code", "invite_codes", ["code"], unique=True)
+    if not _index_exists("invite_codes", "ix_invite_codes_code"):
+        op.create_index("ix_invite_codes_code", "invite_codes", ["code"], unique=True)
 
 
 def downgrade() -> None:

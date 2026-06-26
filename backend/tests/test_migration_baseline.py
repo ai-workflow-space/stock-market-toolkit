@@ -68,7 +68,7 @@ def test_table_exists_uses_inspect_not_sqlite_master():
     assert "inspect" in source, "Must import and use sqlalchemy.inspect"
 
 
-# ── Fix 2: create_index calls outside table-guarded if blocks ───────────────
+# ── Fix 2: create_index calls must be idempotent (guarded by _index_exists) ──
 
 
 def test_imports_do_not_include_standalone_text():
@@ -86,33 +86,47 @@ def test_imports_do_not_include_standalone_text():
             )
 
 
-def test_indexes_outside_if_blocks():
-    """Fix 2: op.create_index(...) must not be nested inside if not _table_exists(...)."""
+def test_indexes_guarded_by_index_exists():
+    """Fix 2: every op.create_index(...) must be guarded by `if not _index_exists(...)`.
+
+    An index trapped inside the table-existence guard is skipped when the table
+    pre-exists (e.g. a create_all deployment) but its index is missing. An
+    *unconditional* create_index is worse: it crashes with "index already
+    exists" on exactly those pre-Alembic deployments the baseline must adopt.
+    The only safe pattern is a per-index existence check.
+    """
     source = MIGRATION_PATH.read_text()
     lines = source.splitlines()
 
-    # For each create_index line, walk backwards to check indent.
-    # If the nearest preceding statement at the same or lesser indent
-    # is an `if not _table_exists(`, the index is trapped inside the guard.
     for lineno, line in enumerate(lines):
         stripped = line.strip()
         if not stripped.startswith("op.create_index"):
             continue
 
         index_indent = len(line) - len(line.lstrip())
-        # Walk backwards to find the nearest statement at <= index_indent
+        # Walk backwards to find the nearest statement at lesser indent: it must
+        # be the `if not _index_exists(...)` guard wrapping this create_index.
         for prev in range(lineno - 1, -1, -1):
             prev_stripped = lines[prev].strip()
             if not prev_stripped or prev_stripped.startswith("#"):
                 continue
             prev_indent = len(lines[prev]) - len(lines[prev].lstrip())
             if prev_indent < index_indent:
-                assert not prev_stripped.startswith("if "), (
-                    f"Line {lineno + 1}: create_index is nested inside an if-guard "
-                    f"(line {prev + 1}: {prev_stripped}). "
-                    "Indexes must be created unconditionally."
+                assert prev_stripped.startswith("if not _index_exists("), (
+                    f"Line {lineno + 1}: create_index must be guarded by "
+                    f"`if not _index_exists(...)` for idempotency, but the "
+                    f"enclosing statement is line {prev + 1}: {prev_stripped}"
                 )
                 break
+
+
+def test_index_exists_helper_defined():
+    """Fix 2: the migration must define an _index_exists helper."""
+    tree = _parse_migration()
+    funcs = [
+        n.name for n in ast.iter_child_nodes(tree) if isinstance(n, ast.FunctionDef)
+    ]
+    assert "_index_exists" in funcs, "Migration must define _index_exists() helper"
 
 
 # ── Fix 3: downgrade() must guard every drop with _table_exists ─────────────
