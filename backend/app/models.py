@@ -138,6 +138,8 @@ class InviteCode(Base):
     expires_at = Column(DateTime(timezone=True), nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    email = Column(String, nullable=True)
+    token = Column(String, nullable=True, unique=True, index=True)
 
     creator = relationship("User", foreign_keys=[created_by])
     redeemer = relationship("User", foreign_keys=[used_by])

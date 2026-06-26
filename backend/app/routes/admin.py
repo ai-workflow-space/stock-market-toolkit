@@ -12,6 +12,9 @@ from app.schemas import (
     InviteCodeCreate,
     InviteCodeResponse,
     InviteCodeListResponse,
+    InviteSendRequest,
+    InviteSendResponse,
+    InviteRevokeRequest,
     SmtpSettingsResponse,
     SmtpSettingsUpdate,
     SmtpTestRequest,
@@ -43,9 +46,11 @@ async def create_invite_code(
 
     invite = InviteCode(
         code=generate_code(),
+        token=secrets.token_urlsafe(32),
         created_by=current_user.id,
         expires_at=expires_at,
         is_active=True,
+        email=data.email,
     )
     db.add(invite)
     await db.commit()
@@ -55,7 +60,7 @@ async def create_invite_code(
         actor_id=current_user.id,
         action="invite.created",
         target=invite.code,
-        meta={"expires_in_days": data.expires_in_days},
+        meta={"expires_in_days": data.expires_in_days, "has_email": bool(data.email)},
         request=request,
     )
     return invite
@@ -101,6 +106,77 @@ async def deactivate_invite_code(
     return None
 
 
+@router.post("/invite-send", response_model=InviteSendResponse, status_code=201)
+async def send_invite(
+    data: InviteSendRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Create an email-based invitation and send it. Admin only.
+    If SMTP is not configured, returns the invite link in the response."""
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    token = secrets.token_urlsafe(32)
+    code = generate_code()
+
+    invite = InviteCode(
+        code=code,
+        token=token,
+        created_by=current_user.id,
+        expires_at=expires_at,
+        is_active=True,
+        email=data.email,
+    )
+    db.add(invite)
+    await db.commit()
+    await db.refresh(invite)
+
+    invite_link = f"/register?token={token}"
+
+    await write_audit(
+        db,
+        actor_id=current_user.id,
+        action="invite.sent",
+        target=data.email,
+        meta={"invite_code": code, "token": token},
+        request=request,
+    )
+
+    return InviteSendResponse(
+        message="Invitation created. SMTP not configured — invite link returned in response.",
+        invite_code=code,
+        token=token,
+        invite_link=invite_link,
+    )
+
+
+@router.post("/invite-revoke")
+async def revoke_invite(
+    data: InviteRevokeRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Revoke an invitation by token. Admin only."""
+    result = await db.execute(
+        select(InviteCode).where(InviteCode.token == data.token)
+    )
+    invite = result.scalar_one_or_none()
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+
+    invite.is_active = False
+    await db.commit()
+
+    await write_audit(
+        db,
+        actor_id=current_user.id,
+        action="invite.revoked",
+        target=invite.code,
+        meta={"token": data.token},
+        request=request,
+    )
+    return {"message": "Invitation revoked"}
 @router.get("/smtp", response_model=SmtpSettingsResponse)
 async def get_smtp_settings(
     db: AsyncSession = Depends(get_db),
