@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.4](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.3...v0.9.4) (2026-06-26)
+
+
+### Bug Fixes
+
+* **backend:** align tests + route with int F-score return type ([ba01c8d](https://github.com/ai-workflow-space/stock-market-toolkit/commit/ba01c8df32f5029541bd277edb576434533811c0))
+
 ## [0.9.3](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.2...v0.9.3) (2026-06-26)
 
 
