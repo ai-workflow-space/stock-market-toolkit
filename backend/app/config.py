@@ -27,6 +27,7 @@ class Settings:
     ADMIN_EMAIL: str = _get_env("ADMIN_EMAIL", "admin@stocktoolkit.local")
     ADMIN_USERNAME: str = _get_env("ADMIN_USERNAME", "admin")
     ADMIN_PASSWORD: str = _get_env("ADMIN_PASSWORD", "Admin@1234")
+    FINMIND_TOKEN: str = _get_env("FINMIND_TOKEN", "")
 
 
 @lru_cache
