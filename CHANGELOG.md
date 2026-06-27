@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.5](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.4...v0.9.5) (2026-06-27)
+
+
+### Bug Fixes
+
+* **release:** wire release-please to config so version markers bump ([#174](https://github.com/ai-workflow-space/stock-market-toolkit/issues/174)) ([35822fb](https://github.com/ai-workflow-space/stock-market-toolkit/commit/35822fb54adc578cb64b27c3d5cd140b2de61b33))
+
 ## [0.9.4](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.3...v0.9.4) (2026-06-26)
 
 
