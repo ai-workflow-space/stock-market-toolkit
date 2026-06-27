@@ -59,7 +59,7 @@ services:
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 300 --include smt_backend --include smt_frontend
+    command: --interval 300 smt_backend smt_frontend
 
 volumes:
   postgres_data:
