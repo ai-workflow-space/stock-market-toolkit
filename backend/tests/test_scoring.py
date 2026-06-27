@@ -184,6 +184,33 @@ def test_dividend_quality_full_score():
     assert result["details"]["payout_ratio"] == pytest.approx(2.0 / 100)
 
 
+def test_dividend_quality_tz_aware_index():
+    """yfinance returns dividends with a tz-aware index (e.g. America/New_York);
+    this must not raise when compared against the current time."""
+    dates = pd.date_range(end=pd.Timestamp.now(tz="America/New_York"), periods=8, freq="QE")
+    divs = pd.Series([0.25] * 4 + [0.50] * 4, index=dates)
+    f_current = {"net_income": 100}
+    result = dividend_quality(f_current, {}, divs)
+    assert result["score"] == 3
+    assert result["details"]["consistent"] is True
+
+
+def test_dividend_quality_non_datetime_index_does_not_raise():
+    """A dividends Series without a DatetimeIndex (int/object/string index) must
+    not raise — a non-datetime index has no ``.tz`` and is otherwise
+    incomparable to a Timestamp, which previously surfaced as a 500."""
+    f_current = {"net_income": 100}
+
+    int_idx = pd.Series([0.25, 0.50], index=[2023, 2024])
+    result = dividend_quality(f_current, {}, int_idx)
+    assert result["details"]["has_dividends"] is True
+    assert isinstance(result["score"], int)
+
+    str_idx = pd.Series([0.25, 0.50], index=["2023-03-01", "2024-03-01"])
+    result = dividend_quality(f_current, {}, str_idx)
+    assert isinstance(result["score"], int)
+
+
 def test_dividend_quality_growth():
     dates = pd.date_range(end=pd.Timestamp.now(), periods=8, freq="QE")
     divs = pd.Series([0.5] * 4 + [0.6] * 4, index=dates)

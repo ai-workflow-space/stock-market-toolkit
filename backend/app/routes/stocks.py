@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -25,6 +26,8 @@ from app.services.scoring import (
 import pandas_ta as ta
 import math
 
+log = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api", tags=["stocks"])
 
 CACHE_TTL = 300  # 5 minutes
@@ -51,13 +54,22 @@ async def get_stock(
 
     interval_map = {"1d": "5m", "5d": "15m"}
     interval = interval_map.get(period, "1d")
-    result = await market_provider.get_history(
-        symbol.upper(), period=period, interval=interval
-    )
+
+    try:
+        result = await market_provider.get_history(
+            symbol.upper(), period=period, interval=interval
+        )
+    except Exception as exc:
+        log.error("Provider error for %s: %s", symbol, exc, exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail="Stock data service temporarily unavailable. Please try again later."
+        )
+
     df = result.value
 
     if df.empty:
-        raise HTTPException(status_code=404, detail=f"No data for {symbol}")
+        raise HTTPException(status_code=404, detail=f"No data found for {symbol}")
 
     return StockDataResponse(
         symbol=symbol.upper(),
@@ -82,9 +94,18 @@ async def get_indicators(
 ):
     interval_map = {"1d": "5m", "5d": "15m"}
     interval = interval_map.get(period, "1d")
-    result = await market_provider.get_history(
-        symbol.upper(), period=period, interval=interval
-    )
+
+    try:
+        result = await market_provider.get_history(
+            symbol.upper(), period=period, interval=interval
+        )
+    except Exception as exc:
+        log.error("Provider error for %s: %s", symbol, exc, exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail="Stock data service temporarily unavailable. Please try again later."
+        )
+
     df = result.value
 
     if len(df) < 2:
@@ -159,7 +180,14 @@ async def get_stock_info(
     symbol: str,
     current_user: User = Depends(get_current_user),
 ):
-    result = await market_provider.get_info(symbol.upper())
+    try:
+        result = await market_provider.get_info(symbol.upper())
+    except Exception as exc:
+        log.error("Failed to get stock info for %s: %s", symbol, exc, exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail="Stock info service temporarily unavailable. Please try again later."
+        )
     info = result.value
 
     return StockInfoResponse(
@@ -190,7 +218,14 @@ async def get_fundamentals(
     symbol: str,
     current_user: User = Depends(get_current_user),
 ):
-    data = await fundamentals_provider.get_fundamentals_dict(symbol.upper())
+    try:
+        data = await fundamentals_provider.get_fundamentals_dict(symbol.upper())
+    except Exception as exc:
+        log.error("Failed to get fundamentals for %s: %s", symbol, exc, exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail="Fundamentals service temporarily unavailable."
+        )
     cur = data.get("current", {})
     prev = data.get("prior", {})
 
@@ -201,7 +236,14 @@ async def get_fundamentals(
 
     f_score = piotroski_f_score(cur, prev)
     p_metrics = profitability_metrics(cur, prev)
-    div_df = await fundamentals_provider.get_dividends(symbol.upper())
+    try:
+        div_df = await fundamentals_provider.get_dividends(symbol.upper())
+    except Exception as exc:
+        log.error("Failed to get dividends for %s: %s", symbol, exc, exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail="Fundamentals service temporarily unavailable."
+        )
     dq = dividend_quality(cur, prev, div_df)
 
     return FundamentalsResponse(
@@ -219,7 +261,14 @@ async def get_dividends(
     symbol: str,
     current_user: User = Depends(get_current_user),
 ):
-    divs = await fundamentals_provider.get_dividends(symbol.upper())
+    try:
+        divs = await fundamentals_provider.get_dividends(symbol.upper())
+    except Exception as exc:
+        log.error("Failed to get dividends for %s: %s", symbol, exc, exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail="Fundamentals service temporarily unavailable."
+        )
 
     if divs.empty:
         return DividendsResponse(
@@ -281,9 +330,16 @@ async def compare_stocks(
     interval_map = {"1d": "5m", "5d": "15m"}
     int_interval = interval_map.get(data.period, "1d")
     for symbol in data.symbols:
-        result = await market_provider.get_history(
-            symbol.upper(), period=data.period, interval=int_interval
-        )
+        try:
+            result = await market_provider.get_history(
+                symbol.upper(), period=data.period, interval=int_interval
+            )
+        except Exception as exc:
+            log.error("Failed to get stock history for %s: %s", symbol, exc, exc_info=True)
+            raise HTTPException(
+                status_code=503,
+                detail="Stock data service temporarily unavailable. Please try again later."
+            )
         df = result.value
 
         if df.empty:
