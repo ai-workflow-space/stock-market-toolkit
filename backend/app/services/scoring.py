@@ -10,7 +10,7 @@ def _f(v, default=0.0):
         return default
 
 
-def piotroski_f_score(cur: dict, prev: dict) -> dict:
+def piotroski_f_score(cur: dict, prev: dict) -> int:
     """Compute Piotroski F-Score (0–9) from current and prior year fundamentals.
 
     Nine criteria across three categories:
@@ -48,20 +48,27 @@ def piotroski_f_score(cur: dict, prev: dict) -> dict:
     at = rev / ta if ta else 0.0
     at_p = rev_p / ta_p if ta_p else 0.0
 
-    criteria = {
-        "positive_roa": roa > 0,
-        "positive_cfo": cfo > 0,
-        "roa_growth": roa > roa_p,
-        "cfo_exceeds_ni": cfo > ni,
-        "decreasing_leverage": lev < lev_p,
-        "increasing_current_ratio": cr > cr_p,
-        "no_dilution": shares_c <= shares_p,
-        "increasing_gross_margin": gm > gm_p,
-        "increasing_asset_turnover": at > at_p,
-    }
+    score = 0
+    if roa > 0:
+        score += 1
+    if cfo > 0:
+        score += 1
+    if roa > roa_p:
+        score += 1
+    if cfo > ni:
+        score += 1
+    if lev < lev_p:
+        score += 1
+    if cr > cr_p:
+        score += 1
+    if shares_c <= shares_p:
+        score += 1
+    if gm > gm_p:
+        score += 1
+    if at > at_p:
+        score += 1
 
-    score = sum(1 for v in criteria.values() if v)
-    return {"score": score, "details": criteria}
+    return score
 
 
 def profitability_metrics(f: dict, prev: dict | None = None) -> dict:

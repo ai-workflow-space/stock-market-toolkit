@@ -58,10 +58,7 @@ export const TIMEFRAMES = [
   { label: "Max", value: "max" },
 ];
 
-export interface Fundamentals {
-  symbol: string;
-  cached_at: string;
-  f_score: number;
+export interface ProfitabilityMetrics {
   roe: number | null;
   roa: number | null;
   gross_margin: number | null;
@@ -69,6 +66,23 @@ export interface Fundamentals {
   net_margin: number | null;
   eps_growth: number | null;
   rev_growth: number | null;
+}
+
+export interface DividendQualityDetails {
+  score: number;
+  has_dividends: boolean;
+  consistent: boolean;
+  growth: number | null;
+  payout_ratio: number | null;
+}
+
+export interface Fundamentals {
+  symbol: string;
+  cached_at: string;
+  f_score: number;
+  profitability: ProfitabilityMetrics;
+  dividend_quality: DividendQualityDetails;
+  statements?: Record<string, unknown>;
 }
 
 export interface YearlyDividend {

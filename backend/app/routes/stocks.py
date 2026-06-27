@@ -7,6 +7,8 @@ from app.schemas import (
     IndicatorsResponse,
     StockInfoResponse,
     FundamentalsResponse,
+    ProfitabilityMetrics,
+    DividendQualityDetails,
     DividendsResponse,
     YearlyDividend,
     CompareRequest,
@@ -15,7 +17,11 @@ from app.schemas import (
 )
 from app.auth import get_current_user
 from app.providers import market_provider, fundamentals_provider
-import pandas as pd
+from app.services.scoring import (
+    piotroski_f_score,
+    profitability_metrics,
+    dividend_quality,
+)
 import pandas_ta as ta
 import math
 
@@ -179,114 +185,32 @@ async def get_stock_info(
     )
 
 
-def _fs_val(df: pd.DataFrame, row_name: str, col_idx: int = 0):
-    """Extract a value from a financial statement DataFrame."""
-    try:
-        val = df.loc[row_name]
-        if isinstance(val, pd.Series):
-            if col_idx < len(val):
-                v = val.iloc[col_idx]
-                return v if pd.notna(v) else None
-        return None
-    except (KeyError, IndexError, TypeError):
-        return None
-
-
 @router.get("/stock/{symbol}/fundamentals", response_model=FundamentalsResponse)
 async def get_fundamentals(
     symbol: str,
     current_user: User = Depends(get_current_user),
 ):
-    income = await fundamentals_provider.get_income_statement(symbol.upper())
-    balance = await fundamentals_provider.get_balance_sheet(symbol.upper())
-    cashflow = await fundamentals_provider.get_cash_flow(symbol.upper())
+    data = await fundamentals_provider.get_fundamentals_dict(symbol.upper())
+    cur = data.get("current", {})
+    prev = data.get("prior", {})
 
-    if income.empty or balance.empty:
-        raise HTTPException(status_code=404, detail=f"No fundamentals data for {symbol}")
+    if not cur or not prev:
+        raise HTTPException(
+            status_code=404, detail=f"No fundamentals data for {symbol}"
+        )
 
-    f_score = 0
-
-    ni_cur = _fs_val(income, "Net Income", 0)
-    ni_prev = _fs_val(income, "Net Income", 1)
-    rev_cur = _fs_val(income, "Total Revenue", 0)
-    rev_prev = _fs_val(income, "Total Revenue", 1)
-    gp_cur = _fs_val(income, "Gross Profit", 0)
-    gp_prev = _fs_val(income, "Gross Profit", 1)
-    oi_cur = _fs_val(income, "Operating Income", 0)
-    eps_cur = _fs_val(income, "Diluted EPS", 0)
-    eps_prev = _fs_val(income, "Diluted EPS", 1)
-
-    ta_cur = _fs_val(balance, "Total Assets", 0)
-    ta_prev = _fs_val(balance, "Total Assets", 1)
-    tl_cur = _fs_val(balance, "Total Liabilities Net Minority Interest", 0)
-    tl_prev = _fs_val(balance, "Total Liabilities Net Minority Interest", 1)
-    ca_cur = _fs_val(balance, "Current Assets", 0)
-    ca_prev = _fs_val(balance, "Current Assets", 1)
-    cl_cur = _fs_val(balance, "Current Liabilities", 0)
-    cl_prev = _fs_val(balance, "Current Liabilities", 1)
-    eq_cur = _fs_val(balance, "Stockholders Equity", 0)
-
-    cfo_cur = _fs_val(cashflow, "Operating Cash Flow", 0) if not cashflow.empty else None
-
-    roa = round(ni_cur / ta_cur * 100, 2) if ni_cur and ta_cur else None
-    roa_prev = round(ni_prev / ta_prev * 100, 2) if ni_prev and ta_prev else None
-    roe = round(ni_cur / eq_cur * 100, 2) if ni_cur and eq_cur else None
-    gross_margin = round(gp_cur / rev_cur * 100, 2) if gp_cur and rev_cur else None
-    op_margin = round(oi_cur / rev_cur * 100, 2) if oi_cur and rev_cur else None
-    net_margin = round(ni_cur / rev_cur * 100, 2) if ni_cur and rev_cur else None
-    eps_growth = round((eps_cur - eps_prev) / abs(eps_prev) * 100, 2) if eps_cur and eps_prev and eps_prev != 0 else None
-    rev_growth = round((rev_cur - rev_prev) / abs(rev_prev) * 100, 2) if rev_cur and rev_prev and rev_prev != 0 else None
-
-    # Piotroski F-Score
-    # 1. ROA > 0
-    if roa and roa > 0:
-        f_score += 1
-    # 2. CFO > 0
-    if cfo_cur and cfo_cur > 0:
-        f_score += 1
-    # 3. ROA improving
-    if roa and roa_prev and roa > roa_prev:
-        f_score += 1
-    # 4. Accruals (CFO > NI)
-    if cfo_cur and ni_cur and cfo_cur > ni_cur:
-        f_score += 1
-    # 5. Leverage ratio decreasing
-    lv_cur = tl_cur / ta_cur if tl_cur and ta_cur else None
-    lv_prev = tl_prev / ta_prev if tl_prev and ta_prev else None
-    if lv_cur and lv_prev and lv_cur < lv_prev:
-        f_score += 1
-    # 6. Current ratio improving
-    cr_cur = ca_cur / cl_cur if ca_cur and cl_cur else None
-    cr_prev = ca_prev / cl_prev if ca_prev and cl_prev else None
-    if cr_cur and cr_prev and cr_cur > cr_prev:
-        f_score += 1
-    # 7. No share dilution
-    sh_cur = _fs_val(balance, "Ordinary Shares Number", 0)
-    sh_prev = _fs_val(balance, "Ordinary Shares Number", 1)
-    if sh_cur and sh_prev and sh_cur <= sh_prev:
-        f_score += 1
-    # 8. Gross margin improving
-    gm_cur = gp_cur / rev_cur if gp_cur and rev_cur else None
-    gm_prev = gp_prev / rev_prev if gp_prev and rev_prev else None
-    if gm_cur and gm_prev and gm_cur > gm_prev:
-        f_score += 1
-    # 9. Asset turnover improving
-    at_cur = rev_cur / ta_cur if rev_cur and ta_cur else None
-    at_prev = rev_prev / ta_prev if rev_prev and ta_prev else None
-    if at_cur and at_prev and at_cur > at_prev:
-        f_score += 1
+    f_score = piotroski_f_score(cur, prev)
+    p_metrics = profitability_metrics(cur, prev)
+    div_df = await fundamentals_provider.get_dividends(symbol.upper())
+    dq = dividend_quality(cur, prev, div_df)
 
     return FundamentalsResponse(
         symbol=symbol.upper(),
         cached_at=datetime.utcnow().isoformat(),
         f_score=f_score,
-        roe=roe,
-        roa=roa,
-        gross_margin=gross_margin,
-        op_margin=op_margin,
-        net_margin=net_margin,
-        eps_growth=eps_growth,
-        rev_growth=rev_growth,
+        profitability=ProfitabilityMetrics(**p_metrics),
+        dividend_quality=DividendQualityDetails(score=dq["score"], **dq["details"]),
+        statements={"current": cur, "prior": prev},
     )
 
 

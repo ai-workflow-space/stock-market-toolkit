@@ -10,7 +10,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy import text
+from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
@@ -21,16 +21,19 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def _table_exists(table_name: str) -> bool:
-    """Check if a table already exists in the database."""
-    conn = op.get_bind()
-    result = conn.execute(
-        text("SELECT name FROM sqlite_master WHERE type='table' AND name=:name"),
-        {"name": table_name},
-    )
-    return result.fetchone() is not None
+    inspector = inspect(op.get_bind())
+    return inspector.has_table(table_name)
+
+
+def _index_exists(table_name: str, index_name: str) -> bool:
+    if not _table_exists(table_name):
+        return False
+    inspector = inspect(op.get_bind())
+    return any(ix["name"] == index_name for ix in inspector.get_indexes(table_name))
 
 
 def upgrade() -> None:
+    # Users
     if not _table_exists("users"):
         op.create_table(
             "users",
@@ -48,9 +51,12 @@ def upgrade() -> None:
             ),
             sa.PrimaryKeyConstraint("id"),
         )
+    if not _index_exists("users", "ix_users_email"):
         op.create_index("ix_users_email", "users", ["email"], unique=True)
+    if not _index_exists("users", "ix_users_username"):
         op.create_index("ix_users_username", "users", ["username"], unique=True)
 
+    # Watchlists
     if not _table_exists("watchlists"):
         op.create_table(
             "watchlists",
@@ -66,6 +72,7 @@ def upgrade() -> None:
             sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
         )
 
+    # Alerts
     if not _table_exists("alerts"):
         op.create_table(
             "alerts",
@@ -86,6 +93,7 @@ def upgrade() -> None:
             sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
         )
 
+    # Notification settings
     if not _table_exists("notification_settings"):
         op.create_table(
             "notification_settings",
@@ -93,8 +101,12 @@ def upgrade() -> None:
             sa.Column("discord_webhook_url", sa.Text(), nullable=True),
             sa.Column("email_address", sa.String(), nullable=True),
             sa.Column("email_enabled", sa.Boolean(), server_default="0", nullable=True),
-            sa.Column("discord_enabled", sa.Boolean(), server_default="1", nullable=True),
-            sa.Column("default_period", sa.String(), server_default="1h", nullable=True),
+            sa.Column(
+                "discord_enabled", sa.Boolean(), server_default="1", nullable=True
+            ),
+            sa.Column(
+                "default_period", sa.String(), server_default="1h", nullable=True
+            ),
             sa.Column("timezone", sa.String(), server_default="UTC", nullable=True),
             sa.Column(
                 "updated_at",
@@ -105,6 +117,7 @@ def upgrade() -> None:
             sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
         )
 
+    # Triggered alerts
     if not _table_exists("triggered_alerts"):
         op.create_table(
             "triggered_alerts",
@@ -127,6 +140,7 @@ def upgrade() -> None:
             sa.ForeignKeyConstraint(["alert_id"], ["alerts.id"]),
         )
 
+    # Invite codes
     if not _table_exists("invite_codes"):
         op.create_table(
             "invite_codes",
@@ -145,15 +159,22 @@ def upgrade() -> None:
             ),
             sa.ForeignKeyConstraint(["created_by"], ["users.id"]),
         )
+    if not _index_exists("invite_codes", "ix_invite_codes_code"):
         op.create_index("ix_invite_codes_code", "invite_codes", ["code"], unique=True)
 
 
 def downgrade() -> None:
-    op.drop_table("invite_codes")
-    op.drop_table("triggered_alerts")
-    op.drop_table("notification_settings")
-    op.drop_table("alerts")
-    op.drop_table("watchlists")
-    op.drop_index("ix_users_username", "users")
-    op.drop_index("ix_users_email", "users")
-    op.drop_table("users")
+    if _table_exists("invite_codes"):
+        op.drop_table("invite_codes")
+    if _table_exists("triggered_alerts"):
+        op.drop_table("triggered_alerts")
+    if _table_exists("notification_settings"):
+        op.drop_table("notification_settings")
+    if _table_exists("alerts"):
+        op.drop_table("alerts")
+    if _table_exists("watchlists"):
+        op.drop_table("watchlists")
+    if _table_exists("users"):
+        op.drop_index("ix_users_username", table_name="users")
+        op.drop_index("ix_users_email", table_name="users")
+        op.drop_table("users")

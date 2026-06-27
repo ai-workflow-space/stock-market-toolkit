@@ -3,6 +3,24 @@ from datetime import datetime
 from typing import Optional
 
 
+class ProfitabilityMetrics(BaseModel):
+    roe: Optional[float] = None
+    roa: Optional[float] = None
+    gross_margin: Optional[float] = None
+    op_margin: Optional[float] = None
+    net_margin: Optional[float] = None
+    eps_growth: Optional[float] = None
+    rev_growth: Optional[float] = None
+
+
+class DividendQualityDetails(BaseModel):
+    score: int = 0
+    has_dividends: bool = False
+    consistent: bool = False
+    growth: Optional[float] = None
+    payout_ratio: Optional[float] = None
+
+
 # ─── Auth schemas ───
 class UserRegister(BaseModel):
     email: EmailStr
@@ -50,13 +68,9 @@ class FundamentalsResponse(BaseModel):
     symbol: str
     cached_at: str = ""
     f_score: int
-    roe: Optional[float] = None
-    roa: Optional[float] = None
-    gross_margin: Optional[float] = None
-    op_margin: Optional[float] = None
-    net_margin: Optional[float] = None
-    eps_growth: Optional[float] = None
-    rev_growth: Optional[float] = None
+    profitability: ProfitabilityMetrics
+    dividend_quality: DividendQualityDetails
+    statements: Optional[dict] = None
 
 
 class YearlyDividend(BaseModel):
@@ -148,12 +162,8 @@ class CompareResponse(BaseModel):
 
 # ─── Alert schemas ───
 class AlertConditionCreate(BaseModel):
-    metric: str = Field(
-        ..., pattern="^(price|rsi|macd_hist|signal|pct_change)$"
-    )
-    operator: str = Field(
-        ..., pattern="^(gt|lt|crosses_above|eq)$"
-    )
+    metric: str = Field(..., pattern="^(price|rsi|macd_hist|signal|pct_change)$")
+    operator: str = Field(..., pattern="^(gt|lt|crosses_above|eq)$")
     value: float
 
 

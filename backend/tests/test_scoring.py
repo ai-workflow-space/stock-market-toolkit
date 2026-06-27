@@ -36,8 +36,7 @@ def test_piotroski_perfect_score():
         "weighted_shares_outstanding": 100,
     }
     result = piotroski_f_score(cur, prev)
-    assert result["score"] == 9
-    assert all(result["details"].values())
+    assert result == 9
 
 
 def test_piotroski_zero_score():
@@ -64,16 +63,15 @@ def test_piotroski_zero_score():
         "weighted_shares_outstanding": 100,
     }
     result = piotroski_f_score(cur, prev)
-    assert result["score"] == 0
-    assert not any(result["details"].values())
+    assert result == 0
 
 
 def test_piotroski_missing_fields_default_to_zero():
     cur = {"net_income": 100}
     prev = {"net_income": 50}
     result = piotroski_f_score(cur, prev)
-    assert isinstance(result["score"], int)
-    assert 0 <= result["score"] <= 9
+    assert isinstance(result, int)
+    assert 0 <= result <= 9
 
 
 # ─── Profitability Metrics ───────────────────────────────────────────────

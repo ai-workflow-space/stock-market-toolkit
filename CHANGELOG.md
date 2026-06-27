@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.9.5](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.4...v0.9.5) (2026-06-27)
+
+
+### Bug Fixes
+
+* **compose:** inject version/sha/build-time into feat-test frontend build ([#175](https://github.com/ai-workflow-space/stock-market-toolkit/issues/175)) ([9d136d1](https://github.com/ai-workflow-space/stock-market-toolkit/commit/9d136d1c335d5aeac4dd34f2c85b030221455fd1))
+* **release:** wire release-please to config so version markers bump ([#174](https://github.com/ai-workflow-space/stock-market-toolkit/issues/174)) ([35822fb](https://github.com/ai-workflow-space/stock-market-toolkit/commit/35822fb54adc578cb64b27c3d5cd140b2de61b33))
+
+## [0.9.4](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.3...v0.9.4) (2026-06-26)
+
+
+### Bug Fixes
+
+* **backend:** align tests + route with int F-score return type ([ba01c8d](https://github.com/ai-workflow-space/stock-market-toolkit/commit/ba01c8df32f5029541bd277edb576434533811c0))
+
+## [0.9.3](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.2...v0.9.3) (2026-06-26)
+
+
+### Bug Fixes
+
+* **frontend:** strip leading "v" from injected version so release links resolve ([2ac20cf](https://github.com/ai-workflow-space/stock-market-toolkit/commit/2ac20cfb758f450d720ba087a2761de1792c184d))
+
+## [0.9.2](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.1...v0.9.2) (2026-06-26)
+
+
+### Bug Fixes
+
+* guard baseline index creation for idempotency (pre-Alembic adoption) ([#166](https://github.com/ai-workflow-space/stock-market-toolkit/issues/166)) ([a363e34](https://github.com/ai-workflow-space/stock-market-toolkit/commit/a363e3424c6459950698cd742826fb89636eb461))
+
+## [0.9.1](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.0...v0.9.1) (2026-06-26)
+
+
+### Bug Fixes
+
+* 4 bugs in PR [#163](https://github.com/ai-workflow-space/stock-market-toolkit/issues/163) initial_baseline migration + signals API ([#164](https://github.com/ai-workflow-space/stock-market-toolkit/issues/164)) ([21c1f43](https://github.com/ai-workflow-space/stock-market-toolkit/commit/21c1f4381c6bc1871c8a31850d3c7c936c322564))
+
 ## [0.9.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.8.0...v0.9.0) (2026-06-26)
 
 
