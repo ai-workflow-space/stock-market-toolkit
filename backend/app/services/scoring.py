@@ -131,6 +131,25 @@ def dividend_quality(f_current: dict, f_prior: dict, dividends_df) -> dict:
     details["has_dividends"] = True
     score = 0
 
+    # Normalize the dividend dates to a tz-naive DatetimeIndex before any
+    # comparison. yfinance returns a tz-aware index (e.g. America/New_York);
+    # comparing that against a tz-naive Timestamp raises TypeError, and a
+    # non-datetime index has no ``.tz`` at all — both surface to the client as
+    # a generic 500. Coercing here keeps dividend_quality total.
+    idx = dividends_df.index
+    if not isinstance(idx, pd.DatetimeIndex):
+        idx = pd.to_datetime(idx, errors="coerce")
+    if isinstance(idx, pd.DatetimeIndex) and idx.tz is not None:
+        idx = idx.tz_localize(None)
+    dividends_df = pd.Series(dividends_df.to_numpy(), index=idx)
+    dividends_df = dividends_df[dividends_df.index.notna()]
+
+    if dividends_df.empty:
+        details["consistent"] = False
+        details["growth"] = None
+        details["payout_ratio"] = None
+        return {"score": 0, "details": details}
+
     now = pd.Timestamp.now()
     one_year_ago = now - pd.DateOffset(years=1)
     two_years_ago = now - pd.DateOffset(years=2)

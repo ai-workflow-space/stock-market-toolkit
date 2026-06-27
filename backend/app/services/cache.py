@@ -1,9 +1,11 @@
 """In-process TTL cache with single-flight locking for market data."""
 
+import logging
 import time
 import asyncio
 from typing import Any, Callable, Awaitable
 
+log = logging.getLogger(__name__)
 
 # Simple in-process TTL store
 _store: dict[str, tuple[float, Any]] = {}
@@ -13,9 +15,7 @@ _locks: dict[str, asyncio.Lock] = {}
 async def cached(key: str, ttl: int, loader: Callable[[], Awaitable[Any]]) -> Any:
     """
     Get or compute a cached value with TTL and single-flight deduplication.
-
-    Single-flight means concurrent calls for the same key wait for one result
-    rather than each firing their own loader.
+    Falls back to stale cached value if loader fails.
     """
     now = time.time()
     hit = _store.get(key)
@@ -24,13 +24,18 @@ async def cached(key: str, ttl: int, loader: Callable[[], Awaitable[Any]]) -> An
 
     lock = _locks.setdefault(key, asyncio.Lock())
     async with lock:
-        # Double-check after acquiring lock (another coroutine may have populated it)
         hit = _store.get(key)
         if hit and now - hit[0] < ttl:
             return hit[1]
-        val = await loader()
-        _store[key] = (time.time(), val)
-        return val
+        try:
+            val = await loader()
+            _store[key] = (time.time(), val)
+            return val
+        except Exception:
+            if hit:
+                log.warning("Loader failed for %s, returning stale cache", key)
+                return hit[1]
+            raise
 
 
 def cache_key(

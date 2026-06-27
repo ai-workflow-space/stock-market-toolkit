@@ -78,7 +78,8 @@ class FallbackChain:
 
         raise RuntimeError(
             f"All providers failed for symbol={symbol} "
-            f"period={period} interval={interval}"
+            f"period={period} interval={interval}. "
+            f"Providers tried: {self._chain}"
         )
 
     async def get_info(self, symbol: str) -> TaggedValue:
@@ -103,7 +104,10 @@ class FallbackChain:
                 cb.record_failure()
                 log.error("Provider %s get_info failed for %s: %s", name, symbol, exc)
 
-        raise RuntimeError(f"All providers failed for info symbol={symbol}")
+        raise RuntimeError(
+            f"All providers failed for info symbol={symbol}. "
+            f"Providers tried: {self._chain}"
+        )
 
     # ── Sync interface (protocol conformance, rarely used directly) ───
 
