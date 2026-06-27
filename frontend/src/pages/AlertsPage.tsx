@@ -9,7 +9,6 @@ import {
   getNotificationSettings,
   updateNotificationSettings,
   type Alert,
-  type AlertConditionCreate,
   type TriggeredAlert,
   type NotificationSettings,
 } from "../api/alertsApi";
@@ -86,7 +85,11 @@ function operatorLabel(o: string): string {
 }
 
 // Local form type for conditions: value stored as a string so the field can be empty
-type ConditionFormItem = { metric: string; operator: string; value: string };
+type ConditionFormItem = {
+  metric: "price" | "rsi" | "macd_hist" | "signal" | "pct_change";
+  operator: "gt" | "lt" | "crosses_above" | "eq";
+  value: string;
+};
 
 /* ─── Create Alert Dialog ─── */
 function CreateAlertDialog({
