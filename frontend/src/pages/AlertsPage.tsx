@@ -9,7 +9,6 @@ import {
   getNotificationSettings,
   updateNotificationSettings,
   type Alert,
-  type AlertConditionCreate,
   type TriggeredAlert,
   type NotificationSettings,
 } from "../api/alertsApi";
@@ -85,6 +84,13 @@ function operatorLabel(o: string): string {
   return opt?.label || o;
 }
 
+// Local form type for conditions: value stored as a string so the field can be empty
+type ConditionFormItem = {
+  metric: "price" | "rsi" | "macd_hist" | "signal" | "pct_change";
+  operator: "gt" | "lt" | "crosses_above" | "eq";
+  value: string;
+};
+
 /* ─── Create Alert Dialog ─── */
 function CreateAlertDialog({
   open,
@@ -99,8 +105,8 @@ function CreateAlertDialog({
   const [selectedSymbol, setSelectedSymbol] = useState("");
   const [symbolName, setSymbolName] = useState("");
   const [combinator, setCombinator] = useState<"all" | "any">("all");
-  const [conditions, setConditions] = useState<AlertConditionCreate[]>([
-    { metric: "price", operator: "gt", value: 0 },
+  const [conditions, setConditions] = useState<ConditionFormItem[]>([
+    { metric: "price", operator: "gt", value: "" },
   ]);
   const [period, setPeriod] = useState("1h");
   const [loading, setLoading] = useState(false);
@@ -120,12 +126,12 @@ function CreateAlertDialog({
     return () => { cancelled = true; };
   }, [selectedSymbol]);
 
-  const updateCondition = (idx: number, field: keyof AlertConditionCreate, value: string | number) => {
-    setConditions(prev => prev.map((c, i) => i === idx ? { ...c, [field]: field === "value" ? Number(value) : value } : c));
+  const updateCondition = (idx: number, field: string, value: string) => {
+    setConditions(prev => prev.map((c, i) => i === idx ? { ...c, [field]: value } : c));
   };
 
   const addCondition = () => {
-    setConditions(prev => [...prev, { metric: "price", operator: "gt", value: 0 }]);
+    setConditions(prev => [...prev, { metric: "price", operator: "gt", value: "" }]);
   };
 
   const removeCondition = (idx: number) => {
@@ -136,9 +142,12 @@ function CreateAlertDialog({
     e.preventDefault();
     if (!symbol.trim()) { setError("Symbol is required"); return; }
 
-    // Validate conditions
+    // Validate conditions: value must be a non-empty, parseable number
     for (const c of conditions) {
-      if (isNaN(c.value)) { setError("Enter a valid value for all conditions"); return; }
+      if (c.value.trim() === "" || isNaN(Number(c.value))) {
+        setError("Enter a valid value for all conditions");
+        return;
+      }
     }
     if (conditions.length === 0) { setError("Add at least one condition"); return; }
 
@@ -150,7 +159,7 @@ function CreateAlertDialog({
         symbol_name: symbolName || undefined,
         period,
         combinator,
-        conditions,
+        conditions: conditions.map(c => ({ ...c, value: Number(c.value) })),
       });
       onCreated(alert);
       onClose();
@@ -241,6 +250,7 @@ function CreateAlertDialog({
                     <Input
                       type="number"
                       step="0.01"
+                      inputMode="decimal"
                       placeholder="Value"
                       value={c.value}
                       onChange={e => updateCondition(idx, "value", e.target.value)}
