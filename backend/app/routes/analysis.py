@@ -183,8 +183,8 @@ async def get_batch_signals(
     symbol_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
     if len(symbol_list) > 25:
         raise HTTPException(status_code=400, detail="Maximum 25 symbols allowed")
-    results = []
-    errors = []
+    results: list[dict] = []
+    errors: list[dict] = []
     for sym in symbol_list:
         try:
             results.append(await _compute_analysis(sym, period))

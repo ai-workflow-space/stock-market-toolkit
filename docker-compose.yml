@@ -54,5 +54,12 @@ services:
     depends_on:
       - backend
 
+  watchtower:
+    image: containrrr/watchtower
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 300 smt_backend smt_frontend
+
 volumes:
   postgres_data:

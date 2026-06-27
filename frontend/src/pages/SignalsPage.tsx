@@ -116,11 +116,11 @@ export default function SignalsPage() {
           : (raw as { signals: AnalysisResponse[]; errors: { symbol: string; error: string }[] });
         const mapped = data.signals.map((d) => mapAnalysisToSignal(d));
         setSignals(mapped);
-        setSignalErrors(
-          Object.fromEntries((data.errors ?? []).map((e) => [e.symbol, e.error])),
-        );
-        if (mapped.length < symbols.length) {
-          toast(`Loaded ${mapped.length} of ${symbols.length} symbols`);
+        const errs = data.errors ?? [];
+        setSignalErrors(Object.fromEntries(errs.map((e) => [e.symbol, e.error])));
+        if (errs.length > 0) {
+          const failedSymbols = errs.map((e) => e.symbol).join(", ");
+          toast.error(`Failed to load: ${failedSymbols}`);
         }
       } catch {
         setSignals([]);
