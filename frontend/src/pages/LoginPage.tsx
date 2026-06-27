@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import axios from "axios";
+import { APP_VERSION, RELEASE_URL } from "@/lib/version";
 
 function BrandMark() {
   return (
@@ -91,6 +92,17 @@ export default function LoginPage() {
             <Link to={usersExist === false ? "/bootstrap" : "/register"} className="text-primary underline-offset-4 hover:underline">
               {usersExist === false ? "Set up the system" : "Request access"}
             </Link>
+          </p>
+
+          <p className="text-center text-xs text-muted-foreground">
+            <a
+              href={RELEASE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline"
+            >
+              v{APP_VERSION}
+            </a>
           </p>
         </CardContent>
       </Card>
