@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Activity, Plus, Star, TrendingUp, BarChart3, Loader2 } from "lucide-react";
+import { Activity, Plus, Loader2 } from "lucide-react";
 import SignalCard from "@/components/SignalCard";
 import StatCard from "@/components/common/StatCard";
 import SymbolSearch from "@/components/common/SymbolSearch";
-import WatchlistButton from "@/components/common/WatchlistButton";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,7 +17,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
-import { cn } from "@/lib/utils";
 import type { Signal } from "@/types";
 
 type AnalysisResponse = {
@@ -58,6 +56,20 @@ function mapAnalysisToSignal(data: AnalysisResponse, symbolOverride?: string): S
   } satisfies Signal;
 }
 
+/** Placeholder for a tracked symbol whose analysis is unavailable. */
+function pendingSignal(symbol: string, reason?: string): Signal {
+  return {
+    id: `sig-${symbol}-pending`,
+    symbol,
+    direction: "neutral",
+    signal_type: "macd_cross",
+    price: 0,
+    timestamp: new Date().toISOString(),
+    strength: 0,
+    description: reason ?? "No signal data available for this symbol yet.",
+  };
+}
+
 /* ─── Signals Page ─── */
 export default function SignalsPage() {
   const navigate = useNavigate();
@@ -72,19 +84,20 @@ export default function SignalsPage() {
     refresh: refreshWatchlist,
   } = useWatchlist();
   const [signals, setSignals] = useState<Signal[]>([]);
+  const [signalErrors, setSignalErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [addTickerOpen, setAddTickerOpen] = useState(false);
   const [newTicker, setNewTicker] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState("");
   const [tickerError, setTickerError] = useState("");
   const [addingTicker, setAddingTicker] = useState(false);
-  const [viewMode, setViewMode] = useState<"signals" | "list">("signals");
 
   useEffect(() => {
     const symbols = watchedSymbols;
     if (symbols.length === 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- false positive: early-return guard
       setSignals((prev) => (prev.length === 0 ? prev : []));
+      setSignalErrors({});
       setLoading(false);
       return;
     }
@@ -103,11 +116,15 @@ export default function SignalsPage() {
           : (raw as { signals: AnalysisResponse[]; errors: { symbol: string; error: string }[] });
         const mapped = data.signals.map((d) => mapAnalysisToSignal(d));
         setSignals(mapped);
+        setSignalErrors(
+          Object.fromEntries((data.errors ?? []).map((e) => [e.symbol, e.error])),
+        );
         if (mapped.length < symbols.length) {
           toast(`Loaded ${mapped.length} of ${symbols.length} symbols`);
         }
       } catch {
         setSignals([]);
+        setSignalErrors({});
       } finally {
         setLoading(false);
       }
@@ -122,7 +139,15 @@ export default function SignalsPage() {
       `${import.meta.env.VITE_API_URL || ""}/api/analysis/${symbol}?period=1mo`,
       { headers: { Authorization: `Bearer ${token}` } },
     );
-    if (!res.ok) throw new Error(`${symbol} failed`);
+    if (!res.ok) {
+      let detail = `No signal data for ${symbol}`;
+      try {
+        detail = (await res.json())?.detail ?? detail;
+      } catch {
+        // non-JSON error body — keep the default reason
+      }
+      throw new Error(detail);
+    }
     const data = (await res.json()) as AnalysisResponse;
     return {
       ...mapAnalysisToSignal(data, symbol),
@@ -150,14 +175,32 @@ export default function SignalsPage() {
 
     try {
       await addToWatchlist(trimmed);
-      const signal = await fetchSignalForTicker(trimmed);
-      setSignals((prev) => [...prev, signal]);
-      setAddTickerOpen(false);
-      setNewTicker("");
-      setSelectedSymbol("");
-      toast.success(`${trimmed} added to tracking`);
     } catch {
       toast.error(`Failed to add ${trimmed}. Please try again.`);
+      setAddingTicker(false);
+      return;
+    }
+
+    // The symbol is now tracked regardless of whether analysis is available,
+    // so close the dialog and surface any signal reason on the card itself.
+    setAddTickerOpen(false);
+    setNewTicker("");
+    setSelectedSymbol("");
+
+    try {
+      const signal = await fetchSignalForTicker(trimmed);
+      setSignals((prev) => [...prev, signal]);
+      setSignalErrors((prev) => {
+        if (!(trimmed in prev)) return prev;
+        const next = { ...prev };
+        delete next[trimmed];
+        return next;
+      });
+      toast.success(`${trimmed} added to tracking`);
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : "Analysis unavailable";
+      setSignalErrors((prev) => ({ ...prev, [trimmed]: reason }));
+      toast(`${trimmed} added — no signal data available`);
     } finally {
       setAddingTicker(false);
     }
@@ -166,86 +209,43 @@ export default function SignalsPage() {
   const handleRemoveTicker = useCallback(async (symbol: string) => {
     await removeFromWatchlist(symbol);
     setSignals((prev) => prev.filter((s) => s.symbol !== symbol));
+    setSignalErrors((prev) => {
+      if (!(symbol in prev)) return prev;
+      const next = { ...prev };
+      delete next[symbol];
+      return next;
+    });
     toast(`${symbol} removed from tracking`);
   }, [removeFromWatchlist]);
 
-  const handleDismissSignal = useCallback((id: string) => {
-    setSignals((prev) => prev.filter((s) => s.id !== id));
-    toast("Signal dismissed");
-  }, []);
+  const handleView = useCallback((symbol: string) => navigate(`/?symbol=${symbol}`), [navigate]);
+  const handleCompare = useCallback(
+    (symbol: string) => navigate(`/compare?symbols=${symbol}`),
+    [navigate],
+  );
+
+  // Single source of truth: every tracked symbol shows up, carrying its signal
+  // when analysis is available and a placeholder otherwise.
+  const signalBySymbol = useMemo(
+    () => new Map(signals.map((s) => [s.symbol, s])),
+    [signals],
+  );
+  const trackedSignals = useMemo(
+    () =>
+      items.map((item) => ({
+        signal:
+          signalBySymbol.get(item.symbol) ??
+          pendingSignal(item.symbol, signalErrors[item.symbol]),
+        pending: !signalBySymbol.has(item.symbol),
+      })),
+    [items, signalBySymbol, signalErrors],
+  );
 
   const bullish = signals.filter((s) => s.direction === "bullish");
   const bearish = signals.filter((s) => s.direction === "bearish");
   const neutral = signals.filter((s) => s.direction === "neutral");
 
-  const listViewContent = (
-    <div className="mx-auto max-w-3xl">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Tracked Symbols</h2>
-        <Button variant="outline" size="sm" onClick={refreshWatchlist} disabled={watchlistLoading}>
-          {watchlistLoading ? <Loader2 className="mr-1 size-4 animate-spin" /> : null}
-          Refresh
-        </Button>
-      </div>
-
-      {watchlistError && <p className="mb-4 text-sm text-destructive">{watchlistError}</p>}
-
-      {watchlistLoading ? (
-        <div className="flex flex-col gap-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full rounded-xl" />
-          ))}
-        </div>
-      ) : items.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-            <Star className="size-8 text-muted-foreground" />
-            <p className="text-muted-foreground">No tracked symbols</p>
-            <p className="text-xs text-muted-foreground">
-              Add tickers to start tracking them here
-            </p>
-            <Button variant="outline" size="sm" onClick={() => setAddTickerOpen(true)}>
-              <Plus className="mr-1 size-4" />
-              Add Ticker
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {items.map((item) => (
-            <Card key={item.id}>
-              <CardContent className="flex items-center gap-4 py-4">
-                <WatchlistButton symbol={item.symbol} className="!text-yellow-500" />
-                <span
-                  className="flex-1 cursor-pointer font-bold text-base hover:underline"
-                  onClick={() => navigate(`/?symbol=${item.symbol}`)}
-                >
-                  {item.symbol}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Added {new Date(item.created_at).toLocaleDateString()}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate(`/?symbol=${item.symbol}`)}
-                >
-                  <TrendingUp />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate(`/compare?symbols=${item.symbol}`)}
-                >
-                  <BarChart3 />
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  const showSkeleton = (loading || watchlistLoading) && items.length === 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -254,38 +254,19 @@ export default function SignalsPage() {
           <h1 className="text-2xl font-semibold">Trading signals</h1>
           <p className="text-sm text-muted-foreground">Real-time signals based on technical indicators</p>
         </div>
-        <Button onClick={() => setAddTickerOpen(true)} variant="outline" size="sm">
-          <Plus className="size-4" />
-          Add Ticker
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={refreshWatchlist} disabled={watchlistLoading}>
+            {watchlistLoading ? <Loader2 className="mr-1 size-4 animate-spin" /> : null}
+            Refresh
+          </Button>
+          <Button onClick={() => setAddTickerOpen(true)} variant="outline" size="sm">
+            <Plus className="size-4" />
+            Add Ticker
+          </Button>
+        </div>
       </div>
 
-      <div className="flex items-center gap-1 self-start rounded-lg border bg-muted p-1">
-        <button
-          type="button"
-          onClick={() => setViewMode("signals")}
-          className={cn(
-            "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-            viewMode === "signals"
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          Signals
-        </button>
-        <button
-          type="button"
-          onClick={() => setViewMode("list")}
-          className={cn(
-            "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-            viewMode === "list"
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          Tracked
-        </button>
-      </div>
+      {watchlistError && <p className="text-sm text-destructive">{watchlistError}</p>}
 
       <Dialog open={addTickerOpen} onOpenChange={setAddTickerOpen}>
         <DialogContent>
@@ -319,7 +300,7 @@ export default function SignalsPage() {
         </DialogContent>
       </Dialog>
 
-      {viewMode === "list" ? listViewContent : loading ? (
+      {showSkeleton ? (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Skeleton className="h-[76px] rounded-xl" />
@@ -340,20 +321,31 @@ export default function SignalsPage() {
             <StatCard label="Neutral signals" value={String(neutral.length)} tone="neutral" />
           </div>
 
-          {signals.length === 0 ? (
+          {items.length === 0 ? (
             <Card>
-              <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
+              <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
                 <Activity className="size-8 text-muted-foreground" />
-                <p className="text-muted-foreground">No signals available</p>
+                <p className="text-muted-foreground">No tracked symbols</p>
                 <p className="text-sm text-muted-foreground">
-                  Signals will appear here when technical indicators trigger alerts
+                  Add tickers to track their signals here
                 </p>
+                <Button variant="outline" size="sm" onClick={() => setAddTickerOpen(true)}>
+                  <Plus className="mr-1 size-4" />
+                  Add Ticker
+                </Button>
               </CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {signals.map((signal) => (
-                <SignalCard key={signal.id} signal={signal} onDismiss={handleDismissSignal} onRemoveTicker={handleRemoveTicker} />
+              {trackedSignals.map(({ signal, pending }) => (
+                <SignalCard
+                  key={signal.symbol}
+                  signal={signal}
+                  pending={pending}
+                  onRemoveTicker={handleRemoveTicker}
+                  onView={handleView}
+                  onCompare={handleCompare}
+                />
               ))}
             </div>
           )}
