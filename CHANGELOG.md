@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.6](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.5...v0.9.6) (2026-06-27)
+
+
+### Bug Fixes
+
+* **watchtower:** scope to containers via positional args, not --include ([aa8002d](https://github.com/ai-workflow-space/stock-market-toolkit/commit/aa8002dc65ca4f8ab2fa352d5e62c3c3eecba479))
+
 ## [0.9.5](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.4...v0.9.5) (2026-06-27)
 
 
