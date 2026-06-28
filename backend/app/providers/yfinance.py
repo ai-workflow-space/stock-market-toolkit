@@ -1,6 +1,7 @@
 """YFinance implementation of market data and fundamentals providers."""
 
 import asyncio
+from datetime import datetime
 
 import yfinance as yf
 import pandas as pd
@@ -9,6 +10,30 @@ import logging
 from app.services.cache import cached, cache_key
 
 log = logging.getLogger(__name__)
+
+
+def _to_epoch(value) -> int | None:
+    """Normalize a yfinance publish time to a unix-epoch int (seconds).
+
+    The current yfinance news schema returns ``content.pubDate`` as an
+    ISO-8601 string (e.g. ``"2026-06-27T12:00:00Z"``); the legacy schema
+    returned ``providerPublishTime`` as a unix-epoch int. ``NewsArticle.
+    publishedAt`` is typed ``int`` and the frontend expects epoch seconds, so
+    coerce both forms (and drop anything unparseable) here — otherwise an ISO
+    string fails response-model validation and 500s the whole /news endpoint.
+    """
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            # fromisoformat rejects a trailing 'Z' before Python 3.11.
+            dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            return int(dt.timestamp())
+        except ValueError:
+            return None
+    return None
 
 
 # TTLs in seconds
@@ -62,7 +87,7 @@ class YFinanceMarketDataProvider:
                 "title":       c.get("title"),
                 "publisher":   (c.get("provider") or {}).get("displayName") or n.get("publisher"),
                 "link":        (c.get("canonicalUrl") or {}).get("url") or n.get("link"),
-                "publishedAt": c.get("pubDate") or n.get("providerPublishTime"),
+                "publishedAt": _to_epoch(c.get("pubDate") or n.get("providerPublishTime")),
             })
         return [x for x in out if x["title"] and x["link"]]
 
