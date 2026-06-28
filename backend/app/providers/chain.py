@@ -119,6 +119,40 @@ class FallbackChain:
             f"Providers tried: {self._chain}"
         )
 
+    async def get_news(self, symbol: str) -> list[dict]:
+        """Fetch news articles, falling back through the provider chain.
+
+        NOTE: Unlike get_info / get_history which treat an empty result as a
+        provider failure (returning 503), get_news returns an empty list when
+        all providers fail.  This is intentional — news is non-critical
+        auxiliary data, so surfacing a 503 would be disproportionate.  The
+        route layer (stocks.py:get_stock_news) mirrors this contract by
+        catching provider exceptions and returning an empty articles list
+        rather than propagating a 503.
+        """
+        for name in self._chain:
+            cb = self._circuit_breakers[name]
+            if cb.is_open():
+                continue
+
+            provider = self._providers.get(name)
+            if provider is None:
+                continue
+
+            try:
+                articles: list[dict] = await provider.get_news(symbol)
+                cb.record_success()
+                return articles
+            except Exception as exc:
+                cb.record_failure()
+                log.error("Provider %s get_news failed for %s: %s", name, symbol, exc)
+
+        # FallbackChain contract: raise when all providers fail
+        raise RuntimeError(
+            f"All providers failed for news symbol={symbol}. "
+            f"Providers tried: {self._chain}"
+        )
+
     # ── Sync interface (protocol conformance, rarely used directly) ───
 
     def history(self, symbol: str, period: str, interval: str) -> pd.DataFrame:

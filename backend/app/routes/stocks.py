@@ -15,6 +15,7 @@ from app.schemas import (
     CompareRequest,
     CompareResponse,
     CompareStockData,
+    NewsResponse,
 )
 from app.auth import get_current_user
 from app.providers import market_provider, fundamentals_provider
@@ -395,3 +396,20 @@ async def search_symbols(
         return (tai_results + other_results)[:8]
     except Exception:
         return []
+
+
+@router.get("/stock/{symbol}/news", response_model=NewsResponse)
+async def get_stock_news(
+    symbol: str,
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        articles = await market_provider.get_news(symbol.upper())
+    except Exception as exc:
+        log.error("Failed to get news for %s: %s", symbol, exc, exc_info=True)
+        articles = []  # Return empty rather than 503 -- news is non-critical
+    return NewsResponse(
+        symbol=symbol.upper(),
+        cached_at=datetime.utcnow().isoformat(),
+        articles=articles,
+    )

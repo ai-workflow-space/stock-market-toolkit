@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, startTransition, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 import { LayoutGrid, List } from "lucide-react";
-import { getStock, getIndicators, getStockInfo, getFundamentals, getDividends } from "@/api/stockApi";
-import type { StockData, Indicators, StockInfo, Fundamentals, DividendData } from "@/types";
+import { getStock, getIndicators, getStockInfo, getFundamentals, getDividends, getNews } from "@/api/stockApi";
+import type { StockData, Indicators, StockInfo, Fundamentals, DividendData, NewsData } from "@/types";
 import { TIMEFRAMES } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,6 +45,8 @@ export default function DashboardPage() {
   const [info, setInfo] = useState<StockInfo | null>(null);
   const [fundamentals, setFundamentals] = useState<Fundamentals | null>(null);
   const [dividends, setDividends] = useState<DividendData | null>(null);
+  const [news, setNews] = useState<NewsData | null>(null);
+  const [newsLoading, setNewsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [active, setActive] = useState<string[]>(["sma20", "rsi", "macd"]);
@@ -55,6 +57,8 @@ export default function DashboardPage() {
   // so this effect performs no synchronous setState (only after the await).
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- newsLoading is non-critical state raised before an async fetch
+    setNewsLoading(true);
     (async () => {
       try {
         // Core data must load for the dashboard to render. Fundamentals and
@@ -68,12 +72,20 @@ export default function DashboardPage() {
           getDividends(symbol).catch(() => null),
         ]);
         if (cancelled) return;
+        let newsData: NewsData | null = null;
+        try {
+          newsData = await getNews(symbol);
+        } catch {
+          // News is non-critical — don't crash the dashboard if it fails
+        }
+        if (cancelled) return;
         startTransition(() => {
           setStock(st);
           setIndicators(ind);
           setInfo(inf);
           setFundamentals(fund);
           setDividends(divs);
+          setNews(newsData);
           setError("");
         });
       } catch (e: unknown) {
@@ -84,8 +96,12 @@ export default function DashboardPage() {
         setInfo(null);
         setFundamentals(null);
         setDividends(null);
+        setNews(null);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setNewsLoading(false);
+        }
       }
     })();
     return () => { cancelled = true; };
@@ -127,10 +143,10 @@ export default function DashboardPage() {
       ) : ready && stock && indicators && info ? (
         editMode ? (
           <Suspense fallback={<DashboardSkeleton />}>
-            <EditableGrid stock={stock} indicators={indicators} info={info} fundamentals={fundamentals} dividends={dividends} active={activeSet} />
+            <EditableGrid stock={stock} indicators={indicators} info={info} fundamentals={fundamentals} dividends={dividends} news={news} newsLoading={newsLoading} active={activeSet} />
           </Suspense>
         ) : (
-          <DashboardGrid stock={stock} indicators={indicators} info={info} fundamentals={fundamentals} dividends={dividends} active={activeSet} />
+          <DashboardGrid stock={stock} indicators={indicators} info={info} fundamentals={fundamentals} dividends={dividends} news={news} newsLoading={newsLoading} active={activeSet} />
         )
       ) : (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-16 text-center text-sm text-muted-foreground">

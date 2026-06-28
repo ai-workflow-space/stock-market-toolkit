@@ -109,3 +109,85 @@ def test_provider_error_message_includes_providers_list(client):
         response = client.get("/api/stock/AAPL?period=1mo")
         assert response.status_code == 503
         assert "unavailable" in response.json()["detail"].lower()
+
+
+# ─── /api/stock/{symbol}/news endpoint tests ──────────────────────────────────
+
+def test_get_stock_news_happy_path(client):
+    """Returns 200 with correct NewsResponse shape when provider returns articles."""
+    from app.providers.chain import FallbackChain
+    fake_articles = [
+        {
+            "title": "Apple Reports Record Q3 Earnings",
+            "publisher": "Reuters",
+            "link": "https://example.com/article1",
+            "publishedAt": 1699900000,
+        },
+        {
+            "title": "AAPL Hits New High",
+            "publisher": "CNBC",
+            "link": "https://example.com/article2",
+            "publishedAt": 1699800000,
+        },
+    ]
+    with patch("app.routes.stocks.market_provider", spec=FallbackChain) as mock_provider:
+        mock_provider.get_news = AsyncMock(return_value=fake_articles)
+        response = client.get("/api/stock/AAPL/news")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["symbol"] == "AAPL"
+        assert "cached_at" in data
+        assert len(data["articles"]) == 2
+        assert data["articles"][0]["title"] == "Apple Reports Record Q3 Earnings"
+        assert data["articles"][0]["link"] == "https://example.com/article1"
+
+
+def test_news_provider_parses_iso_pubdate_to_epoch():
+    """yfinance returns content.pubDate as an ISO string; the provider must
+    coerce it to an epoch int so NewsResponse validation doesn't 500."""
+    from app.providers.yfinance import YFinanceMarketDataProvider, _to_epoch
+
+    assert _to_epoch("2026-06-27T12:00:00Z") == 1782561600
+    assert _to_epoch(1699900000) == 1699900000
+    assert _to_epoch(None) is None
+    assert _to_epoch("not-a-date") is None
+
+    raw = [
+        {
+            "content": {
+                "title": "Apple climbs",
+                "provider": {"displayName": "Reuters"},
+                "canonicalUrl": {"url": "https://example.com/a"},
+                "pubDate": "2026-06-27T12:00:00Z",
+            }
+        }
+    ]
+    with patch("app.providers.yfinance.yf.Ticker") as mock_ticker:
+        mock_ticker.return_value.news = raw
+        articles = YFinanceMarketDataProvider().news("AAPL")
+
+    assert len(articles) == 1
+    a = articles[0]
+    assert a["title"] == "Apple climbs"
+    assert a["publisher"] == "Reuters"
+    assert a["link"] == "https://example.com/a"
+    assert a["publishedAt"] == 1782561600
+    assert isinstance(a["publishedAt"], int)
+
+
+def test_get_stock_news_provider_failure_returns_empty_articles(client):
+    """When market_provider.get_news raises, returns 200 with empty articles.
+
+    News is non-critical so the endpoint swallows provider failures and returns
+    an empty list rather than a 503 — consistent with the endpoint design.
+    """
+    from app.providers.chain import FallbackChain
+    with patch("app.routes.stocks.market_provider", spec=FallbackChain) as mock_provider:
+        mock_provider.get_news = AsyncMock(
+            side_effect=RuntimeError("All providers failed for news symbol=AAPL")
+        )
+        response = client.get("/api/stock/AAPL/news")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["symbol"] == "AAPL"
+        assert data["articles"] == []

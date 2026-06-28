@@ -99,6 +99,19 @@ export interface DividendData {
   streak: number;
 }
 
+export interface NewsArticle {
+  title: string;
+  publisher?: string;
+  link: string;
+  publishedAt?: number;  // unix epoch
+}
+
+export interface NewsData {
+  symbol: string;
+  cached_at: string;
+  articles: NewsArticle[];
+}
+
 export type SignalDirection = "bullish" | "bearish" | "neutral";
 
 export type SignalType = 
