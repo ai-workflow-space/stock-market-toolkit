@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Sun, Moon, Menu } from "lucide-react";
+import { Sun, Moon, Menu, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -23,19 +23,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/version";
 import { toast } from "@/components/ui/sonner";
 
 const NAV_ITEMS = [
-  { to: "/", label: "Dashboard", end: true },
-  { to: "/signals", label: "Signals", end: false },
-  { to: "/compare", label: "Compare", end: false },
-  { to: "/alerts", label: "Alerts", end: false },
-  { to: "/settings", label: "Settings", end: false },
+  { to: "/", labelKey: "nav.dashboard", end: true },
+  { to: "/signals", labelKey: "nav.signals", end: false },
+  { to: "/compare", labelKey: "nav.compare", end: false },
+  { to: "/alerts", labelKey: "nav.alerts", end: false },
+  { to: "/settings", labelKey: "nav.settings", end: false },
 ];
 
 export default function Navbar() {
+  const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -105,7 +107,7 @@ export default function Navbar() {
         <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{APP_VERSION}</span>
 
         <nav className="ml-2 hidden items-center gap-1 md:flex">
-          {NAV_ITEMS.map(({ to, label, end }) => (
+          {NAV_ITEMS.map(({ to, labelKey, end }) => (
             <NavLink key={to} to={to} end={end}>
               {({ isActive }) => (
                 <span
@@ -116,7 +118,7 @@ export default function Navbar() {
                       : "text-muted-foreground hover:bg-accent hover:text-foreground",
                   )}
                 >
-                  {label}
+                  {t(labelKey)}
                 </span>
               )}
             </NavLink>
@@ -132,6 +134,20 @@ export default function Navbar() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Switch to {theme === "dark" ? "light" : "dark"} mode</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => i18n.changeLanguage(i18n.language === "en" ? "zh-TW" : "en")}
+                  aria-label="Switch language"
+                >
+                  <Languages />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Switch to {i18n.language === "en" ? "中文" : "English"}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
 
@@ -169,9 +185,9 @@ export default function Navbar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {NAV_ITEMS.map(({ to, label, end }) => (
+                {NAV_ITEMS.map(({ to, labelKey, end }) => (
                   <DropdownMenuItem key={to} asChild>
-                    <NavLink to={to} end={end}>{label}</NavLink>
+                    <NavLink to={to} end={end}>{t(labelKey)}</NavLink>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
