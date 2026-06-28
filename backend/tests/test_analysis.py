@@ -1,0 +1,94 @@
+"""Tests for analysis routes (GET /api/analysis/{symbol}, GET /api/analysis/signals)."""
+import pytest
+from unittest.mock import AsyncMock, patch
+from fastapi.testclient import TestClient
+from app.main import app
+from app.auth import get_current_user
+from app.models import User
+
+
+@pytest.fixture
+def mock_user():
+    return User(id="1", email="test@test.com", username="testuser", hashed_password="xxx")
+
+
+@pytest.fixture
+def client(mock_user):
+    app.dependency_overrides[get_current_user] = lambda: mock_user
+    yield TestClient(app)
+    app.dependency_overrides.clear()
+
+
+def test_get_analysis_provider_failure_returns_502(client):
+    """When market_provider.get_history raises RuntimeError, should return 502."""
+    from app.providers.chain import FallbackChain
+    with patch("app.routes.analysis.market_provider", spec=FallbackChain) as mock_provider:
+        mock_provider.get_history = AsyncMock(
+            side_effect=RuntimeError("All providers failed")
+        )
+        response = client.get("/api/analysis/AAPL?period=1mo")
+        assert response.status_code == 502
+        assert "unavailable" in response.json()["detail"].lower()
+        assert "AAPL" in response.json()["detail"]
+
+
+def test_get_batch_signals_partial_failure_returns_structured_errors(client):
+    """When one symbol fails and another succeeds, return 200 with signals + errors.
+
+    The get_batch_signals handler catches HTTPException (from the 502 path in
+    _compute_analysis) and also falls back to a generic 'analysis failed' for any
+    other exception, collecting them all into the ``errors`` list while still
+    returning 200 with the symbols that succeeded.
+    """
+    from app.providers.chain import FallbackChain
+    with patch("app.routes.analysis.market_provider", spec=FallbackChain) as mock_provider:
+        # AAPL: provider raises RuntimeError -> _compute_analysis raises 502 -> caught
+        # GOOG: returns a real-looking DataFrame -> analysis succeeds
+        import pandas as pd
+        from datetime import datetime
+        from app.providers.chain import TaggedValue
+
+        # Need 50+ rows so SMA20/SMA50 don't produce all-NaN series.
+        n = 60
+        good_df = pd.DataFrame({
+            "Open":   [150.0 + i * 0.1 for i in range(n)],
+            "High":   [152.0 + i * 0.1 for i in range(n)],
+            "Low":    [149.0 + i * 0.1 for i in range(n)],
+            "Close":  [151.0 + i * 0.1 for i in range(n)],
+            "Volume": [1_000_000 + i * 10_000 for i in range(n)],
+        }, index=pd.date_range("2024-01-01", periods=n, freq="D"))
+
+        def get_history_side_effect(symbol, period, interval):
+            if symbol == "AAPL":
+                raise RuntimeError("All providers failed")
+            return TaggedValue(good_df, "yfinance", datetime.utcnow())
+
+        mock_provider.get_history = AsyncMock(side_effect=get_history_side_effect)
+
+        response = client.get("/api/analysis/signals?symbols=AAPL,GOOG&period=1mo")
+        assert response.status_code == 200
+        data = response.json()
+        assert "signals" in data
+        assert "errors" in data
+        # GOOG should have a valid signal; AAPL should be in errors
+        assert len(data["signals"]) == 1
+        assert data["signals"][0]["symbol"] == "GOOG"
+        assert len(data["errors"]) == 1
+        assert data["errors"][0]["symbol"] == "AAPL"
+        assert "unavailable" in data["errors"][0]["error"].lower()
+
+
+def test_get_batch_signals_all_fail_returns_empty_signals_with_errors(client):
+    """When all symbols fail, return 200 with empty signals list and populated errors."""
+    from app.providers.chain import FallbackChain
+    with patch("app.routes.analysis.market_provider", spec=FallbackChain) as mock_provider:
+        mock_provider.get_history = AsyncMock(
+            side_effect=RuntimeError("All providers failed")
+        )
+        response = client.get("/api/analysis/signals?symbols=INVALD1,INVALD2&period=1mo")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["signals"] == []
+        assert len(data["errors"]) == 2
+        assert data["errors"][0]["symbol"] == "INVALD1"
+        assert data["errors"][1]["symbol"] == "INVALD2"
