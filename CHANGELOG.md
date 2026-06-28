@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.7](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.6...v0.9.7) (2026-06-27)
+
+
+### Bug Fixes
+
+* **alerts:** remove unused AlertConditionCreate import; narrow ConditionFormItem metric/operator to literal unions ([27d0bfe](https://github.com/ai-workflow-space/stock-market-toolkit/commit/27d0bfeea4b056be898d97487dad9cb5f515bb29))
+* prevent dashboard 500 from dividend date handling and provider failures ([#180](https://github.com/ai-workflow-space/stock-market-toolkit/issues/180)) ([c9a3693](https://github.com/ai-workflow-space/stock-market-toolkit/commit/c9a3693c6604d87c557cf5b250cd273bf3736db2))
+* Price Alert condition Value field defaults to empty, not 0 ([be44b6b](https://github.com/ai-workflow-space/stock-market-toolkit/commit/be44b6bb2c35a3f6767b43b3aa29fc52c3642088))
+
 ## [0.9.6](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.5...v0.9.6) (2026-06-27)
 
 
