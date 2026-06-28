@@ -435,14 +435,40 @@ async def check_alerts():
                             ):
                                 smtp_cfg = await db.get(SmtpSettings, 1)
                                 if smtp_cfg and smtp_cfg.host:
-                                    email_body = _build_email_body(
-                                        symbol, alert, current_price, now
+                                    # Build template variables
+                                    condition_label = CONDITION_LABELS.get(alert.condition_type, alert.condition_type)
+                                    threshold_str = (
+                                        f"${alert.threshold:.2f}"
+                                        if alert.condition_type in ("above", "below")
+                                        else f"{alert.threshold:.1f}%"
                                     )
+
+                                    TEMPLATE_VARS = {
+                                        "{symbol}":       symbol,
+                                        "{price}":        f"{current_price:.2f}",
+                                        "{condition}":    condition_label,
+                                        "{threshold}":    threshold_str,
+                                        "{triggered_at}": now.strftime("%Y-%m-%d %H:%M UTC"),
+                                    }
+
+                                    def _interpolate(template: str, vars: dict) -> str:
+                                        result = template
+                                        for k, v in vars.items():
+                                            result = result.replace(k, str(v))
+                                        return result
+
+                                    subject = settings.email_subject or f"Price Alert: {symbol}"
+                                    body = settings.email_body
+                                    if body:
+                                        body = _interpolate(body, TEMPLATE_VARS)
+                                    else:
+                                        body = _build_email_body(symbol, alert, current_price, now)
+
                                     email_success = await send_email(
                                         smtp_cfg,
                                         settings.email_address,
-                                        f"Price Alert: {symbol}",
-                                        html_body=email_body,
+                                        subject,
+                                        html_body=body,
                                     )
                                     delivery_records.append(
                                         NotificationDelivery(
