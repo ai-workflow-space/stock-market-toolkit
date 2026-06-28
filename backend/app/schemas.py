@@ -90,7 +90,7 @@ class DividendsResponse(BaseModel):
 class NewsArticle(BaseModel):
     title: str
     publisher: Optional[str] = None
-    link: str
+    link: str = Field(..., min_length=1)  # empty string blocked by yfinance filter too
     publishedAt: Optional[int] = None  # unix epoch from yfinance
 
 
