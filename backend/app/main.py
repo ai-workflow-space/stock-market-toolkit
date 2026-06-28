@@ -93,10 +93,12 @@ async def lifespan(app: FastAPI):
     # Run Alembic in-process (no dependency on the `alembic` binary being on
     # PATH or on the working directory). A failed migration must abort startup
     # rather than let the app boot against a missing/half-applied schema.
+    # Use "heads" (plural) since the migration tree may have multiple heads
+    # during active development; this applies all pending revisions on all heads.
     backend_dir = Path(__file__).parent.parent
     alembic_cfg = Config(str(backend_dir / "alembic.ini"))
     try:
-        command.upgrade(alembic_cfg, "head")
+        command.upgrade(alembic_cfg, "heads")
     except Exception:
         log.exception("Alembic migration failed; aborting startup")
         raise
