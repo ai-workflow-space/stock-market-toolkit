@@ -31,5 +31,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_column("notification_settings", "email_body")
     op.drop_column("notification_settings", "email_subject")
+    op.drop_column("notification_settings", "email_body")
