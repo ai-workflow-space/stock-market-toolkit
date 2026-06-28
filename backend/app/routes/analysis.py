@@ -1,13 +1,25 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+import logging
+
 from app.models import User
 from app.auth import get_current_user
 from app.providers import market_provider
 import pandas_ta as ta
 import math
 
+log = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api", tags=["analysis"])
 
 CACHE_TTL = 300  # 5 minutes
+
+# Minimum number of trading days required to compute the signal indicators.
+# SMA20 and the 20-day volume average are the longest core look-backs, so with
+# fewer than this many bars every indicator collapses to NaN and the technical
+# routines (ta.stoch / ta.sma indexing) can raise on the thin frame. A symbol
+# that just listed (e.g. an IPO earlier today) lands here — we surface a clear,
+# specific reason rather than a generic "analysis failed".
+MIN_HISTORY_BARS = 20
 
 
 def _clean(v):
@@ -24,13 +36,29 @@ async def _compute_analysis(symbol: str, period: str = "3mo") -> dict:
     """Get comprehensive technical analysis for a symbol (no auth dependency)."""
     interval_map = {"1d": "5m", "5d": "15m"}
     interval = interval_map.get(period, "1d")
-    result = await market_provider.get_history(
-        symbol.upper(), period=period, interval=interval
-    )
+    try:
+        result = await market_provider.get_history(
+            symbol.upper(), period=period, interval=interval
+        )
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=502, detail=f"Data provider unavailable for {symbol}"
+        ) from exc
     df = result.value
 
     if df.empty:
         raise HTTPException(status_code=404, detail=f"No data for {symbol}")
+
+    if len(df) < MIN_HISTORY_BARS:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Not enough price history for {symbol} to compute signals: "
+                f"only {len(df)} trading day(s) available, need at least "
+                f"{MIN_HISTORY_BARS}. The symbol may have been listed too "
+                f"recently — check back once it has more trading history."
+            ),
+        )
 
     close = df["Close"]
 
@@ -189,9 +217,16 @@ async def get_batch_signals(
         try:
             results.append(await _compute_analysis(sym, period))
         except HTTPException as exc:
-            errors.append({"symbol": sym, "error": str(exc.detail)})
-        except Exception:
-            errors.append({"symbol": sym, "error": "Analysis failed"})
+            errors.append({"symbol": sym, "error": exc.detail})
+        except Exception as exc:  # noqa: BLE001
+            # Surface a concrete reason on the signal card instead of a generic
+            # "analysis failed" — include the error type and message so the user
+            # can tell an unexpected analysis bug apart from "no/thin data".
+            log.warning("analysis failed for %s: %s", sym, exc, exc_info=True)
+            reason = str(exc).strip() or exc.__class__.__name__
+            errors.append(
+                {"symbol": sym, "error": f"Could not analyze {sym}: {reason}"}
+            )
     return {"signals": results, "errors": errors}
 
 

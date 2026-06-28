@@ -67,7 +67,17 @@ class FallbackChain:
             try:
                 df: pd.DataFrame = await provider.get_history(symbol, period, interval)
                 if df.empty:
-                    cb.record_failure()
+                    # Empty DataFrame is a soft "no data for this symbol" — do not
+                    # trip the circuit breaker so other symbols are still tried.
+                    #
+                    # NOTE: This means a rate-limited or broken provider that returns
+                    # empty frames for every request will never trip the circuit breaker,
+                    # and the chain will retry it on every batch request.  This is a
+                    # deliberate trade-off: incorrectly failing open on transient empty
+                    # frames would cause valid symbols to be skipped.  If a provider is
+                    # genuinely broken and always returns empty, add it to the chain
+                    # config's skip list or reduce its weight rather than relying on the
+                    # circuit breaker to protect it.
                     log.warning("%s returned empty DataFrame for %s", name, symbol)
                     continue
                 cb.record_success()
