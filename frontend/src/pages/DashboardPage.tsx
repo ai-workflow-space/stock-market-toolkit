@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, startTransition, lazy, Suspense } from "react";
+import { useSearchParams } from "react-router-dom";
 import { LayoutGrid, List } from "lucide-react";
 import { getStock, getIndicators, getStockInfo, getFundamentals, getDividends } from "@/api/stockApi";
 import type { StockData, Indicators, StockInfo, Fundamentals, DividendData } from "@/types";
@@ -36,7 +37,8 @@ function DashboardSkeleton() {
 }
 
 export default function DashboardPage() {
-  const [symbol, setSymbol] = useState("AAPL");
+  const [searchParams] = useSearchParams();
+  const [symbol, setSymbol] = useState(() => searchParams.get("symbol")?.toUpperCase() || "AAPL");
   const [period, setPeriod] = useState("1mo");
   const [stock, setStock] = useState<StockData | null>(null);
   const [indicators, setIndicators] = useState<Indicators | null>(null);
