@@ -25,6 +25,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -268,17 +269,16 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             <Label htmlFor="timezone">Current: {timezone}</Label>
-            <select
-              id="timezone"
-              aria-label="Timezone"
-              value={timezone}
-              onChange={e => setTimezone(e.target.value)}
-              className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            >
-              {COMMON_TIMEZONES.map(tz => (
-                <option key={tz.value} value={tz.value}>{tz.label}</option>
-              ))}
-            </select>
+            <Select value={timezone} onValueChange={setTimezone}>
+              <SelectTrigger id="timezone" className="mt-2 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {COMMON_TIMEZONES.map(tz => (
+                  <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </CardContent>
         </Card>
 
