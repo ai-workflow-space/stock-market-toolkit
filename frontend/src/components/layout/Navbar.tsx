@@ -141,13 +141,13 @@ export default function Navbar() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => i18n.changeLanguage(i18n.language === "en" ? "zh-TW" : "en")}
+                  onClick={() => i18n.changeLanguage(i18n.language.startsWith("en") ? "zh-TW" : "en")}
                   aria-label="Switch language"
                 >
                   <Languages />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Switch to {i18n.language === "en" ? "中文" : "English"}</TooltipContent>
+              <TooltipContent>{i18n.language.startsWith("en") ? t("nav.switchToChinese") : t("nav.switchToEnglish")}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
 

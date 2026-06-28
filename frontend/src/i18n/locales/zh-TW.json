@@ -4,6 +4,8 @@
     "signals": "信號",
     "compare": "比較",
     "alerts": "警報",
-    "settings": "設定"
+    "settings": "設定",
+    "switchToChinese": "切換至中文",
+    "switchToEnglish": "切換至英文"
   }
 }
