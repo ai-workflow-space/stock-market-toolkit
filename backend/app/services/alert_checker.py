@@ -460,14 +460,12 @@ async def check_alerts():
                                         "{triggered_at}": now.strftime("%Y-%m-%d %H:%M UTC"),
                                     }
 
-                                    subject = settings.email_subject or f"Price Alert: {symbol}"
+                                    subject = settings.email_subject if settings.email_subject is not None else f"Price Alert: {symbol}"
                                     if subject:
                                         subject = _interpolate(subject, TEMPLATE_VARS)
-                                    body = settings.email_body
+                                    body = settings.email_body if settings.email_body is not None else _build_email_body(symbol, alert, current_price, now)
                                     if body:
                                         body = _interpolate(body, TEMPLATE_VARS)
-                                    else:
-                                        body = _build_email_body(symbol, alert, current_price, now)
 
                                     email_success = await send_email(
                                         smtp_cfg,
