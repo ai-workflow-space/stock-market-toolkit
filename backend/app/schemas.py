@@ -466,3 +466,8 @@ class SmtpTestRequest(BaseModel):
 class SmtpTestResponse(BaseModel):
     success: bool
     message: str
+
+
+# ─── Notification test schemas ───
+class DiscordTestRequest(BaseModel):
+    webhook_url: str = Field(..., min_length=1)
