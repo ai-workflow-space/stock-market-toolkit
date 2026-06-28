@@ -57,12 +57,15 @@ export default function DashboardPage() {
     let cancelled = false;
     (async () => {
       try {
+        // Core data must load for the dashboard to render. Fundamentals and
+        // dividends are secondary: many symbols (e.g. ETFs like 0050.TW) have no
+        // fundamentals and return 404, which must NOT fail the whole dashboard.
         const [st, ind, inf, fund, divs] = await Promise.all([
           getStock(symbol, period),
           getIndicators(symbol, period),
           getStockInfo(symbol),
-          getFundamentals(symbol),
-          getDividends(symbol),
+          getFundamentals(symbol).catch(() => null),
+          getDividends(symbol).catch(() => null),
         ]);
         if (cancelled) return;
         startTransition(() => {
