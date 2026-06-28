@@ -70,7 +70,6 @@ function AdminSmtpPanel() {
 
   useEffect(() => {
     let ignore = false;
-    setSmtpLoading(true);
     getSmtpSettings()
       .then(data => {
         if (ignore) return;
