@@ -46,6 +46,25 @@ describe("defaultLayout", () => {
     expect(ids).toContain("rsi");
     expect(ids).toContain("macd");
   });
+
+  it("omits optional cards by default but adds them when present", () => {
+    expect(defaultLayout(new Set()).map((l) => l.i)).not.toContain("news");
+    const ids = defaultLayout(new Set(), new Set(["fundamentals", "dividends", "news"])).map((l) => l.i);
+    expect(ids).toEqual(expect.arrayContaining(["fundamentals", "dividends", "news"]));
+  });
+
+  it("places optional cards below the info/table block without collision", () => {
+    const layout = defaultLayout(new Set(["rsi", "macd"]), new Set(["fundamentals", "dividends", "news"]));
+    const byId = Object.fromEntries(layout.map((l) => [l.i, l]));
+    const infoBottom = byId.info.y + byId.info.h;
+    for (const id of ["fundamentals", "dividends", "news"]) {
+      expect(byId[id].y).toBeGreaterThanOrEqual(infoBottom);
+    }
+    // the three cards sit side by side on the same row
+    expect(byId.fundamentals.y).toBe(byId.dividends.y);
+    expect(byId.dividends.y).toBe(byId.news.y);
+    expect(byId.fundamentals.x).not.toBe(byId.dividends.x);
+  });
 });
 
 describe("reconcileLayout", () => {

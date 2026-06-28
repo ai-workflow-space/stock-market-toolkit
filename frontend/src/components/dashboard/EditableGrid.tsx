@@ -21,7 +21,17 @@ export default function EditableGrid({ stock, indicators, info, fundamentals, di
   );
   const [stored, setStored] = useState<LayoutItem[]>(() => loadLayout() ?? []);
 
-  const layout = useMemo(() => reconcileLayout(stored, active), [active, stored]);
+  // Optional cards only get a layout slot (and thus render in the grid) when
+  // their data is present — react-grid-layout drops children without a slot.
+  const extras = useMemo(() => {
+    const s = new Set<string>();
+    if (fundamentals) s.add("fundamentals");
+    if (dividends) s.add("dividends");
+    if (news) s.add("news");
+    return s;
+  }, [fundamentals, dividends, news]);
+
+  const layout = useMemo(() => reconcileLayout(stored, active, extras), [active, extras, stored]);
 
   const handleChange = useCallback((next: readonly LayoutItem[]) => {
     setStored(next as LayoutItem[]);
@@ -73,12 +83,12 @@ export default function EditableGrid({ stock, indicators, info, fundamentals, di
             <DividendCard data={dividends} />
           </div>
         )}
+        {news && (
+          <div key="news" className="h-full overflow-auto">
+            <NewsCard news={news} loading={newsLoading} />
+          </div>
+        )}
       </GridLayout>
-      {news && (
-        <div key="news" className="h-full overflow-auto">
-          <NewsCard news={news} loading={newsLoading} />
-        </div>
-      )}
     </div>
   );
 }
