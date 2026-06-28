@@ -472,6 +472,4 @@ class SmtpTestResponse(BaseModel):
     message: str
 
 
-# ─── Notification test schemas ───
-class DiscordTestRequest(BaseModel):
-    webhook_url: HttpUrl
+
