@@ -109,3 +109,52 @@ def test_provider_error_message_includes_providers_list(client):
         response = client.get("/api/stock/AAPL?period=1mo")
         assert response.status_code == 503
         assert "unavailable" in response.json()["detail"].lower()
+
+
+# ─── /api/stock/{symbol}/news endpoint tests ──────────────────────────────────
+
+def test_get_stock_news_happy_path(client):
+    """Returns 200 with correct NewsResponse shape when provider returns articles."""
+    from app.providers.chain import FallbackChain
+    fake_articles = [
+        {
+            "title": "Apple Reports Record Q3 Earnings",
+            "publisher": "Reuters",
+            "link": "https://example.com/article1",
+            "publishedAt": 1699900000,
+        },
+        {
+            "title": "AAPL Hits New High",
+            "publisher": "CNBC",
+            "link": "https://example.com/article2",
+            "publishedAt": 1699800000,
+        },
+    ]
+    with patch("app.routes.stocks.market_provider", spec=FallbackChain) as mock_provider:
+        mock_provider.get_news = AsyncMock(return_value=fake_articles)
+        response = client.get("/api/stock/AAPL/news")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["symbol"] == "AAPL"
+        assert "cached_at" in data
+        assert len(data["articles"]) == 2
+        assert data["articles"][0]["title"] == "Apple Reports Record Q3 Earnings"
+        assert data["articles"][0]["link"] == "https://example.com/article1"
+
+
+def test_get_stock_news_provider_failure_returns_empty_articles(client):
+    """When market_provider.get_news raises, returns 200 with empty articles.
+
+    News is non-critical so the endpoint swallows provider failures and returns
+    an empty list rather than a 503 — consistent with the endpoint design.
+    """
+    from app.providers.chain import FallbackChain
+    with patch("app.routes.stocks.market_provider", spec=FallbackChain) as mock_provider:
+        mock_provider.get_news = AsyncMock(
+            side_effect=RuntimeError("All providers failed for news symbol=AAPL")
+        )
+        response = client.get("/api/stock/AAPL/news")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["symbol"] == "AAPL"
+        assert data["articles"] == []

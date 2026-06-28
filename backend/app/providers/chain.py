@@ -110,7 +110,16 @@ class FallbackChain:
         )
 
     async def get_news(self, symbol: str) -> list[dict]:
-        """Fetch news articles, falling back through the provider chain."""
+        """Fetch news articles, falling back through the provider chain.
+
+        NOTE: Unlike get_info / get_history which treat an empty result as a
+        provider failure (returning 503), get_news returns an empty list when
+        all providers fail.  This is intentional — news is non-critical
+        auxiliary data, so surfacing a 503 would be disproportionate.  The
+        route layer (stocks.py:get_stock_news) mirrors this contract by
+        catching provider exceptions and returning an empty articles list
+        rather than propagating a 503.
+        """
         for name in self._chain:
             cb = self._circuit_breakers[name]
             if cb.is_open():
