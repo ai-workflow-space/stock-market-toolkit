@@ -33,11 +33,278 @@ import {
   DialogFooter,
   DialogDescription,
 } from "../components/ui/dialog";
-import { Loader2, Key, Pencil } from "lucide-react";
+import { Loader2, Key, Pencil, Mail } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { APP_VERSION, RELEASE_URL, RELEASE_API_URL } from "../lib/version";
+import { getSmtpSettings, updateSmtpSettings, testSmtpSettings } from "../api/adminApi";
 import { fmtDate } from "../lib/format";
 import ReactMarkdown from "react-markdown";
+
+// ── Admin SMTP Panel ─────────────────────────────────────────────────────────
+
+function AdminSmtpPanel() {
+  const [smtp, setSmtp] = useState<{
+    host: string; port: number; use_tls: boolean;
+    username: string | null; password_set: boolean;
+    from_address: string; reply_to: string | null; updated_at: string | null;
+  } | null>(null);
+  const [smtpLoading, setSmtpLoading] = useState(true);
+
+  // Form fields
+  const [formHost, setFormHost] = useState("");
+  const [formPort, setFormPort] = useState("587");
+  const [formUseTls, setFormUseTls] = useState(true);
+  const [formUsername, setFormUsername] = useState("");
+  const [formPassword, setFormPassword] = useState("");
+  const [formFromAddress, setFormFromAddress] = useState("");
+  const [formReplyTo, setFormReplyTo] = useState("");
+
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  // Test email state
+  const [testOpen, setTestOpen] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [testLoading, setTestLoading] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+    setSmtpLoading(true);
+    getSmtpSettings()
+      .then(data => {
+        if (ignore) return;
+        setSmtp(data);
+        setFormHost(data.host);
+        setFormPort(String(data.port));
+        setFormUseTls(data.use_tls);
+        setFormUsername(data.username ?? "");
+        setFormFromAddress(data.from_address);
+        setFormReplyTo(data.reply_to ?? "");
+      })
+      .catch(async (err: unknown) => {
+        if (ignore) return;
+        // 404 → unconfigured, leave fields empty
+        if (err && typeof err === "object" && "response" in err) {
+          const axiosErr = err as { response?: { status?: number } };
+          if (axiosErr.response?.status === 404) {
+            setSmtp(null);
+            setSmtpLoading(false);
+            return;
+          }
+        }
+        // non-404 error — just log to console, form stays in unconfigured state
+        console.error("Failed to load SMTP settings", err);
+      })
+      .finally(() => { if (!ignore) setSmtpLoading(false); });
+    return () => { ignore = true; };
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaveLoading(true);
+    setSaveError("");
+    try {
+      const payload: Parameters<typeof updateSmtpSettings>[0] = {
+        host: formHost,
+        port: Number(formPort),
+        use_tls: formUseTls,
+        username: formUsername || null,
+        from_address: formFromAddress,
+        reply_to: formReplyTo || null,
+      };
+      if (formPassword) payload.password = formPassword;
+      const updated = await updateSmtpSettings(payload);
+      setSmtp(updated);
+      setFormPassword("");
+      toast.success("SMTP settings saved");
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save SMTP settings");
+      toast.error("Failed to save SMTP settings");
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleTestEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setTestLoading(true);
+    setTestResult(null);
+    try {
+      const result = await testSmtpSettings(testEmail);
+      setTestResult(result);
+      if (result.success) toast.success("Test email sent!");
+      else toast.error(result.message);
+    } catch (err: unknown) {
+      setTestResult({ success: false, message: err instanceof Error ? err.message : "Test failed" });
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
+  if (smtpLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-6">
+          <Loader2 className="size-5 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>SMTP Settings</CardTitle>
+              <CardDescription>Configure outgoing email delivery</CardDescription>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setTestOpen(true)}>
+              <Mail className="size-3 mr-1" /> Send Test Email
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSave} className="flex flex-col gap-4">
+            {saveError && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {saveError}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="smtp-host">Host</Label>
+                <Input
+                  id="smtp-host"
+                  placeholder="smtp.example.com"
+                  value={formHost}
+                  onChange={e => setFormHost(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="smtp-port">Port</Label>
+                <Input
+                  id="smtp-port"
+                  type="number"
+                  placeholder="587"
+                  value={formPort}
+                  onChange={e => setFormPort(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between rounded-md border px-3 py-2">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium">Use TLS</span>
+                <span className="text-xs text-muted-foreground">Encrypt outgoing connections</span>
+              </div>
+              <Switch checked={formUseTls} onCheckedChange={setFormUseTls} />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="smtp-username">Username</Label>
+              <Input
+                id="smtp-username"
+                placeholder="user@example.com"
+                value={formUsername}
+                onChange={e => setFormUsername(e.target.value)}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="smtp-password">Password</Label>
+                {smtp?.password_set && (
+                  <span className="text-xs text-muted-foreground">Password is set</span>
+                )}
+              </div>
+              <Input
+                id="smtp-password"
+                type="password"
+                placeholder="••••••••"
+                value={formPassword}
+                onChange={e => setFormPassword(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Leave blank to keep the current password</p>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="smtp-from">From Address</Label>
+              <Input
+                id="smtp-from"
+                type="email"
+                placeholder="alerts@example.com"
+                value={formFromAddress}
+                onChange={e => setFormFromAddress(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="smtp-replyto">Reply-To <span className="text-muted-foreground">(optional)</span></Label>
+              <Input
+                id="smtp-replyto"
+                type="email"
+                placeholder="reply@example.com"
+                value={formReplyTo}
+                onChange={e => setFormReplyTo(e.target.value)}
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <Button type="submit" disabled={saveLoading}>
+                {saveLoading ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Dialog open={testOpen} onOpenChange={open => { if (!open) { setTestOpen(false); setTestEmail(""); setTestResult(null); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Test Email</DialogTitle>
+            <DialogDescription>Enter a recipient address to verify SMTP configuration.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleTestEmail} className="flex flex-col gap-3">
+            {testResult && (
+              <div className={`rounded-md border px-3 py-2 text-sm ${testResult.success
+                ? "border-green-500/40 bg-green-500/10 text-green-600 dark:text-green-400"
+                : "border-destructive/40 bg-destructive/10 text-destructive"
+              }`}>
+                {testResult.success ? "Test email sent!" : testResult.message}
+              </div>
+            )}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="test-email">Recipient Email</Label>
+              <Input
+                id="test-email"
+                type="email"
+                placeholder="test@example.com"
+                value={testEmail}
+                onChange={e => setTestEmail(e.target.value)}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setTestOpen(false)} disabled={testLoading}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={testLoading}>
+                {testLoading ? "Sending…" : "Send Test Email"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 export default function SettingsPage() {
   const { theme, toggleTheme, timezone, setTimezone } = useTheme();
@@ -312,59 +579,62 @@ export default function SettingsPage() {
         </Card>
 
         {isAdmin && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>Manage user accounts and permissions</CardDescription>
-              </div>
-              <Button size="sm" onClick={() => setAddOpen(true)}>+ Add User</Button>
-            </div>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            {usersLoading ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="size-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : users.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No users found.</p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {users.map(u => (
-                  <div key={u.id} className="flex items-center justify-between rounded-md border p-3">
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <span className="text-sm font-medium truncate">{u.username}</span>
-                      <span className="text-xs text-muted-foreground truncate">{u.email}</span>
-                      {u.created_at && (
-                        <span className="text-xs text-muted-foreground truncate">Registered {fmtDate(u.created_at)}</span>
-                      )}
-                      <span className="text-xs text-muted-foreground truncate">
-                        Last login {u.last_login_at ? fmtDate(u.last_login_at) : "—"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4 shrink-0">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditEmail({ id: u.id, email: u.email, is_admin: u.is_admin, is_active: u.is_active })}
-                      >
-                        <Pencil className="size-3 mr-1" /> Edit
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => setDeleteTarget({ id: u.id, username: u.username })}
-                      >
-                        Delete
-                      </Button>
-                    </div>
+          <>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>User Management</CardTitle>
+                    <CardDescription>Manage user accounts and permissions</CardDescription>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  <Button size="sm" onClick={() => setAddOpen(true)}>+ Add User</Button>
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                {usersLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : users.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No users found.</p>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {users.map(u => (
+                      <div key={u.id} className="flex items-center justify-between rounded-md border p-3">
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <span className="text-sm font-medium truncate">{u.username}</span>
+                          <span className="text-xs text-muted-foreground truncate">{u.email}</span>
+                          {u.created_at && (
+                            <span className="text-xs text-muted-foreground truncate">Registered {fmtDate(u.created_at)}</span>
+                          )}
+                          <span className="text-xs text-muted-foreground truncate">
+                            Last login {u.last_login_at ? fmtDate(u.last_login_at) : "—"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 shrink-0">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditEmail({ id: u.id, email: u.email, is_admin: u.is_admin, is_active: u.is_active })}
+                          >
+                            <Pencil className="size-3 mr-1" /> Edit
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setDeleteTarget({ id: u.id, username: u.username })}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            <AdminSmtpPanel />
+          </>
         )}
 
         <Card>
