@@ -1,9 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+import logging
+
 from app.models import User
 from app.auth import get_current_user
 from app.providers import market_provider
 import pandas_ta as ta
 import math
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["analysis"])
 
@@ -24,9 +28,14 @@ async def _compute_analysis(symbol: str, period: str = "3mo") -> dict:
     """Get comprehensive technical analysis for a symbol (no auth dependency)."""
     interval_map = {"1d": "5m", "5d": "15m"}
     interval = interval_map.get(period, "1d")
-    result = await market_provider.get_history(
-        symbol.upper(), period=period, interval=interval
-    )
+    try:
+        result = await market_provider.get_history(
+            symbol.upper(), period=period, interval=interval
+        )
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=502, detail=f"Data provider unavailable for {symbol}"
+        ) from exc
     df = result.value
 
     if df.empty:
@@ -189,9 +198,10 @@ async def get_batch_signals(
         try:
             results.append(await _compute_analysis(sym, period))
         except HTTPException as exc:
-            errors.append({"symbol": sym, "error": str(exc.detail)})
-        except Exception:
-            errors.append({"symbol": sym, "error": "Analysis failed"})
+            errors.append({"symbol": sym, "error": exc.detail})
+        except Exception as exc:  # noqa: BLE001
+            log.warning("analysis failed for %s: %s", sym, exc)
+            errors.append({"symbol": sym, "error": "analysis failed"})
     return {"signals": results, "errors": errors}
 
 

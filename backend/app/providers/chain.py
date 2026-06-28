@@ -67,7 +67,8 @@ class FallbackChain:
             try:
                 df: pd.DataFrame = await provider.get_history(symbol, period, interval)
                 if df.empty:
-                    cb.record_failure()
+                    # Empty DataFrame is a soft "no data for this symbol" — do not
+                    # trip the circuit breaker so other symbols are still tried.
                     log.warning("%s returned empty DataFrame for %s", name, symbol)
                     continue
                 cb.record_success()
