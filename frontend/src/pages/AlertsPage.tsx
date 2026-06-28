@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../co
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
+import { Textarea } from "../components/ui/textarea";
 import { Badge } from "../components/ui/badge";
 import {
   Dialog,
@@ -308,6 +309,10 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
 }) {
   const [discordWebhook, setDiscordWebhook] = useState(settings.discord_webhook_url || "");
   const [discordEnabled, setDiscordEnabled] = useState(settings.discord_enabled);
+  const [emailEnabled, setEmailEnabled] = useState(settings.email_enabled);
+  const [emailAddress, setEmailAddress] = useState(settings.email_address || "");
+  const [emailSubject, setEmailSubject] = useState(settings.email_subject || "");
+  const [emailBody, setEmailBody] = useState(settings.email_body || "");
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -320,6 +325,10 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
       const updated = await updateNotificationSettings({
         discord_webhook_url: discordWebhook || null,
         discord_enabled: discordEnabled,
+        email_address: emailAddress || null,
+        email_enabled: emailEnabled,
+        email_subject: emailSubject || null,
+        email_body: emailBody || null,
       });
       onUpdate(updated);
       setSaved(true);
@@ -358,6 +367,61 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
             Get your webhook URL from Discord channel settings → Integrations → Webhooks
           </p>
         </div>
+
+        <hr className="my-4" />
+
+        {/* Email section */}
+        <div className="flex items-center gap-3">
+          <Switch
+            id="email-toggle"
+            checked={emailEnabled}
+            onCheckedChange={setEmailEnabled}
+          />
+          <Label htmlFor="email-toggle">Enable Email Notifications</Label>
+        </div>
+
+        {emailEnabled && (
+          <>
+            {/* Email address */}
+            <div className="grid gap-2">
+              <Label htmlFor="email-address">Email Address</Label>
+              <Input
+                id="email-address"
+                type="email"
+                placeholder="you@example.com"
+                value={emailAddress}
+                onChange={e => setEmailAddress(e.target.value)}
+              />
+            </div>
+
+            {/* Email subject */}
+            <div className="grid gap-2">
+              <Label htmlFor="email-subject">Email Subject</Label>
+              <Input
+                id="email-subject"
+                placeholder="Price Alert: {symbol}"
+                value={emailSubject}
+                onChange={e => setEmailSubject(e.target.value)}
+              />
+            </div>
+
+            {/* Email body template */}
+            <div className="grid gap-2">
+              <Label htmlFor="email-body">Email Body Template</Label>
+              <Textarea
+                id="email-body"
+                rows={5}
+                placeholder="Enter your custom email template..."
+                value={emailBody}
+                onChange={e => setEmailBody(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Available placeholders: {`{symbol}`}, {`{price}`}, {`{condition}`}, {`{threshold}`}, {`{triggered_at}`}
+              </p>
+            </div>
+          </>
+        )}
+
         <Button onClick={handleSave} disabled={loading} className="w-fit">
           {loading ? "Saving…" : saved ? "Saved" : "Save settings"}
         </Button>
