@@ -170,6 +170,8 @@ async def get_notification_settings(
             discord_enabled=True,
             default_period="1h",
             timezone="UTC",
+            email_subject=None,
+            email_body=None,
         )
     return settings
 
@@ -235,6 +237,10 @@ async def update_notification_settings(
             settings.discord_webhook_url = data.discord_webhook_url
         if data.email_address is not None:
             settings.email_address = data.email_address
+        if data.email_subject is not None:
+            settings.email_subject = data.email_subject
+        if data.email_body is not None:
+            settings.email_body = data.email_body
         settings.email_enabled = data.email_enabled
         settings.discord_enabled = data.discord_enabled
         settings.default_period = data.default_period
@@ -245,6 +251,8 @@ async def update_notification_settings(
             user_id=current_user.id,
             discord_webhook_url=data.discord_webhook_url,
             email_address=data.email_address,
+            email_subject=data.email_subject,
+            email_body=data.email_body,
             email_enabled=data.email_enabled,
             discord_enabled=data.discord_enabled,
             default_period=data.default_period,
