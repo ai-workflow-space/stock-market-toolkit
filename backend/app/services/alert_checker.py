@@ -225,16 +225,24 @@ def _check_multi_condition(alert: Alert, indicators: dict) -> bool:
         return any(results)
 
 
-async def _send_discord_notification(
-    webhook_url: str,
-    symbol: str,
-    condition_type: str,
-    current_price: float,
-    threshold: float,
-    triggered_at: datetime,
-    pct_change_today: float | None = None,
-) -> tuple[bool, int | None, str | None]:
-    """Send notification to Discord webhook. Returns (success, http_status, error)."""
+def _build_discord_embed(
+    symbol: str | None,
+    condition_type: str | None,
+    current_price: float | None,
+    threshold: float | None,
+    triggered_at: datetime | None,
+    pct_change_today: float | None,
+) -> dict:
+    """Build a Discord embed dict. When symbol is None, builds a test notification embed."""
+    if symbol is None:
+        # Test notification
+        return {
+            "title": "🔔 Test notification",
+            "description": "Your Discord webhook is configured correctly.",
+            "color": 0x2ECC71,
+            "url": "https://stock-toolkit.app/alerts",
+        }
+
     color = DISCORD_COLOR_ABOVE if condition_type == "above" else DISCORD_COLOR_BELOW
     emoji = "🔔"
     condition_label = CONDITION_LABELS.get(condition_type, condition_type)
@@ -250,7 +258,7 @@ async def _send_discord_notification(
     else:
         price_change_str = ""
 
-    embed = {
+    return {
         "title": f"{emoji} Price Alert: {symbol} {condition_label}",
         "description": f"Current price: {price_str} {price_change_str}",
         "color": color,
@@ -266,17 +274,36 @@ async def _send_discord_notification(
         "url": "https://stock-toolkit.app/alerts",
     }
 
-    payload = {"content": f"{emoji} **Price Alert Triggered**", "embeds": [embed]}
+
+async def _send_discord_notification(
+    webhook_url: str,
+    symbol: str | None = None,
+    condition_type: str | None = None,
+    current_price: float | None = None,
+    threshold: float | None = None,
+    triggered_at: datetime | None = None,
+    pct_change_today: float | None = None,
+) -> tuple[bool, int | None, str | None]:
+    """Send notification to Discord webhook. Returns (success, http_status, error)."""
+    embed = _build_discord_embed(
+        symbol, condition_type, current_price, threshold, triggered_at, pct_change_today
+    )
+
+    if symbol is None:
+        # Test notification - simple text content
+        payload = {"content": "🔔 **Test notification**", "embeds": [embed]}
+    else:
+        payload = {"content": "🔔 **Price Alert Triggered**", "embeds": [embed]}
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(webhook_url, json=payload)
             if resp.status_code >= 200 and resp.status_code < 300:
-                log.info(f"Discord notification sent for {symbol} alert")
+                log.info(f"Discord notification sent (symbol={symbol or 'test'})")
                 return (True, resp.status_code, None)
             else:
                 log.warning(
-                    f"Discord notification failed for {symbol}: {resp.status_code}"
+                    f"Discord notification failed (symbol={symbol or 'test'}): {resp.status_code}"
                 )
                 return (False, resp.status_code, f"HTTP {resp.status_code}")
     except Exception as e:

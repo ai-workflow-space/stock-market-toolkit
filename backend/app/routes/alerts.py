@@ -21,6 +21,7 @@ from app.schemas import (
     NotificationSettingsResponse,
     NotificationSettingsUpdate,
     NotificationDeliveryResponse,
+    DiscordTestRequest,
 )
 from app.auth import get_current_user
 
@@ -215,6 +216,22 @@ async def resend_notification(
 
     await check_alerts_endpoint()
     return {"status": "ok", "message": "Resend triggered"}
+
+
+@router.post("/notifications/test-discord")
+async def test_discord_webhook(
+    data: DiscordTestRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Send a test Discord webhook notification to verify the webhook URL."""
+    from app.services.alert_checker import _send_discord_notification
+
+    success, status, error = await _send_discord_notification(
+        webhook_url=data.webhook_url
+    )
+    if not success:
+        raise HTTPException(status_code=400, detail=error or "Discord webhook test failed")
+    return {"ok": True}
 
 
 @router.put("/settings", response_model=NotificationSettingsResponse)

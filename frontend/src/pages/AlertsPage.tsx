@@ -8,6 +8,7 @@ import {
   markTriggeredAlertRead,
   getNotificationSettings,
   updateNotificationSettings,
+  testDiscordWebhook,
   type Alert,
   type TriggeredAlert,
   type NotificationSettings,
@@ -37,6 +38,7 @@ import { Skeleton } from "../components/ui/skeleton";
 import { Bell, CheckCircle2, X, Plus, Trash2 } from "lucide-react";
 import SymbolSearch from "@/components/common/SymbolSearch";
 import { fmt } from "../lib/format";
+import { toast } from "@/components/ui/sonner";
 
 const CONDITION_OPTIONS = [
   { value: "above", label: "Price Above", description: "Trigger when price rises above threshold" },
@@ -311,6 +313,7 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [testing, setTesting] = useState(false);
 
   const handleSave = async () => {
     setLoading(true);
@@ -328,6 +331,18 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
       setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to save settings");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    try {
+      await testDiscordWebhook(discordWebhook);
+      toast.success("Test message sent — check your Discord channel");
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Test failed");
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -358,6 +373,13 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
             Get your webhook URL from Discord channel settings → Integrations → Webhooks
           </p>
         </div>
+        <Button
+          variant="outline"
+          disabled={!discordWebhook || testing}
+          onClick={handleTest}
+        >
+          {testing ? "Sending…" : "Send test"}
+        </Button>
         <Button onClick={handleSave} disabled={loading} className="w-fit">
           {loading ? "Saving…" : saved ? "Saved" : "Save settings"}
         </Button>

@@ -472,6 +472,10 @@ class SmtpSettingsUpdate(BaseModel):
     reply_to: Optional[str] = None
 
 
+class DiscordTestRequest(BaseModel):
+    webhook_url: str = Field(..., min_length=1)
+
+
 class SmtpTestRequest(BaseModel):
     to_email: EmailStr
 
