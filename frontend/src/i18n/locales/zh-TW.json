@@ -1,0 +1,9 @@
+{
+  "nav": {
+    "dashboard": "儀表板",
+    "signals": "信號",
+    "compare": "比較",
+    "alerts": "警報",
+    "settings": "設定"
+  }
+}

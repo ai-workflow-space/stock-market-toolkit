@@ -1,0 +1,9 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "signals": "Signals",
+    "compare": "Compare",
+    "alerts": "Alerts",
+    "settings": "Settings"
+  }
+}
