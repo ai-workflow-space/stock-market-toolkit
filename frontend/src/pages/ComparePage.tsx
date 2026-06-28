@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Plus, X, Download } from "lucide-react";
 import { compareStocks, getIndicators, searchSymbols } from "@/api/stockApi";
@@ -95,7 +96,13 @@ function TickerPicker({ onAdd, disabled }: { onAdd: (s: string) => void; disable
 }
 
 export default function ComparePage() {
-  const [tickers, setTickers] = useState<string[]>([]);
+  const [searchParams] = useSearchParams();
+  const [tickers, setTickers] = useState<string[]>(() => {
+    const raw = searchParams.get("symbols");
+    return raw
+      ? raw.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean)
+      : [];
+  });
   const [period, setPeriod] = useState("1mo");
   const [data, setData] = useState<StockData[] | null>(null);
   const [indicatorsData, setIndicatorsData] = useState<Record<string, Indicators>>({});
