@@ -293,8 +293,7 @@ async def _send_discord_notification(
         # Test notification - simple text content
         payload = {"content": "🔔 **Test notification**", "embeds": [embed]}
     else:
-        condition_label = CONDITION_LABELS.get(condition_type, condition_type)
-        payload = {"content": f"🔔 **Price Alert Triggered**", "embeds": [embed]}
+        payload = {"content": "🔔 **Price Alert Triggered**", "embeds": [embed]}
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
