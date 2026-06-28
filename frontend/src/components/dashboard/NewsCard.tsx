@@ -33,13 +33,13 @@ export default function NewsCard({ news, loading }: NewsCardProps) {
   if (loading) {
     return (
       <Card className="flex h-full flex-col">
-        <CardHeader className="px-5 pb-3 pt-4">
+        <CardHeader className="px-4 pb-3 pt-4">
           <div className="flex items-center gap-2 text-lg font-semibold">
             <Newspaper className="h-4 w-4" />
             Recent News
           </div>
         </CardHeader>
-        <CardContent className="px-5 pb-4 pt-0 space-y-3">
+        <CardContent className="px-4 pb-4 pt-0 space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="space-y-1">
               <Skeleton className="h-4 w-full" />
@@ -55,20 +55,20 @@ export default function NewsCard({ news, loading }: NewsCardProps) {
 
   return (
     <Card className="flex h-full flex-col">
-      <CardHeader className="px-5 pb-3 pt-4">
+      <CardHeader className="px-4 pb-3 pt-4">
         <div className="flex items-center gap-2 text-lg font-semibold">
           <Newspaper className="h-4 w-4" />
           Recent News
         </div>
       </CardHeader>
-      <CardContent className="px-5 pb-4 pt-0 flex-1 overflow-auto">
+      <CardContent className="px-4 pb-4 pt-0 flex-1 overflow-auto">
         {articles.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center text-sm text-muted-foreground">
             <Newspaper className="mb-2 h-6 w-6 opacity-40" />
             No recent news
           </div>
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-3 pl-3">
             {articles.slice(0, 5).map((article, i) => (
               <li key={i} className="group">
                 <a
