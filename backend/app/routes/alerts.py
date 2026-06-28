@@ -222,7 +222,6 @@ async def resend_notification(
 async def test_discord_webhook(
     data: DiscordTestRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ):
     """Send a test Discord webhook notification to verify the webhook URL."""
     from app.services.alert_checker import _send_discord_notification

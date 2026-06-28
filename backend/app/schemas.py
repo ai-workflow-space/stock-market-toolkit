@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, HttpUrl, field_validator
 from datetime import datetime
 from typing import Optional
 
@@ -470,4 +470,4 @@ class SmtpTestResponse(BaseModel):
 
 # ─── Notification test schemas ───
 class DiscordTestRequest(BaseModel):
-    webhook_url: str = Field(..., min_length=1)
+    webhook_url: HttpUrl
