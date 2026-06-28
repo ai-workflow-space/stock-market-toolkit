@@ -291,7 +291,6 @@ async def _send_discord_notification(
     if symbol is None:
         payload = {"content": "🔔 **Test notification**", "embeds": [embed]}
     else:
-        condition_label = CONDITION_LABELS.get(condition_type, condition_type)
         payload = {"content": "🔔 **Price Alert Triggered**", "embeds": [embed]}
 
     try:
