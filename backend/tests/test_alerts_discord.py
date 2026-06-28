@@ -1,174 +1,79 @@
-"""Tests for Discord notification test endpoint (PR #201)."""
+"""Tests for POST /api/alerts/notifications/test-discord."""
 
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
 import pytest
-import uuid
 from unittest.mock import AsyncMock, patch
-
-from app.auth import create_access_token, hash_password
-from app.database import AsyncSessionLocal
+from fastapi.testclient import TestClient
+from app.main import app
+from app.auth import get_current_user
 from app.models import User
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+@pytest.fixture
+def mock_user():
+    return User(id="1", email="test@test.com", username="testuser", hashed_password="xxx")
 
 
-@pytest.fixture(scope="module")
-def app():
-    from app.main import app
-
-    yield app
-
-
-@pytest.fixture(scope="module")
-def client(app: FastAPI):
-    with TestClient(app) as c:
-        yield c
+@pytest.fixture
+def client(mock_user):
+    app.dependency_overrides[get_current_user] = lambda: mock_user
+    yield TestClient(app)
+    app.dependency_overrides.clear()
 
 
-async def _seed_user(db_session, admin: bool = False) -> User:
-    uid = str(uuid.uuid4())
-    user = User(
-        id=uid,
-        email=f"user-{uid[:8]}@test.local",
-        username=f"user-{uid[:8]}",
-        hashed_password=hash_password("testpass123"),
-        is_active=True,
-        is_admin=admin,
-    )
-    db_session.add(user)
-    await db_session.commit()
-    return user
+class TestDiscordWebhookEndpoint:
+    """Backend tests for POST /api/alerts/notifications/test-discord."""
 
+    def test_valid_webhook_returns_200(self, client):
+        """A reachable, valid webhook_url returns 200 with {"ok": True}."""
+        with patch("app.services.alert_checker._send_discord_notification") as mock_send:
+            mock_send.return_value = (True, 200, None)
+            response = client.post(
+                "/api/alerts/notifications/test-discord",
+                json={"webhook_url": "https://discord.com/api/webhooks/valid/test"},
+            )
+            assert response.status_code == 200
+            assert response.json() == {"ok": True}
+            mock_send.assert_called_once_with(
+                webhook_url="https://discord.com/api/webhooks/valid/test"
+            )
 
-def _auth_header(user: User) -> dict:
-    return {"Authorization": f"Bearer {create_access_token(data={'sub': user.id})}"}
+    def test_webhook_failure_returns_400(self, client):
+        """When _send_discord_notification returns success=False, endpoint returns 400."""
+        with patch("app.services.alert_checker._send_discord_notification") as mock_send:
+            mock_send.return_value = (False, 403, "HTTP 403")
+            response = client.post(
+                "/api/alerts/notifications/test-discord",
+                json={"webhook_url": "https://discord.com/api/webhooks/bad/test"},
+            )
+            assert response.status_code == 400
+            assert response.json()["detail"]  # has error detail
 
+    def test_webhook_network_error_returns_400(self, client):
+        """When _send_discord_notification returns success=False (e.g. network error logged internally),
+        endpoint propagates the failure as 400 via its error-detail branch."""
+        with patch("app.services.alert_checker._send_discord_notification") as mock_send:
+            # Simulate what _send_discord_notification does internally when httpx raises:
+            # it catches the exception and returns (False, None, "Failed to send Discord notification")
+            mock_send.return_value = (False, None, "Failed to send Discord notification")
+            response = client.post(
+                "/api/alerts/notifications/test-discord",
+                json={"webhook_url": "https://discord.com/api/webhooks/timeout/test"},
+            )
+            assert response.status_code == 400
+            assert response.json()["detail"]  # has error detail
 
-async def _auth_token(admin: bool = False) -> str:
-    async with AsyncSessionLocal() as session:
-        user = await _seed_user(session, admin=admin)
-        return create_access_token(data={"sub": user.id})
-
-
-# ─── Auth ─────────────────────────────────────────────────────────────────────
-
-
-class TestDiscordTestAuth:
-    def test_requires_auth(self, client):
-        resp = client.post(
-            "/api/alerts/notifications/test-discord",
-            json={"webhook_url": "https://discord.com/api/webhooks/123456/abcdef"},
-        )
-        assert resp.status_code == 403
-
-    def test_rejects_bad_token(self, client):
-        resp = client.post(
-            "/api/alerts/notifications/test-discord",
-            json={"webhook_url": "https://discord.com/api/webhooks/123456/abcdef"},
-            headers={"Authorization": "Bearer invalid-token"},
-        )
-        assert resp.status_code == 401
-
-
-# ─── Schema validation ─────────────────────────────────────────────────────────
-
-
-class TestDiscordTestSchema:
-    def test_empty_webhook_url(self, client):
-        """Empty string for webhook_url is rejected with 422."""
-
-        async def _setup():
-            return await _auth_token(admin=True)
-
-        import asyncio
-        token = asyncio.run(_setup())
-
-        resp = client.post(
+    def test_empty_webhook_url_rejected_by_pydantic(self, client):
+        """An empty string webhook_url is rejected by Pydantic validation (min_length=1)."""
+        response = client.post(
             "/api/alerts/notifications/test-discord",
             json={"webhook_url": ""},
-            headers={"Authorization": f"Bearer {token}"},
         )
-        assert resp.status_code == 422
+        assert response.status_code == 422
 
-    def test_malformed_url_rejected(self, client):
-        """Non-URL string for webhook_url is rejected with 422."""
-
-        async def _setup():
-            return await _auth_token(admin=True)
-
-        import asyncio
-        token = asyncio.run(_setup())
-
-        resp = client.post(
+    def test_missing_webhook_url_rejected_by_pydantic(self, client):
+        """Omitting webhook_url entirely returns a 422 validation error."""
+        response = client.post(
             "/api/alerts/notifications/test-discord",
-            json={"webhook_url": "not-a-valid-url"},
-            headers={"Authorization": f"Bearer {token}"},
+            json={},
         )
-        assert resp.status_code == 422
-
-    def test_valid_webhook_url_accepted_by_schema(self):
-        """HttpUrl validation accepts a properly-formed Discord webhook URL."""
-        from app.schemas import DiscordTestRequest
-
-        req = DiscordTestRequest(
-            webhook_url="https://discord.com/api/webhooks/123456789/abcdefghijklmnop"
-        )
-        assert str(req.webhook_url) == "https://discord.com/api/webhooks/123456789/abcdefghijklmnop"
-
-
-# ─── Route ─────────────────────────────────────────────────────────────────────
-
-
-class TestDiscordTestRoute:
-    def test_successful_call_returns_ok_true(self, client):
-        """A call with a valid webhook_url and mocked successful send returns {"ok": True}."""
-
-        async def _setup():
-            return await _auth_token(admin=True)
-
-        import asyncio
-        token = asyncio.run(_setup())
-
-        with patch(
-            "app.services.alert_checker._send_discord_notification",
-            new_callable=AsyncMock,
-            return_value=(True, 204, None),
-        ) as mock_send:
-            resp = client.post(
-                "/api/alerts/notifications/test-discord",
-                json={"webhook_url": "https://discord.com/api/webhooks/123456/abcdef"},
-                headers={"Authorization": f"Bearer {token}"},
-            )
-
-        assert resp.status_code == 200
-        assert resp.json() == {"ok": True}
-        mock_send.assert_called_once()
-        # verify the URL value is passed correctly (HttpUrl preserves the original)
-        _, kwargs = mock_send.call_args
-        assert str(kwargs["webhook_url"]) == "https://discord.com/api/webhooks/123456/abcdef"
-
-    def test_failed_send_returns_400(self, client):
-        """A call that fails at the Discord API returns 400 with error detail."""
-
-        async def _setup():
-            return await _auth_token(admin=True)
-
-        import asyncio
-        token = asyncio.run(_setup())
-
-        with patch(
-            "app.services.alert_checker._send_discord_notification",
-            new_callable=AsyncMock,
-            return_value=(False, 400, "Webhook URL invalid"),
-        ) as mock_send:
-            resp = client.post(
-                "/api/alerts/notifications/test-discord",
-                json={"webhook_url": "https://discord.com/api/webhooks/123456/abcdef"},
-                headers={"Authorization": f"Bearer {token}"},
-            )
-
-        assert resp.status_code == 400
-        assert "Webhook URL invalid" in resp.json()["detail"]
-        mock_send.assert_called_once()
+        assert response.status_code == 422

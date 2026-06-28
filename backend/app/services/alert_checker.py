@@ -235,6 +235,7 @@ def _build_discord_embed(
 ) -> dict:
     """Build a Discord embed dict. When symbol is None, builds a test notification embed."""
     if symbol is None:
+        # Test notification
         return {
             "title": "🔔 Test notification",
             "description": "Your Discord webhook is configured correctly.",
@@ -289,6 +290,7 @@ async def _send_discord_notification(
     )
 
     if symbol is None:
+        # Test notification - simple text content
         payload = {"content": "🔔 **Test notification**", "embeds": [embed]}
     else:
         payload = {"content": "🔔 **Price Alert Triggered**", "embeds": [embed]}

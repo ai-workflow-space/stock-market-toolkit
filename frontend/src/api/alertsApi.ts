@@ -140,3 +140,12 @@ export async function updateNotificationSettings(data: Partial<NotificationSetti
   });
   return res.data;
 }
+
+export async function testDiscordWebhook(webhookUrl: string): Promise<{ ok: boolean }> {
+  const res = await axios.post(
+    `${API}/api/alerts/notifications/test-discord`,
+    { webhook_url: webhookUrl },
+    { headers: authHeaders() }
+  );
+  return res.data;
+}
