@@ -4,6 +4,8 @@
     "signals": "Signals",
     "compare": "Compare",
     "alerts": "Alerts",
-    "settings": "Settings"
+    "settings": "Settings",
+    "switchToChinese": "Switch to 中文",
+    "switchToEnglish": "Switch to English"
   }
 }
