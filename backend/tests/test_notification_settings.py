@@ -46,25 +46,34 @@ class TestNotificationSettingsSchema:
 class TestAlertCheckerInterpolation:
     """alert_checker.py must interpolate subject templates just like body templates."""
 
-    def test_interpolate_function_replaces_all_placeholders(self):
+    def test_interpolate_replaces_all_placeholders(self):
         """The _interpolate helper replaces every {key} with its value."""
-        import inspect
-        from app.services import alert_checker
+        from app.services.alert_checker import _interpolate
 
-        source = inspect.getsource(alert_checker)
+        vars = {
+            "{symbol}": "AAPL",
+            "{price}": "150.25",
+            "{condition}": "above",
+            "{threshold}": "$151.00",
+            "{triggered_at}": "2026-06-28 12:00 UTC",
+        }
+        template = "Alert: {symbol} crossed {price} ({condition}) threshold {threshold} at {triggered_at}"
+        result = _interpolate(template, vars)
+        assert result == "Alert: AAPL crossed 150.25 (above) threshold $151.00 at 2026-06-28 12:00 UTC"
 
-        # Verify interpolation is applied to subject (same pattern as body)
-        # The fixed code reads:
-        #   subject = settings.email_subject or f"Price Alert: {symbol}"
-        #   if subject:
-        #       subject = _interpolate(subject, TEMPLATE_VARS)
-        assert (
-            "subject = _interpolate(subject, TEMPLATE_VARS)" in source
-            and "if subject:" in source
-        ), (
-            "email_subject must be interpolated with _interpolate(TEMPLATE_VARS) "
-            "just like email_body"
-        )
+    def test_interpolate_returns_template_unchanged_when_no_placeholders(self):
+        """If no placeholders match, the template is returned as-is."""
+        from app.services.alert_checker import _interpolate
+
+        result = _interpolate("No placeholders here", {})
+        assert result == "No placeholders here"
+
+    def test_interpolate_preserves_unmatched_braces(self):
+        """Literal braces that aren't placeholder keys are left intact."""
+        from app.services.alert_checker import _interpolate
+
+        result = _interpolate("{literal} and {symbol}", {"{symbol}": "AAPL"})
+        assert result == "{literal} and AAPL"
 
 
 class TestNotificationSettingsModel:

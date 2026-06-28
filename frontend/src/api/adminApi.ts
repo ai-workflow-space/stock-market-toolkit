@@ -4,7 +4,10 @@ const API = import.meta.env.VITE_API_URL || "";
 
 function authHeaders() {
   const token = localStorage.getItem("access_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  if (!token) return {};
+  // Strip any pre-existing "Bearer " prefix to avoid "Authorization: Bearer Bearer <token>"
+  const value = token.startsWith("Bearer ") ? token.slice(7) : token;
+  return { Authorization: `Bearer ${value}` };
 }
 
 export interface SmtpSettings {

@@ -25,6 +25,15 @@ from app.services.mailer import send_email
 
 log = logging.getLogger(__name__)
 
+
+def _interpolate(template: str, vars: dict) -> str:
+    """Replace all {key} placeholders in template with the corresponding values."""
+    result = template
+    for k, v in vars.items():
+        result = result.replace(k, str(v))
+    return result
+
+
 COOLDOWN_MINUTES = 60
 DISCORD_COLOR_ABOVE = 5763719  # green
 DISCORD_COLOR_BELOW = 15548905  # red
@@ -450,12 +459,6 @@ async def check_alerts():
                                         "{threshold}":    threshold_str,
                                         "{triggered_at}": now.strftime("%Y-%m-%d %H:%M UTC"),
                                     }
-
-                                    def _interpolate(template: str, vars: dict) -> str:
-                                        result = template
-                                        for k, v in vars.items():
-                                            result = result.replace(k, str(v))
-                                        return result
 
                                     subject = settings.email_subject or f"Price Alert: {symbol}"
                                     if subject:
