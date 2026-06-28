@@ -11,9 +11,10 @@ import StockInfoCard from "./StockInfoCard";
 import HistoryTable from "./HistoryTable";
 import FundamentalsCard from "./FundamentalsCard";
 import DividendCard from "./DividendCard";
+import NewsCard from "./NewsCard";
 import type { DashboardGridProps } from "./DashboardGrid";
 
-export default function EditableGrid({ stock, indicators, info, fundamentals, dividends, active }: DashboardGridProps) {
+export default function EditableGrid({ stock, indicators, info, fundamentals, dividends, news, newsLoading, active }: DashboardGridProps) {
   const { containerRef, width } = useContainerWidth();
   const dates = stock.timestamp.map((t) =>
     new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
@@ -73,6 +74,11 @@ export default function EditableGrid({ stock, indicators, info, fundamentals, di
           </div>
         )}
       </GridLayout>
+      {news && (
+        <div key="news" className="h-full overflow-auto">
+          <NewsCard news={news} loading={newsLoading} />
+        </div>
+      )}
     </div>
   );
 }

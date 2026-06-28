@@ -1,4 +1,4 @@
-import type { StockData, Indicators, StockInfo, Fundamentals, DividendData } from "@/types";
+import type { StockData, Indicators, StockInfo, Fundamentals, DividendData, NewsData } from "@/types";
 import ChartCard from "@/components/common/ChartCard";
 import PriceChart from "./PriceChart";
 import RsiChart from "./RsiChart";
@@ -8,6 +8,7 @@ import HistoryTable from "./HistoryTable";
 import FundamentalsCard from "./FundamentalsCard";
 import DividendCard from "./DividendCard";
 import WatchlistButton from "@/components/common/WatchlistButton";
+import NewsCard from "./NewsCard";
 
 export interface DashboardGridProps {
   stock: StockData;
@@ -15,10 +16,12 @@ export interface DashboardGridProps {
   info: StockInfo;
   fundamentals: Fundamentals | null;
   dividends: DividendData | null;
+  news: NewsData | null;
+  newsLoading: boolean;
   active: Set<string>;
 }
 
-export default function DashboardGrid({ stock, indicators, info, fundamentals, dividends, active }: DashboardGridProps) {
+export default function DashboardGrid({ stock, indicators, info, fundamentals, dividends, news, newsLoading, active }: DashboardGridProps) {
   const dates = stock.timestamp.map((t) =>
     new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
   );
@@ -66,6 +69,12 @@ export default function DashboardGrid({ stock, indicators, info, fundamentals, d
       {dividends && (
         <div className="col-span-12 lg:col-span-4">
           <DividendCard data={dividends} />
+        </div>
+      )}
+
+      {news && (
+        <div className="col-span-12 lg:col-span-4">
+          <NewsCard news={news} loading={newsLoading} />
         </div>
       )}
     </div>
