@@ -1,6 +1,6 @@
 """add_email_and_token_to_invite_codes
 
-Revision ID: d4e5f6a1b2c3
+Revision ID: 3c4d5e6f7a8b
 Revises: c3d4e5f6a1b2
 Create Date: 2026-06-26 00:00:00.000000
 

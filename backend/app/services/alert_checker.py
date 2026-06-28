@@ -458,6 +458,8 @@ async def check_alerts():
                                         return result
 
                                     subject = settings.email_subject or f"Price Alert: {symbol}"
+                                    if subject:
+                                        subject = _interpolate(subject, TEMPLATE_VARS)
                                     body = settings.email_body
                                     if body:
                                         body = _interpolate(body, TEMPLATE_VARS)
