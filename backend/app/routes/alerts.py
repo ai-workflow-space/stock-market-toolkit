@@ -317,7 +317,6 @@ async def update_alert(
     )
     alert = result.scalar_one()
     return alert
-    return alert
 
 
 @router.delete("/{alert_id}", status_code=204)
