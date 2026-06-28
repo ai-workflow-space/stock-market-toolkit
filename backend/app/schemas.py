@@ -265,7 +265,7 @@ class NotificationSettingsUpdate(BaseModel):
     discord_enabled: bool = True
     default_period: str = Field(default="1h", pattern="^(5m|15m|30m|1h|4h|1d)$")
     timezone: str = "UTC"
-    email_subject: Optional[str] = None  # max 255 chars
+    email_subject: Optional[str] = None  # DB column enforces 255 char limit
     email_body: Optional[str] = None  # no max (Text)
 
 

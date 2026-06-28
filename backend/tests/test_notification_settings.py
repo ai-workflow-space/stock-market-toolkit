@@ -1,8 +1,5 @@
 """Tests for NotificationSettings email_subject / email_body fields (issue #195)."""
 
-import pytest
-from pydantic import ValidationError
-
 from app.schemas import NotificationSettingsUpdate
 
 
@@ -51,13 +48,6 @@ class TestAlertCheckerInterpolation:
 
     def test_interpolate_function_replaces_all_placeholders(self):
         """The _interpolate helper replaces every {key} with its value."""
-        from app.services.alert_checker import _build_email_body
-        import re
-
-        # We test interpolation indirectly via the _build_email_body contract:
-        # subject templates that contain {symbol} etc. must be replaced.
-        # This is verified by checking that the alert checker source applies
-        # _interpolate to email_subject just as it does to email_body.
         import inspect
         from app.services import alert_checker
 
