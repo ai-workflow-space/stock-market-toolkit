@@ -15,6 +15,8 @@ log = logging.getLogger(__name__)
 OHLCV_TTL = 300  # 5 min for intraday/daily OHLCV
 INFO_TTL = 3600  # 1 hr for stock info
 
+NEWS_TTL = 900  # 15 min
+
 
 class YFinanceMarketDataProvider:
     """Market data provider backed by yfinance, with caching."""
@@ -50,6 +52,27 @@ class YFinanceMarketDataProvider:
             return await asyncio.to_thread(self.info, symbol)
 
         return await cached(key, INFO_TTL, loader)
+
+    def news(self, symbol: str) -> list[dict]:
+        raw = yf.Ticker(symbol.upper()).news or []
+        out = []
+        for n in raw[:10]:
+            c = n.get("content", n)
+            out.append({
+                "title":       c.get("title"),
+                "publisher":   (c.get("provider") or {}).get("displayName") or n.get("publisher"),
+                "link":        (c.get("canonicalUrl") or {}).get("url") or n.get("link"),
+                "publishedAt": c.get("pubDate") or n.get("providerPublishTime"),
+            })
+        return [x for x in out if x["title"] and x["link"]]
+
+    async def get_news(self, symbol: str) -> list[dict]:
+        key = cache_key("news", symbol)
+
+        async def loader() -> list[dict]:
+            return await asyncio.to_thread(self.news, symbol)
+
+        return await cached(key, NEWS_TTL, loader)
 
 
 FUNDAMENTALS_TTL = 86400  # 24h

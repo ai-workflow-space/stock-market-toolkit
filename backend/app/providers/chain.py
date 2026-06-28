@@ -109,6 +109,31 @@ class FallbackChain:
             f"Providers tried: {self._chain}"
         )
 
+    async def get_news(self, symbol: str) -> list[dict]:
+        """Fetch news articles, falling back through the provider chain."""
+        for name in self._chain:
+            cb = self._circuit_breakers[name]
+            if cb.is_open():
+                continue
+
+            provider = self._providers.get(name)
+            if provider is None:
+                continue
+
+            try:
+                articles: list[dict] = await provider.get_news(symbol)
+                cb.record_success()
+                return articles
+            except Exception as exc:
+                cb.record_failure()
+                log.error("Provider %s get_news failed for %s: %s", name, symbol, exc)
+
+        # FallbackChain contract: raise when all providers fail
+        raise RuntimeError(
+            f"All providers failed for news symbol={symbol}. "
+            f"Providers tried: {self._chain}"
+        )
+
     # ── Sync interface (protocol conformance, rarely used directly) ───
 
     def history(self, symbol: str, period: str, interval: str) -> pd.DataFrame:
