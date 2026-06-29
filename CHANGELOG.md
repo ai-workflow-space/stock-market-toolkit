@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.10.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.7...v0.10.0) (2026-06-28)
+
+
+### Features
+
+* **alerts:** Send test button for Discord webhook ([#198](https://github.com/ai-workflow-space/stock-market-toolkit/issues/198)) ([98bcb25](https://github.com/ai-workflow-space/stock-market-toolkit/commit/98bcb25d3f79cf517e44b79efd77ce8cacb567f5))
+
+
+### Bug Fixes
+
+* **analysis:** give a specific reason for recently-listed / unanalyzable symbols ([1ec932a](https://github.com/ai-workflow-space/stock-market-toolkit/commit/1ec932a9275d68412d5aa808c26566799b6c5351))
+* don't let missing fundamentals/dividends break the dashboard ([#208](https://github.com/ai-workflow-space/stock-market-toolkit/issues/208)) ([7576a3e](https://github.com/ai-workflow-space/stock-market-toolkit/commit/7576a3eafc3d18d602b8e757de18d03c35ca731a))
+* read ?symbol= and ?symbols= query params in DashboardPage and ComparePage ([478355c](https://github.com/ai-workflow-space/stock-market-toolkit/commit/478355cb35cb0e933ca0f1b33944b0c4d5a48759))
+* replace native select with shadcn Select for timezone dropdown (dark mode) ([#199](https://github.com/ai-workflow-space/stock-market-toolkit/issues/199)) ([44fdff4](https://github.com/ai-workflow-space/stock-market-toolkit/commit/44fdff46b447b0fe4d5d8c6d2da1205f4b1a5009))
+
 ## [0.9.7](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.6...v0.9.7) (2026-06-27)
 
 
