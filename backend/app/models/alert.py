@@ -54,6 +54,8 @@ class NotificationSettings(Base):
     discord_webhook_url = Column(Text, nullable=True)
     email_address = Column(String, nullable=True)
     email_enabled = Column(Boolean, default=False)
+    email_subject = Column(String(length=255), nullable=True)
+    email_body = Column(Text, nullable=True)
     discord_enabled = Column(Boolean, default=True)
     default_period = Column(String, default="1h")
     timezone = Column(String, default="UTC")

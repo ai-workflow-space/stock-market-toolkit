@@ -21,7 +21,7 @@ from app.providers import market_provider
 from app.services.cache import cached, cache_key
 from app.services.mailer import send_email
 from app.services.notification.discord import _send_discord_notification
-from app.services.notification.email import _build_email_body
+from app.services.notification.email import render_alert_email
 from app.utils.numeric import _clean
 
 log = logging.getLogger(__name__)
@@ -338,13 +338,13 @@ async def check_alerts():
                             ):
                                 smtp_cfg = await db.get(SmtpSettings, 1)
                                 if smtp_cfg and smtp_cfg.host:
-                                    email_body = _build_email_body(
-                                        symbol, alert, current_price, now
+                                    email_subject, email_body = render_alert_email(
+                                        settings, symbol, alert, current_price, now
                                     )
                                     email_success = await send_email(
                                         smtp_cfg,
                                         settings.email_address,
-                                        f"Price Alert: {symbol}",
+                                        email_subject,
                                         html_body=email_body,
                                     )
                                     delivery_records.append(
