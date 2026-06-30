@@ -1,4 +1,4 @@
-"""Regression guard for the models package split (Issue #1)."""
+"""Regression guard for the models package split (Issue #214)."""
 from app.database import Base
 from app import models
 
@@ -18,8 +18,12 @@ def test_all_models_importable():
     for name in EXPECTED_MODELS:
         assert hasattr(models, name), f"app.models missing {name}"
 
-def test_model_count_is_fifteen():
-    assert len(EXPECTED_MODELS) == 15
+def test_package_exports_match_expected():
+    # __all__ minus the re-exported Base must equal the expected model set;
+    # catches a model added to a submodule but forgotten in models/__init__.py.
+    exported = [name for name in models.__all__ if name != "Base"]
+    assert set(exported) == set(EXPECTED_MODELS)
+    assert len(exported) == 15
 
 def test_tables_registered_and_no_drift():
     assert set(Base.metadata.tables.keys()) == set(EXPECTED_TABLES)
