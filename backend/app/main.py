@@ -5,7 +5,6 @@ Stock Market Toolkit — FastAPI Backend (Production)
 from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
-from sqlalchemy import select
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
