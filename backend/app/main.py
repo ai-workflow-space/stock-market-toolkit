@@ -19,6 +19,9 @@ from app.config import get_settings
 from app.routes import (
     auth,
     stocks,
+    stock_info,
+    search,
+    news,
     alerts,
     mcp,
     analysis,
@@ -135,6 +138,9 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # ─── Routes ───
 app.include_router(auth.router)
 app.include_router(stocks.router)
+app.include_router(stock_info.router)
+app.include_router(search.router)
+app.include_router(news.router)
 app.include_router(alerts.router)
 app.include_router(mcp.router)
 app.include_router(analysis.router)
