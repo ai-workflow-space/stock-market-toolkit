@@ -20,7 +20,7 @@ from app.models import (
 from app.providers import market_provider
 from app.services.cache import cached, cache_key
 from app.services.mailer import send_email
-from app.services.notification.discord import _build_discord_embed, _send_discord_notification
+from app.services.notification.discord import _send_discord_notification
 from app.services.notification.email import _build_email_body
 from app.utils.numeric import _clean
 
