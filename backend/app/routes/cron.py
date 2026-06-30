@@ -1,0 +1,75 @@
+from fastapi import APIRouter
+
+router = APIRouter(tags=["cron"])
+
+
+@router.post("/cron/check-alerts")
+async def cron_check_alerts():
+    """Cron endpoint to check all price alerts. Called every 15 minutes by external scheduler."""
+    from app.services.alert_checker import check_alerts
+
+    await check_alerts()
+    return {"status": "ok", "message": "Alerts checked"}
+
+
+@router.post("/cron/ingest")
+async def cron_ingest():
+    """Cron endpoint to trigger nightly fundamentals ingestion."""
+    from app.database import AsyncSessionLocal
+    from app.models import JobRun
+    from sqlalchemy import select
+
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(JobRun)
+            .where(JobRun.job_type == "nightly_ingest", JobRun.status == "running")
+            .limit(1)
+        )
+        if result.scalar_one_or_none():
+            return {"status": "skipped", "message": "Ingestion already running"}
+
+        job = JobRun(
+            job_type="nightly_ingest",
+            status="running",
+            total_symbols=0,
+        )
+        db.add(job)
+        await db.commit()
+        job_run_id = job.id
+
+    from app.services.ingestion import run_nightly_ingest
+
+    processed = await run_nightly_ingest(job_run_id=job_run_id)
+    return {"status": "ok", "symbols_processed": processed}
+
+
+@router.get("/cron/ingest/status")
+async def cron_ingest_status():
+    """Return status of the last nightly ingestion run."""
+    from app.database import AsyncSessionLocal
+    from app.services.ingestion import get_latest_job_run
+
+    async with AsyncSessionLocal() as db:
+        last_run = await get_latest_job_run(db)
+
+    if last_run is None:
+        return {"last_run": None, "is_running": False}
+
+    return {
+        "last_run": {
+            "id": last_run.id,
+            "job_type": last_run.job_type,
+            "status": last_run.status,
+            "symbols_processed": last_run.symbols_processed or 0,
+            "total_symbols": last_run.total_symbols or 0,
+            "errors": last_run.errors or 0,
+            "error_details": last_run.error_details,
+            "started_at": (
+                last_run.started_at.isoformat() if last_run.started_at else None
+            ),
+            "completed_at": (
+                last_run.completed_at.isoformat() if last_run.completed_at else None
+            ),
+        },
+        "is_running": last_run.status == "running" if last_run else False,
+    }
