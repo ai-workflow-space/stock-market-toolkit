@@ -4,14 +4,13 @@ import logging
 from app.models import User
 from app.auth import get_current_user
 from app.providers import market_provider
+from app.utils.numeric import _clean
 import pandas_ta as ta
 import math
 
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["analysis"])
-
-CACHE_TTL = 300  # 5 minutes
 
 # Minimum number of trading days required to compute the signal indicators.
 # SMA20 and the 20-day volume average are the longest core look-backs, so with
@@ -20,16 +19,6 @@ CACHE_TTL = 300  # 5 minutes
 # that just listed (e.g. an IPO earlier today) lands here — we surface a clear,
 # specific reason rather than a generic "analysis failed".
 MIN_HISTORY_BARS = 20
-
-
-def _clean(v):
-    if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
-        return None
-    return v
-
-
-def _clean_list(lst):
-    return [_clean(v) for v in lst]
 
 
 async def _compute_analysis(symbol: str, period: str = "3mo") -> dict:
