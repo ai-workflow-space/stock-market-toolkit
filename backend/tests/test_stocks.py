@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 from app.main import app
 from app.auth import get_current_user
+from app.routes import stock_info, search, news  # noqa: F401 — imported as mock patch targets
 from app.models import User
 
 
@@ -61,7 +62,7 @@ def test_get_indicators_provider_failure_returns_503(client):
 def test_get_stock_info_provider_failure_returns_503(client):
     """When market provider fails, info endpoint should return 503."""
     from app.providers.chain import FallbackChain
-    with patch("app.routes.stocks.market_provider", spec=FallbackChain) as mock_provider:
+    with patch("app.routes.stock_info.market_provider", spec=FallbackChain) as mock_provider:
         mock_provider.get_info = AsyncMock(
             side_effect=RuntimeError("All providers failed")
         )
@@ -72,7 +73,7 @@ def test_get_stock_info_provider_failure_returns_503(client):
 
 def test_get_fundamentals_provider_failure_returns_503(client):
     from app.providers.chain import FallbackChain
-    with patch("app.routes.stocks.fundamentals_provider", spec=FallbackChain) as mock:
+    with patch("app.routes.stock_info.fundamentals_provider", spec=FallbackChain) as mock:
         mock.get_fundamentals_dict = AsyncMock(
             side_effect=RuntimeError("All providers failed")
         )
@@ -82,7 +83,7 @@ def test_get_fundamentals_provider_failure_returns_503(client):
 
 def test_get_dividends_provider_failure_returns_503(client):
     from app.providers.chain import FallbackChain
-    with patch("app.routes.stocks.fundamentals_provider", spec=FallbackChain) as mock:
+    with patch("app.routes.stock_info.fundamentals_provider", spec=FallbackChain) as mock:
         mock.get_dividends = AsyncMock(side_effect=RuntimeError("All providers failed"))
         response = client.get("/api/stock/AAPL/dividends")
         assert response.status_code == 503
@@ -130,7 +131,7 @@ def test_get_stock_news_happy_path(client):
             "publishedAt": 1699800000,
         },
     ]
-    with patch("app.routes.stocks.market_provider", spec=FallbackChain) as mock_provider:
+    with patch("app.routes.news.market_provider", spec=FallbackChain) as mock_provider:
         mock_provider.get_news = AsyncMock(return_value=fake_articles)
         response = client.get("/api/stock/AAPL/news")
         assert response.status_code == 200
@@ -182,7 +183,7 @@ def test_get_stock_news_provider_failure_returns_empty_articles(client):
     an empty list rather than a 503 — consistent with the endpoint design.
     """
     from app.providers.chain import FallbackChain
-    with patch("app.routes.stocks.market_provider", spec=FallbackChain) as mock_provider:
+    with patch("app.routes.news.market_provider", spec=FallbackChain) as mock_provider:
         mock_provider.get_news = AsyncMock(
             side_effect=RuntimeError("All providers failed for news symbol=AAPL")
         )
