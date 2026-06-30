@@ -6,7 +6,6 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 import logging
-import math
 import httpx
 
 from app.database import AsyncSessionLocal
@@ -22,6 +21,7 @@ from app.models import (
 from app.providers import market_provider
 from app.services.cache import cached, cache_key
 from app.services.mailer import send_email
+from app.utils.numeric import _clean
 
 log = logging.getLogger(__name__)
 
@@ -67,13 +67,6 @@ def _build_email_body(
 <p><b>Triggered At:</b> {triggered_at.strftime("%Y-%m-%d %H:%M UTC")}</p>
 <hr>
 <p>View and manage your alerts at <a href="https://stock-toolkit.app/alerts">stock-toolkit.app</a>.</p>"""
-
-
-def _clean(v):
-    """Replace NaN/inf with None."""
-    if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
-        return None
-    return v
 
 
 async def _get_current_price(symbol: str, period: str) -> float | None:
