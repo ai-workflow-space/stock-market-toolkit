@@ -6,7 +6,6 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 import logging
-import httpx
 
 from app.database import AsyncSessionLocal
 import yfinance as yf
@@ -21,13 +20,13 @@ from app.models import (
 from app.providers import market_provider
 from app.services.cache import cached, cache_key
 from app.services.mailer import send_email
+from app.services.notification.discord import _send_discord_notification
+from app.services.notification.email import _build_email_body
 from app.utils.numeric import _clean
 
 log = logging.getLogger(__name__)
 
 COOLDOWN_MINUTES = 60
-DISCORD_COLOR_ABOVE = 5763719  # green
-DISCORD_COLOR_BELOW = 15548905  # red
 
 # yfinance period mapping for short intervals
 PERIOD_MAP = {
@@ -38,36 +37,6 @@ PERIOD_MAP = {
     "4h": ("1mo", "4h"),
     "1d": ("1y", "1d"),
 }
-
-CONDITION_LABELS = {
-    "above": "🔼 Above",
-    "below": "🔽 Below",
-    "pct_change_up": "📈 +% Up",
-    "pct_change_down": "📉 -% Down",
-}
-
-
-def _build_email_body(
-    symbol: str,
-    alert: Alert,
-    current_price: float,
-    triggered_at: datetime,
-) -> str:
-    condition_label = CONDITION_LABELS.get(alert.condition_type, alert.condition_type)
-    threshold_str = (
-        f"${alert.threshold:.2f}"
-        if alert.condition_type in ("above", "below")
-        else f"{alert.threshold:.1f}%"
-    )
-    return f"""<h2>Price Alert Triggered</h2>
-<p><b>Symbol:</b> {symbol}</p>
-<p><b>Condition:</b> {condition_label}</p>
-<p><b>Current Price:</b> ${current_price:.2f}</p>
-<p><b>Threshold:</b> {threshold_str}</p>
-<p><b>Triggered At:</b> {triggered_at.strftime("%Y-%m-%d %H:%M UTC")}</p>
-<hr>
-<p>View and manage your alerts at <a href="https://stock-toolkit.app/alerts">stock-toolkit.app</a>.</p>"""
-
 
 async def _get_current_price(symbol: str, period: str) -> float | None:
     """Fetch current/recent price for a symbol using specified period."""
@@ -216,92 +185,6 @@ def _check_multi_condition(alert: Alert, indicators: dict) -> bool:
         return all(results)
     else:
         return any(results)
-
-
-def _build_discord_embed(
-    symbol: str | None,
-    condition_type: str | None,
-    current_price: float | None,
-    threshold: float | None,
-    triggered_at: datetime | None,
-    pct_change_today: float | None,
-) -> dict:
-    """Build a Discord embed dict. When symbol is None, builds a test notification embed."""
-    if symbol is None:
-        # Test notification
-        return {
-            "title": "🔔 Test notification",
-            "description": "Your Discord webhook is configured correctly.",
-            "color": 0x2ECC71,
-            "url": "https://stock-toolkit.app/alerts",
-        }
-
-    color = DISCORD_COLOR_ABOVE if condition_type == "above" else DISCORD_COLOR_BELOW
-    emoji = "🔔"
-    condition_label = CONDITION_LABELS.get(condition_type, condition_type)
-    threshold_str = (
-        f"${threshold:.2f}"
-        if condition_type in ("above", "below")
-        else f"{threshold:.1f}%"
-    )
-    price_str = f"${current_price:.2f}"
-
-    if pct_change_today is not None:
-        price_change_str = f"({pct_change_today:+.1f}% today)"
-    else:
-        price_change_str = ""
-
-    return {
-        "title": f"{emoji} Price Alert: {symbol} {condition_label}",
-        "description": f"Current price: {price_str} {price_change_str}",
-        "color": color,
-        "fields": [
-            {"name": "Condition", "value": condition_type, "inline": True},
-            {"name": "Threshold", "value": threshold_str, "inline": True},
-            {
-                "name": "Triggered At",
-                "value": triggered_at.strftime("%Y-%m-%d %H:%M UTC"),
-                "inline": True,
-            },
-        ],
-        "url": "https://stock-toolkit.app/alerts",
-    }
-
-
-async def _send_discord_notification(
-    webhook_url: str,
-    symbol: str | None = None,
-    condition_type: str | None = None,
-    current_price: float | None = None,
-    threshold: float | None = None,
-    triggered_at: datetime | None = None,
-    pct_change_today: float | None = None,
-) -> tuple[bool, int | None, str | None]:
-    """Send notification to Discord webhook. Returns (success, http_status, error)."""
-    embed = _build_discord_embed(
-        symbol, condition_type, current_price, threshold, triggered_at, pct_change_today
-    )
-
-    if symbol is None:
-        # Test notification - simple text content
-        payload = {"content": "🔔 **Test notification**", "embeds": [embed]}
-    else:
-        payload = {"content": "🔔 **Price Alert Triggered**", "embeds": [embed]}
-
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(webhook_url, json=payload)
-            if resp.status_code >= 200 and resp.status_code < 300:
-                log.info(f"Discord notification sent (symbol={symbol or 'test'})")
-                return (True, resp.status_code, None)
-            else:
-                log.warning(
-                    f"Discord notification failed (symbol={symbol or 'test'}): {resp.status_code}"
-                )
-                return (False, resp.status_code, f"HTTP {resp.status_code}")
-    except Exception as e:
-        log.error(f"Failed to send Discord notification: {e}")
-        return (False, None, str(e))
 
 
 async def check_alerts():
