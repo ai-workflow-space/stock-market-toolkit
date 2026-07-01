@@ -9,6 +9,7 @@ import {
   getNotificationSettings,
   updateNotificationSettings,
   testDiscordWebhook,
+  testSmtpSettings,
   type Alert,
   type TriggeredAlert,
   type NotificationSettings,
@@ -310,20 +311,45 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
 }) {
   const [discordWebhook, setDiscordWebhook] = useState(settings.discord_webhook_url || "");
   const [discordEnabled, setDiscordEnabled] = useState(settings.discord_enabled);
+  const [emailEnabled, setEmailEnabled] = useState(settings.email_enabled);
+  const [emailAddress, setEmailAddress] = useState(settings.email_address || "");
+  // SMTP fields
+  const [smtpHost, setSmtpHost] = useState(settings.smtp_host || "");
+  const [smtpPort, setSmtpPort] = useState(settings.smtp_port?.toString() ?? "587");
+  const [smtpUseTls, setSmtpUseTls] = useState(settings.smtp_use_tls ?? true);
+  const [smtpUsername, setSmtpUsername] = useState(settings.smtp_username || "");
+  const [smtpPassword, setSmtpPassword] = useState("");
+  const [smtpFromAddress, setSmtpFromAddress] = useState(settings.smtp_from_address || "");
+  const [smtpReplyTo, setSmtpReplyTo] = useState(settings.smtp_reply_to || "");
+  const smtpPasswordSet = settings.smtp_password_set ?? false;
+
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
-  const [testing, setTesting] = useState(false);
+  const [testingDiscord, setTestingDiscord] = useState(false);
+  const [testingSmtp, setTestingSmtp] = useState(false);
 
   const handleSave = async () => {
     setLoading(true);
     setSaved(false);
     setError("");
     try {
-      const updated = await updateNotificationSettings({
+      const payload: Record<string, unknown> = {
         discord_webhook_url: discordWebhook || null,
         discord_enabled: discordEnabled,
-      });
+        email_enabled: emailEnabled,
+        smtp_host: smtpHost || null,
+        smtp_port: smtpPort ? Number(smtpPort) : null,
+        smtp_use_tls: smtpUseTls,
+        smtp_username: smtpUsername || null,
+        smtp_from_address: smtpFromAddress || null,
+        smtp_reply_to: smtpReplyTo || null,
+      };
+      // Only send password if user typed a new one (empty = keep existing)
+      if (smtpPassword.trim() !== "") {
+        payload.smtp_password = smtpPassword;
+      }
+      const updated = await updateNotificationSettings(payload as Parameters<typeof updateNotificationSettings>[0]);
       onUpdate(updated);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -334,15 +360,31 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
     }
   };
 
-  const handleTest = async () => {
-    setTesting(true);
+  const handleTestDiscord = async () => {
+    setTestingDiscord(true);
     try {
       await testDiscordWebhook(discordWebhook);
       toast.success("Test message sent — check your Discord channel");
     } catch (err: unknown) {
       toast.error((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Test failed");
     } finally {
-      setTesting(false);
+      setTestingDiscord(false);
+    }
+  };
+
+  const handleTestSmtp = async () => {
+    setTestingSmtp(true);
+    try {
+      const result = await testSmtpSettings(emailAddress);
+      if (result.success) {
+        toast.success(result.message || "Test email sent successfully");
+      } else {
+        toast.error(result.message || "Test email failed");
+      }
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Test failed");
+    } finally {
+      setTestingSmtp(false);
     }
   };
 
@@ -353,6 +395,8 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
         <CardDescription>Configure how you receive alert notifications</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
+
+        {/* Discord section */}
         <div className="flex items-center gap-3">
           <Switch
             id="discord-toggle"
@@ -361,25 +405,134 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
           />
           <Label htmlFor="discord-toggle">Enable Discord Notifications</Label>
         </div>
-        <div className="grid gap-2">
-          <Label htmlFor="webhook">Discord Webhook URL</Label>
-          <Input
-            id="webhook"
-            placeholder="https://discord.com/api/webhooks/..."
-            value={discordWebhook}
-            onChange={e => setDiscordWebhook(e.target.value)}
+        {discordEnabled && (
+          <>
+            <div className="grid gap-2">
+              <Label htmlFor="webhook">Discord Webhook URL</Label>
+              <Input
+                id="webhook"
+                placeholder="https://discord.com/api/webhooks/..."
+                value={discordWebhook}
+                onChange={e => setDiscordWebhook(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Get your webhook URL from Discord channel settings → Integrations → Webhooks
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              disabled={!discordWebhook || testingDiscord}
+              onClick={handleTestDiscord}
+            >
+              {testingDiscord ? "Sending…" : "Send test"}
+            </Button>
+          </>
+        )}
+
+        {/* Email section */}
+        <div className="flex items-center gap-3">
+          <Switch
+            id="email-toggle"
+            checked={emailEnabled}
+            onCheckedChange={setEmailEnabled}
           />
-          <p className="text-xs text-muted-foreground">
-            Get your webhook URL from Discord channel settings → Integrations → Webhooks
-          </p>
+          <Label htmlFor="email-toggle">Enable Email Notifications</Label>
         </div>
-        <Button
-          variant="outline"
-          disabled={!discordWebhook || testing}
-          onClick={handleTest}
-        >
-          {testing ? "Sending…" : "Send test"}
-        </Button>
+        {emailEnabled && (
+          <>
+            {/* SMTP subsection — rendered ABOVE email address/subject/body fields */}
+            <div className="grid gap-3 rounded-lg border border-border p-4">
+              <p className="text-sm font-medium">SMTP Configuration</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="smtp-host">Host</Label>
+                  <Input
+                    id="smtp-host"
+                    placeholder="smtp.example.com"
+                    value={smtpHost}
+                    onChange={e => setSmtpHost(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="smtp-port">Port</Label>
+                  <Input
+                    id="smtp-port"
+                    type="number"
+                    placeholder="587"
+                    value={smtpPort}
+                    onChange={e => setSmtpPort(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="smtp-tls"
+                    checked={smtpUseTls}
+                    onCheckedChange={setSmtpUseTls}
+                  />
+                  <Label htmlFor="smtp-tls" className="text-sm font-normal">Use TLS</Label>
+                </div>
+                <div />
+                <div>
+                  <Label htmlFor="smtp-username">Username</Label>
+                  <Input
+                    id="smtp-username"
+                    placeholder="user@example.com"
+                    value={smtpUsername}
+                    onChange={e => setSmtpUsername(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="smtp-password">Password</Label>
+                  <Input
+                    id="smtp-password"
+                    type="password"
+                    placeholder={smtpPasswordSet ? "Password is set" : ""}
+                    value={smtpPassword}
+                    onChange={e => setSmtpPassword(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="smtp-from">From address</Label>
+                  <Input
+                    id="smtp-from"
+                    placeholder="alerts@example.com"
+                    value={smtpFromAddress}
+                    onChange={e => setSmtpFromAddress(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="smtp-reply-to">Reply-To <span className="text-xs text-muted-foreground">(optional)</span></Label>
+                  <Input
+                    id="smtp-reply-to"
+                    placeholder="reply@example.com"
+                    value={smtpReplyTo}
+                    onChange={e => setSmtpReplyTo(e.target.value)}
+                  />
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!smtpHost || testingSmtp}
+                onClick={handleTestSmtp}
+              >
+                {testingSmtp ? "Sending…" : "Send test email"}
+              </Button>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="email-address">Email address</Label>
+              <Input
+                id="email-address"
+                type="email"
+                placeholder="you@example.com"
+                value={emailAddress}
+                onChange={e => setEmailAddress(e.target.value)}
+              />
+            </div>
+          </>
+        )}
+
         <Button onClick={handleSave} disabled={loading} className="w-fit">
           {loading ? "Saving…" : saved ? "Saved" : "Save settings"}
         </Button>
