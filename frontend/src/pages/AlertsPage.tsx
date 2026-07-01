@@ -425,10 +425,10 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
         </div>
         <Button
           variant="outline"
-          disabled={!discordWebhook || testing}
-          onClick={handleTest}
+          disabled={!emailAddress || testingSmtp}
+          onClick={handleTestSmtp}
         >
-          {testing ? "Sending…" : "Send test"}
+          {testingSmtp ? "Sending…" : "Send test email"}
         </Button>
 
         <div className="border-t my-2" />
