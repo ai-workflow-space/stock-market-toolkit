@@ -89,10 +89,13 @@ export interface AlertCreate {
 
 export interface AlertUpdate {
   symbol?: string;
+  symbol_name?: string;
   condition_type?: string;
   threshold?: number;
   period?: string;
   enabled?: boolean;
+  combinator?: "all" | "any";
+  conditions?: AlertConditionCreate[];
 }
 
 // ─── Alert API Functions ───

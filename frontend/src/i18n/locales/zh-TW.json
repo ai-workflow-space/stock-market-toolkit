@@ -65,6 +65,8 @@
     "dialog": {
       "title": "建立價格警報",
       "description": "為任何股票代號設定多條件價格警報",
+      "editTitle": "編輯價格警報",
+      "editDescription": "更新此警報的條件和設定",
       "symbol": "股票代號",
       "combinator": "組合方式",
       "combinatorAll": "且（所有條件）",
@@ -74,7 +76,9 @@
       "currentPrice": "目前價格：${{price}}",
       "cancel": "取消",
       "create": "建立警報",
-      "creating": "建立中……"
+      "creating": "建立中……",
+      "save": "儲存警報",
+      "saving": "儲存中……"
     },
     "conditions": {
       "add": "新增條件",
@@ -120,8 +124,9 @@
     "aria": {
       "enableAlert": "啟用 {{symbol}} 警報",
       "disableAlert": "停用 {{symbol}} 警報",
+      "editAlert": "編輯 {{symbol}} 警報",
       "deleteAlert": "刪除 {{symbol}} 警報",
-      "markRead": "將 {{symbol}} 警報標示為已讀"
+      "markRead": "將 {{symbol}} 警報標記為已讀"
     },
     "empty": {
       "noAlerts": "尚無警報",
