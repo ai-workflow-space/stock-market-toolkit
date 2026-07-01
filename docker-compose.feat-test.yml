@@ -54,7 +54,11 @@ services:
         # of the Dockerfile fallbacks. Each is overridable from the environment,
         # e.g.  VITE_GIT_SHA=$(git rev-parse --short HEAD) docker compose \
         #         -f docker-compose.feat-test.yml up --build
-        VITE_APP_VERSION: ${VITE_APP_VERSION:-0.9.3}
+        # No hardcoded semver default: an un-injected build shows the sentinel
+        # "unknown" (→ "vunknown" in the UI) so a missing version reads as
+        # unrecognized rather than a plausible-but-stale number. Pass the real
+        # value to inject it, e.g. VITE_APP_VERSION=$(git describe --tags --abbrev=0).
+        VITE_APP_VERSION: ${VITE_APP_VERSION:-unknown}
         VITE_GIT_SHA: ${VITE_GIT_SHA:-local}
         VITE_BUILD_TIME: ${VITE_BUILD_TIME:-}
     pull_policy: build
