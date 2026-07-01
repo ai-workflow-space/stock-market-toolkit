@@ -310,6 +310,10 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
 }) {
   const [discordWebhook, setDiscordWebhook] = useState(settings.discord_webhook_url || "");
   const [discordEnabled, setDiscordEnabled] = useState(settings.discord_enabled);
+  const [emailEnabled, setEmailEnabled] = useState(settings.email_enabled);
+  const [emailAddress, setEmailAddress] = useState(settings.email_address || "");
+  const [emailSubject, setEmailSubject] = useState(settings.email_subject || "");
+  const [emailBody, setEmailBody] = useState(settings.email_body || "");
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -323,6 +327,10 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
       const updated = await updateNotificationSettings({
         discord_webhook_url: discordWebhook || null,
         discord_enabled: discordEnabled,
+        email_enabled: emailEnabled,
+        email_address: emailAddress || null,
+        email_subject: emailSubject || null,
+        email_body: emailBody || null,
       });
       onUpdate(updated);
       setSaved(true);
@@ -380,6 +388,60 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
         >
           {testing ? "Sending…" : "Send test"}
         </Button>
+
+        <div className="border-t my-2" />
+
+        <div className="flex items-center gap-3">
+          <Switch
+            id="email-toggle"
+            checked={emailEnabled}
+            onCheckedChange={setEmailEnabled}
+          />
+          <Label htmlFor="email-toggle">Enable Email Notifications</Label>
+        </div>
+
+        {emailEnabled && (
+          <>
+            <div className="grid gap-2">
+              <Label htmlFor="email-address">Email Address</Label>
+              <Input
+                id="email-address"
+                type="email"
+                placeholder="you@example.com"
+                value={emailAddress}
+                onChange={e => setEmailAddress(e.target.value)}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="email-subject">Email Subject Template</Label>
+              <Input
+                id="email-subject"
+                placeholder="Alert: {symbol} hit {price}"
+                value={emailSubject}
+                onChange={e => setEmailSubject(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Available tokens: {"{"}symbol{"}"}, {"{"}price{"}"}, {"{"}condition{"}"}, {"{"}threshold{"}"}, {"{"}triggered_at{"}"}. Leave blank for default.
+              </p>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="email-body">Email Body Template</Label>
+              <textarea
+                id="email-body"
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                placeholder={`{symbol} alert triggered!\n\nCondition: {condition}\nPrice: ${"{price}"} (threshold: ${"{threshold}"})\nTriggered at: ${"{triggered_at}"}`}
+                value={emailBody}
+                onChange={e => setEmailBody(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Available tokens: {"{"}symbol{"}"}, {"{"}price{"}"}, {"{"}condition{"}"}, {"{"}threshold{"}"}, {"{"}triggered_at{"}"}. Leave blank for default.
+              </p>
+            </div>
+          </>
+        )}
+
         <Button onClick={handleSave} disabled={loading} className="w-fit">
           {loading ? "Saving…" : saved ? "Saved" : "Save settings"}
         </Button>
