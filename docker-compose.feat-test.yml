@@ -51,7 +51,8 @@ services:
       args:
         # Mirror the CI image build (.github/workflows/docker.yml) so a locally
         # built image reports the real version, commit, and build time instead
-        # of the Dockerfile fallbacks. Each is overridable from the environment,
+        # of the Dockerfile fallbacks. Easiest: run `make feat-test`, which
+        # injects all three from git. Otherwise each is overridable inline,
         # e.g.  VITE_GIT_SHA=$(git rev-parse --short HEAD) docker compose \
         #         -f docker-compose.feat-test.yml up --build
         # No hardcoded semver default: an un-injected build shows the sentinel
