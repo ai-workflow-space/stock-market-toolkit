@@ -54,6 +54,8 @@ export interface NotificationSettings {
   discord_webhook_url: string | null;
   email_address: string | null;
   email_enabled: boolean;
+  email_subject: string | null;
+  email_body: string | null;
   discord_enabled: boolean;
   default_period: string;
   timezone: string;
