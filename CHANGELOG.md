@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.11.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.10.0...v0.11.0) (2026-07-01)
+
+
+### Features
+
+* **alerts:** customizable email subject/body templates ([#228](https://github.com/ai-workflow-space/stock-market-toolkit/issues/228)) ([771c6c8](https://github.com/ai-workflow-space/stock-market-toolkit/commit/771c6c868df468ba8cd7bd6a572b67afd8059d4c))
+* extract cron endpoints from main.py into routes/cron.py ([#220](https://github.com/ai-workflow-space/stock-market-toolkit/issues/220)) ([916884e](https://github.com/ai-workflow-space/stock-market-toolkit/commit/916884e5749e01273459d3e62ac0fb6570c34e5d))
+* split routes/stocks.py into 4 focused route modules ([#224](https://github.com/ai-workflow-space/stock-market-toolkit/issues/224)) ([#225](https://github.com/ai-workflow-space/stock-market-toolkit/issues/225)) ([8ce8097](https://github.com/ai-workflow-space/stock-market-toolkit/commit/8ce8097ae7790359629be5f7d75470dfcb89780f))
+
+
+### Bug Fixes
+
+* **compose:** honest version/commit in feat-test + make target to inject real values ([#229](https://github.com/ai-workflow-space/stock-market-toolkit/issues/229)) ([bddb637](https://github.com/ai-workflow-space/stock-market-toolkit/commit/bddb637d755b99337ec14504f2d1db071d473f79))
+* keep alembic multi-head fix when reverting select change ([036b539](https://github.com/ai-workflow-space/stock-market-toolkit/commit/036b5396da5d3d98e0ee3c6579586905ec95d497))
+* Replace native select with Radix Select in CreateAlertDialog ([0877ca6](https://github.com/ai-workflow-space/stock-market-toolkit/commit/0877ca69a5bf751c9161141a783c45f94b628913))
+* Replace native select with Radix Select in CreateAlertDialog (stock-market-toolkit[#230](https://github.com/ai-workflow-space/stock-market-toolkit/issues/230)) ([c9ec98e](https://github.com/ai-workflow-space/stock-market-toolkit/commit/c9ec98e973d6e38b600abfc4fb946e5387fd289c))
+* use 'heads' (plural) in alembic command.upgrade to handle multi-head migration trees ([#232](https://github.com/ai-workflow-space/stock-market-toolkit/issues/232)) ([b2cd0a0](https://github.com/ai-workflow-space/stock-market-toolkit/commit/b2cd0a031cacaf1c635a34f326c81ca83bfb6051))
+
 ## [0.10.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.9.7...v0.10.0) (2026-06-28)
 
 
