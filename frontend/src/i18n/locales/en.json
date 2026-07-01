@@ -65,6 +65,8 @@
     "dialog": {
       "title": "Create Price Alert",
       "description": "Set up multi-condition price alerts for any stock symbol",
+      "editTitle": "Edit Price Alert",
+      "editDescription": "Update the conditions and settings for this alert",
       "symbol": "Symbol",
       "combinator": "Combinator",
       "combinatorAll": "AND (all conditions)",
@@ -74,7 +76,9 @@
       "currentPrice": "Current price: ${{price}}",
       "cancel": "Cancel",
       "create": "Create Alert",
-      "creating": "Creating..."
+      "creating": "Creating...",
+      "save": "Save Alert",
+      "saving": "Saving..."
     },
     "conditions": {
       "add": "Add",
@@ -120,6 +124,7 @@
     "aria": {
       "enableAlert": "Enable {{symbol}} alert",
       "disableAlert": "Disable {{symbol}} alert",
+      "editAlert": "Edit {{symbol}} alert",
       "deleteAlert": "Delete {{symbol}} alert",
       "markRead": "Mark {{symbol}} alert as read"
     },
