@@ -29,6 +29,13 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import {
   Tabs,
   TabsContent,
   TabsList,
@@ -227,26 +234,28 @@ function CreateAlertDialog({
               {conditions.map((c, idx) => (
                 <div key={idx} className="flex items-end gap-2">
                   <div className="flex-1">
-                    <select
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                      value={c.metric}
-                      onChange={e => updateCondition(idx, "metric", e.target.value)}
-                    >
-                      {METRIC_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
+                    <Select value={c.metric} onValueChange={v => updateCondition(idx, "metric", v)}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {METRIC_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="w-28">
-                    <select
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                      value={c.operator}
-                      onChange={e => updateCondition(idx, "operator", e.target.value)}
-                    >
-                      {OPERATOR_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
+                    <Select value={c.operator} onValueChange={v => updateCondition(idx, "operator", v)}>
+                      <SelectTrigger className="w-28">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {OPERATOR_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="w-28">
                     <Input
@@ -269,16 +278,16 @@ function CreateAlertDialog({
 
             <div className="grid gap-2">
               <Label htmlFor="period">Period</Label>
-              <select
-                id="period"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                value={period}
-                onChange={e => setPeriod(e.target.value)}
-              >
-                {PERIOD_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+              <Select value={period} onValueChange={v => setPeriod(v)}>
+                <SelectTrigger id="period" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PERIOD_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {currentPrice != null && (
