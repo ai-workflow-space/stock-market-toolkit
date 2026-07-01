@@ -95,6 +95,13 @@ class NotificationSettingsResponse(BaseModel):
     updated_at: Optional[datetime] = None
     email_subject: Optional[str] = None
     email_body: Optional[str] = None
+    smtp_host: Optional[str] = None
+    smtp_port: Optional[int] = None
+    smtp_use_tls: Optional[bool] = None
+    smtp_username: Optional[str] = None
+    smtp_from_address: Optional[str] = None
+    smtp_reply_to: Optional[str] = None
+    smtp_password_set: bool = False
 
     class Config:
         from_attributes = True
@@ -109,6 +116,22 @@ class NotificationSettingsUpdate(BaseModel):
     timezone: str = "UTC"
     email_subject: Optional[str] = Field(default=None, max_length=255)
     email_body: Optional[str] = None
+    smtp_host: Optional[str] = Field(default=None, max_length=255)
+    smtp_port: Optional[int] = Field(default=None, ge=1, le=65535)
+    smtp_use_tls: Optional[bool] = None
+    smtp_username: Optional[str] = Field(default=None, max_length=255)
+    smtp_password: Optional[str] = Field(default=None, max_length=500)
+    smtp_from_address: Optional[str] = Field(default=None, max_length=255)
+    smtp_reply_to: Optional[str] = Field(default=None, max_length=255)
+
+
+class SmtpTestRequest(BaseModel):
+    to: Optional[str] = None
+
+
+class SmtpTestResponse(BaseModel):
+    success: bool
+    message: str
 
 
 class NotificationDeliveryResponse(BaseModel):

@@ -22,8 +22,11 @@ from app.schemas import (
     NotificationSettingsUpdate,
     NotificationDeliveryResponse,
     DiscordTestRequest,
+    SmtpTestRequest,
+    SmtpTestResponse,
 )
 from app.auth import get_current_user
+from app.utils.crypto import encrypt
 
 router = APIRouter(prefix="/api/alerts", tags=["alerts"])
 
@@ -173,8 +176,27 @@ async def get_notification_settings(
             timezone="UTC",
             email_subject=None,
             email_body=None,
+            smtp_password_set=False,
         )
-    return settings
+    return NotificationSettingsResponse(
+        user_id=settings.user_id,
+        discord_webhook_url=settings.discord_webhook_url,
+        email_address=settings.email_address,
+        email_enabled=settings.email_enabled,
+        discord_enabled=settings.discord_enabled,
+        default_period=settings.default_period,
+        timezone=settings.timezone,
+        updated_at=settings.updated_at,
+        email_subject=settings.email_subject,
+        email_body=settings.email_body,
+        smtp_host=settings.smtp_host,
+        smtp_port=settings.smtp_port,
+        smtp_use_tls=settings.smtp_use_tls,
+        smtp_username=settings.smtp_username,
+        smtp_from_address=settings.smtp_from_address,
+        smtp_reply_to=settings.smtp_reply_to,
+        smtp_password_set=settings.smtp_password_encrypted is not None,
+    )
 
 
 MAX_DELIVERIES_PER_USER = 100
@@ -262,6 +284,21 @@ async def update_notification_settings(
         settings.discord_enabled = data.discord_enabled
         settings.default_period = data.default_period
         settings.timezone = data.timezone
+        # SMTP fields
+        if data.smtp_host is not None:
+            settings.smtp_host = data.smtp_host
+        if data.smtp_port is not None:
+            settings.smtp_port = data.smtp_port
+        if data.smtp_use_tls is not None:
+            settings.smtp_use_tls = data.smtp_use_tls
+        if data.smtp_username is not None:
+            settings.smtp_username = data.smtp_username
+        if data.smtp_password is not None:
+            settings.smtp_password_encrypted = encrypt(data.smtp_password)
+        if data.smtp_from_address is not None:
+            settings.smtp_from_address = data.smtp_from_address
+        if data.smtp_reply_to is not None:
+            settings.smtp_reply_to = data.smtp_reply_to
         settings.updated_at = datetime.now(timezone.utc)
     else:
         settings = NotificationSettings(
@@ -274,12 +311,70 @@ async def update_notification_settings(
             discord_enabled=data.discord_enabled,
             default_period=data.default_period,
             timezone=data.timezone,
+            smtp_host=data.smtp_host,
+            smtp_port=data.smtp_port,
+            smtp_use_tls=data.smtp_use_tls,
+            smtp_username=data.smtp_username,
+            smtp_password_encrypted=encrypt(data.smtp_password) if data.smtp_password else None,
+            smtp_from_address=data.smtp_from_address,
+            smtp_reply_to=data.smtp_reply_to,
         )
         db.add(settings)
 
     await db.commit()
     await db.refresh(settings)
-    return settings
+    return NotificationSettingsResponse(
+        user_id=settings.user_id,
+        discord_webhook_url=settings.discord_webhook_url,
+        email_address=settings.email_address,
+        email_enabled=settings.email_enabled,
+        discord_enabled=settings.discord_enabled,
+        default_period=settings.default_period,
+        timezone=settings.timezone,
+        updated_at=settings.updated_at,
+        email_subject=settings.email_subject,
+        email_body=settings.email_body,
+        smtp_host=settings.smtp_host,
+        smtp_port=settings.smtp_port,
+        smtp_use_tls=settings.smtp_use_tls,
+        smtp_username=settings.smtp_username,
+        smtp_from_address=settings.smtp_from_address,
+        smtp_reply_to=settings.smtp_reply_to,
+        smtp_password_set=settings.smtp_password_encrypted is not None,
+    )
+
+
+@router.post("/settings/smtp/test", response_model=SmtpTestResponse)
+async def test_smtp_settings(
+    data: SmtpTestRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Send a test email using the current user's SMTP configuration."""
+    from app.services.mailer import send_test_email
+
+    result = await db.execute(
+        select(NotificationSettings).where(
+            NotificationSettings.user_id == current_user.id
+        )
+    )
+    settings = result.scalar_one_or_none()
+
+    if not settings or not settings.smtp_host:
+        raise HTTPException(
+            status_code=400,
+            detail="No SMTP host configured. Please save your SMTP settings first.",
+        )
+
+    to_address = data.to or settings.email_address
+    if not to_address:
+        raise HTTPException(
+            status_code=400,
+            detail="No recipient email address available. Provide a 'to' address or set your notification email address.",
+        )
+
+    success, message = await send_test_email(settings, to_address)
+    return SmtpTestResponse(success=success, message=message)
 
 
 @router.get("/{alert_id}", response_model=AlertResponse)
