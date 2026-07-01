@@ -47,6 +47,8 @@ class AlertUpdate(BaseModel):
     threshold: Optional[float] = None
     period: Optional[str] = Field(None, pattern="^(5m|15m|30m|1h|4h|1d)$")
     enabled: Optional[bool] = None
+    combinator: Optional[str] = Field(None, pattern="^(all|any)$")
+    conditions: Optional[list[AlertConditionCreate]] = None
 
 
 class AlertResponse(BaseModel):

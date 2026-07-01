@@ -394,9 +394,30 @@ async def update_alert(
         alert.period = data.period
     if data.enabled is not None:
         alert.enabled = data.enabled
+    if data.combinator is not None:
+        alert.combinator = data.combinator
+
+    # Replace conditions when provided in the payload
+    if data.conditions is not None:
+        # Delete existing conditions
+        await db.execute(
+            AlertCondition.__table__.delete().where(AlertCondition.alert_id == alert_id)
+        )
+        # Insert new conditions
+        for c in data.conditions:
+            db.add(
+                AlertCondition(
+                    alert_id=alert_id,
+                    metric=c.metric,
+                    operator=c.operator,
+                    value=c.value,
+                )
+            )
+        # Ensure condition_type reflects multi-condition state
+        if alert.condition_type != "multi":
+            alert.condition_type = "multi"
 
     await db.commit()
-    await db.refresh(alert)
     # Reload with conditions for response
     result = await db.execute(
         select(Alert)
