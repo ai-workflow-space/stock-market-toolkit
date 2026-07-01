@@ -93,6 +93,8 @@ class NotificationSettingsResponse(BaseModel):
     default_period: str
     timezone: str
     updated_at: Optional[datetime] = None
+    email_subject: Optional[str] = None
+    email_body: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -105,6 +107,8 @@ class NotificationSettingsUpdate(BaseModel):
     discord_enabled: bool = True
     default_period: str = Field(default="1h", pattern="^(5m|15m|30m|1h|4h|1d)$")
     timezone: str = "UTC"
+    email_subject: Optional[str] = Field(default=None, max_length=255)
+    email_body: Optional[str] = None
 
 
 class NotificationDeliveryResponse(BaseModel):
