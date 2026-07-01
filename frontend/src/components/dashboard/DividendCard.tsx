@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { DividendData } from "@/types";
 import { fmt, pct } from "@/lib/format";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -5,6 +6,7 @@ import StatCard from "@/components/common/StatCard";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function DividendCard({ data }: { data: DividendData }) {
+  const { t } = useTranslation();
 
   const chartData = data.yearly.map((y) => ({
     name: String(y.year),
@@ -12,17 +14,17 @@ export default function DividendCard({ data }: { data: DividendData }) {
   }));
 
   const stats: { label: string; value: string }[] = [
-    { label: "Dividend yield", value: data.yield_pct != null ? pct(data.yield_pct / 100) : "—" },
-    { label: "Payout ratio", value: data.payout_ratio != null ? pct(data.payout_ratio / 100) : "—" },
-    { label: "Streak", value: data.streak > 0 ? `${data.streak} yr` : "—" },
+    { label: t("common.fields.dividendYield"), value: data.yield_pct != null ? pct(data.yield_pct / 100) : "—" },
+    { label: t("common.fields.payoutRatio"), value: data.payout_ratio != null ? pct(data.payout_ratio / 100) : "—" },
+    { label: t("common.fields.streak"), value: data.streak > 0 ? t("common.fields.streakYears", { count: data.streak }) : "—" },
   ];
 
   return (
     <Card className="flex h-full flex-col">
       <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 px-4 pb-2 pt-4">
         <div className="min-w-0">
-          <div className="text-sm font-medium">Dividends</div>
-          <div className="text-xs text-muted-foreground">Yearly per share</div>
+          <div className="text-sm font-medium">{t("common.cards.dividends")}</div>
+          <div className="text-xs text-muted-foreground">{t("common.cards.dividendsSubtitle")}</div>
         </div>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-3 px-4 pb-4 pt-0">
@@ -51,7 +53,7 @@ export default function DividendCard({ data }: { data: DividendData }) {
           </div>
         ) : (
           <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
-            No dividend data available
+            {t("common.cards.noDividendData")}
           </div>
         )}
         <div className="grid grid-cols-3 gap-2">

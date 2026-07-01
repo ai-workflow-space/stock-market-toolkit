@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { Fundamentals } from "@/types";
 import { pct } from "@/lib/format";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -40,20 +41,21 @@ function DividendQualityBadge({ score }: { score: number }) {
 }
 
 export default function FundamentalsCard({ data }: { data: Fundamentals }) {
+  const { t } = useTranslation();
   const p = data.profitability;
   const rows: { label: string; value: string; tone?: "up" | "down" | "neutral" }[] = [
     { label: "ROE", value: p.roe != null ? pct(p.roe) : "—" },
     { label: "ROA", value: p.roa != null ? pct(p.roa) : "—" },
-    { label: "Gross margin", value: p.gross_margin != null ? pct(p.gross_margin) : "—" },
-    { label: "Operating margin", value: p.op_margin != null ? pct(p.op_margin) : "—" },
-    { label: "Net margin", value: p.net_margin != null ? pct(p.net_margin) : "—" },
+    { label: t("common.fields.grossMargin"), value: p.gross_margin != null ? pct(p.gross_margin) : "—" },
+    { label: t("common.fields.operatingMargin"), value: p.op_margin != null ? pct(p.op_margin) : "—" },
+    { label: t("common.fields.netMargin"), value: p.net_margin != null ? pct(p.net_margin) : "—" },
     {
-      label: "EPS growth",
+      label: t("common.fields.epsGrowth"),
       value: p.eps_growth != null ? pct(p.eps_growth) : "—",
       tone: p.eps_growth != null ? (p.eps_growth >= 0 ? "up" : "down") : undefined,
     },
     {
-      label: "Revenue growth",
+      label: t("common.fields.revenueGrowth"),
       value: p.rev_growth != null ? pct(p.rev_growth) : "—",
       tone: p.rev_growth != null ? (p.rev_growth >= 0 ? "up" : "down") : undefined,
     },
@@ -61,14 +63,14 @@ export default function FundamentalsCard({ data }: { data: Fundamentals }) {
 
   const dq = data.dividend_quality;
   const dqRows: { label: string; value: string; tone?: "up" | "down" | "neutral" }[] = [
-    { label: "Consistent", value: dq.consistent ? "Yes" : "No", tone: dq.consistent ? "up" : "down" },
+    { label: t("common.fields.consistent"), value: dq.consistent ? t("common.values.yes") : t("common.values.no"), tone: dq.consistent ? "up" : "down" },
     {
-      label: "Growth",
+      label: t("common.fields.growth"),
       value: dq.growth != null ? pct(dq.growth) : "—",
       tone: dq.growth != null ? (dq.growth >= 0 ? "up" : "down") : undefined,
     },
     {
-      label: "Payout ratio",
+      label: t("common.fields.payoutRatio"),
       value: dq.payout_ratio != null ? pct(dq.payout_ratio) : "—",
       tone: dq.payout_ratio != null ? (dq.payout_ratio < 0.6 ? "up" : "down") : undefined,
     },
@@ -78,8 +80,8 @@ export default function FundamentalsCard({ data }: { data: Fundamentals }) {
     <Card className="flex h-full flex-col">
       <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 px-4 pb-3 pt-4">
         <div className="min-w-0">
-          <div className="text-sm font-medium">Fundamentals</div>
-          <div className="text-xs text-muted-foreground">Piotroski F-Score</div>
+          <div className="text-sm font-medium">{t("common.cards.fundamentals")}</div>
+          <div className="text-xs text-muted-foreground">{t("common.cards.piotroskiFScore")}</div>
         </div>
         <FScoreGauge score={data.f_score} />
       </CardHeader>
@@ -91,7 +93,7 @@ export default function FundamentalsCard({ data }: { data: Fundamentals }) {
         </div>
         <div className="border-t pt-3">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">Dividend Quality</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("common.cards.dividendQuality")}</span>
             <DividendQualityBadge score={dq.score} />
           </div>
           <div className="grid grid-cols-3 gap-2">

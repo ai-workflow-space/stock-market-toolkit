@@ -1,4 +1,5 @@
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useTranslation } from "react-i18next";
 import { fmt } from "@/lib/format";
 import { useChartTheme } from "@/hooks/useChartTheme";
 
@@ -13,6 +14,7 @@ export default function MacdChart({
   signal: (number | null)[];
   hist: (number | null)[];
 }) {
+  const { t } = useTranslation();
   const c = useChartTheme();
   const macdData = dates.map((date, i) => ({ date, macd: macd[i], signal: signal[i], hist: hist[i] }));
   return (
@@ -36,7 +38,7 @@ export default function MacdChart({
             );
           }}
         />
-        <Bar dataKey="hist" fill="#6366f1" opacity={0.5} name="Histogram" maxBarSize={6} />
+        <Bar dataKey="hist" fill="#6366f1" opacity={0.5} name={t("common.charts.histogram")} maxBarSize={6} />
         <Line type="monotone" dataKey="macd" stroke="#3b82f6" strokeWidth={1.5} dot={false} name="MACD" />
         <Line type="monotone" dataKey="signal" stroke="#f97316" strokeWidth={1.5} dot={false} name="Signal" />
       </ComposedChart>

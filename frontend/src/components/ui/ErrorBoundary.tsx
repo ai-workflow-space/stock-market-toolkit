@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from "react";
+import i18n from "@/i18n";
 import { Button } from "@/components/ui/button";
 
 interface Props {
@@ -35,10 +36,9 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-8 text-center">
           <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-semibold">Something went wrong</h1>
+            <h1 className="text-2xl font-semibold">{i18n.t("common.errorBoundary.title")}</h1>
             <p className="text-muted-foreground text-sm">
-              An unexpected error occurred. The page you were viewing may have
-              crashed.
+              {i18n.t("common.errorBoundary.description")}
             </p>
             {import.meta.env.DEV && this.state.error && (
               <p className="text-xs text-muted-foreground font-mono mt-2">
@@ -47,7 +47,7 @@ export class ErrorBoundary extends Component<Props, State> {
             )}
           </div>
           <Button onClick={this.handleReload} variant="default">
-            Reload page
+            {i18n.t("common.errorBoundary.reload")}
           </Button>
         </div>
       );

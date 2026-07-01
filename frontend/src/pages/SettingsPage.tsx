@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 /** Drill into any FastAPI error shape and return a human-readable message.
  *  Handles: string detail, Pydantic validation detail array, {detail:string} */
@@ -25,7 +26,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,7 @@ import { fmtDate } from "../lib/format";
 import ReactMarkdown from "react-markdown";
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const { theme, toggleTheme, timezone, setTimezone } = useTheme();
   const { user } = useAuth();
   const [yfStatus, setYfStatus] = useState<"loading" | "ok" | "error">("loading");
@@ -86,17 +88,17 @@ export default function SettingsPage() {
       .then(data => {
         if (data.status === "ok") {
           setYfStatus("ok");
-          setYfMessage(data.message ?? "yfinance is working");
+          setYfMessage(data.message ?? t("settings.dataSource.working"));
         } else {
           setYfStatus("error");
-          setYfMessage(data.message ?? "yfinance check failed");
+          setYfMessage(data.message ?? t("settings.dataSource.checkFailed"));
         }
       })
       .catch(() => {
         setYfStatus("error");
-        setYfMessage("Could not reach the health endpoint");
+        setYfMessage(t("settings.dataSource.unreachable"));
       });
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -141,7 +143,7 @@ export default function SettingsPage() {
         body: JSON.stringify({ email: addEmail, username: addUsername, password: addPassword }),
       });
       if (!res.ok) {
-        throw new Error(await extractError(res, "Failed to add user"));
+        throw new Error(await extractError(res, t("settings.errors.addUser")));
       }
       const newUser = await res.json();
       setUsers(prev => [...prev, newUser]);
@@ -150,7 +152,7 @@ export default function SettingsPage() {
       setAddUsername("");
       setAddPassword("");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to add user";
+      const msg = err instanceof Error ? err.message : t("settings.errors.addUser");
       setAddError(msg);
     } finally {
       setAddLoading(false);
@@ -171,7 +173,7 @@ export default function SettingsPage() {
       });
       if (!res.ok) {
         const d = await res.json();
-        throw new Error(typeof d.detail === "string" ? d.detail : d.detail?.[0]?.msg || "Reset failed");
+        throw new Error(typeof d.detail === "string" ? d.detail : d.detail?.[0]?.msg || t("settings.errors.resetFailed"));
       }
       const data = await res.json();
       setResetResult(data.password);
@@ -202,10 +204,10 @@ export default function SettingsPage() {
         body: JSON.stringify({ email: editEmail, is_admin: editEmailTarget.is_admin, is_active: editEmailTarget.is_active }),
       });
       if (!res.ok) {
-        throw new Error(await extractError(res, "Failed to update email"));
+        throw new Error(await extractError(res, t("settings.errors.updateEmail")));
       }
       setUsers(prev => prev.map(u => u.id === editEmailTarget.id ? { ...u, email: editEmail, is_admin: editEmailTarget.is_admin, is_active: editEmailTarget.is_active } : u));
-      toast("Email updated", { description: "User email has been updated successfully." });
+      toast(t("settings.toasts.emailUpdatedTitle"), { description: t("settings.toasts.emailUpdatedDescription") });
       setEditEmailOpen(false);
       setEditEmailTarget(null);
     } catch (err: unknown) {
@@ -226,7 +228,7 @@ export default function SettingsPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-        throw new Error(await extractError(res, "Delete failed"));
+        throw new Error(await extractError(res, t("settings.errors.deleteFailed")));
       }
       setUsers(prev => prev.filter(u => u.id !== deleteTarget.id));
       setDeleteTarget(null);
@@ -240,23 +242,23 @@ export default function SettingsPage() {
     return (
     <>
       <div className="mx-auto flex max-w-2xl flex-col gap-4">
-        <h1 className="text-2xl font-semibold">Settings</h1>
+        <h1 className="text-2xl font-semibold">{t("settings.title")}</h1>
 
         <Card>
           <CardHeader>
-            <CardTitle>Appearance</CardTitle>
-            <CardDescription>Customize your viewing experience</CardDescription>
+            <CardTitle>{t("settings.appearance.title")}</CardTitle>
+            <CardDescription>{t("settings.appearance.description")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
               <div>
-                <Label>Theme</Label>
+                <Label>{t("settings.appearance.theme")}</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {theme === "dark" ? "Dark mode is active" : "Light mode is active"}
+                  {theme === "dark" ? t("settings.appearance.darkActive") : t("settings.appearance.lightActive")}
                 </p>
               </div>
               <Button variant="secondary" onClick={toggleTheme}>
-                {theme === "dark" ? "Switch to Light" : "Switch to Dark"}
+                {theme === "dark" ? t("settings.appearance.switchToLight") : t("settings.appearance.switchToDark")}
               </Button>
             </div>
           </CardContent>
@@ -264,44 +266,45 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Timezone</CardTitle>
-            <CardDescription>Set your preferred timezone for alerts and timestamps</CardDescription>
+            <CardTitle>{t("settings.timezone.title")}</CardTitle>
+            <CardDescription>{t("settings.timezone.description")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <Label htmlFor="timezone">Current: {timezone}</Label>
-            <Select value={timezone} onValueChange={setTimezone}>
-              <SelectTrigger id="timezone" className="mt-2 w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {COMMON_TIMEZONES.map(tz => (
-                  <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="timezone">{t("settings.timezone.current", { timezone })}</Label>
+            <select
+              id="timezone"
+              aria-label={t("settings.timezone.ariaLabel")}
+              value={timezone}
+              onChange={e => setTimezone(e.target.value)}
+              className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              {COMMON_TIMEZONES.map(tz => (
+                <option key={tz.value} value={tz.value}>{tz.label}</option>
+              ))}
+            </select>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Data Source Health</CardTitle>
-            <CardDescription>Status of connected data providers</CardDescription>
+            <CardTitle>{t("settings.dataSource.title")}</CardTitle>
+            <CardDescription>{t("settings.dataSource.description")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2 mb-1">
               {yfStatus === "loading" && (
-                <span className="text-sm">Checking Yahoo Finance...</span>
+                <span className="text-sm">{t("settings.dataSource.checking")}</span>
               )}
               {yfStatus === "ok" && (
                 <>
                   <span className="inline-block size-2 rounded-full bg-up" />
-                  <span className="text-sm font-medium text-up">Yahoo Finance operational</span>
+                  <span className="text-sm font-medium text-up">{t("settings.dataSource.operational")}</span>
                 </>
               )}
               {yfStatus === "error" && (
                 <>
                   <span className="inline-block size-2 rounded-full bg-down" />
-                  <span className="text-sm font-medium text-down">Yahoo Finance error</span>
+                  <span className="text-sm font-medium text-down">{t("settings.dataSource.error")}</span>
                 </>
               )}
             </div>
@@ -316,10 +319,10 @@ export default function SettingsPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>Manage user accounts and permissions</CardDescription>
+                <CardTitle>{t("settings.users.title")}</CardTitle>
+                <CardDescription>{t("settings.users.description")}</CardDescription>
               </div>
-              <Button size="sm" onClick={() => setAddOpen(true)}>+ Add User</Button>
+              <Button size="sm" onClick={() => setAddOpen(true)}>{t("settings.users.addUser")}</Button>
             </div>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -328,7 +331,7 @@ export default function SettingsPage() {
                 <Loader2 className="size-5 animate-spin text-muted-foreground" />
               </div>
             ) : users.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No users found.</p>
+              <p className="text-sm text-muted-foreground">{t("settings.users.none")}</p>
             ) : (
               <div className="flex flex-col gap-3">
                 {users.map(u => (
@@ -337,10 +340,10 @@ export default function SettingsPage() {
                       <span className="text-sm font-medium truncate">{u.username}</span>
                       <span className="text-xs text-muted-foreground truncate">{u.email}</span>
                       {u.created_at && (
-                        <span className="text-xs text-muted-foreground truncate">Registered {fmtDate(u.created_at)}</span>
+                        <span className="text-xs text-muted-foreground truncate">{t("settings.users.registered", { date: fmtDate(u.created_at) })}</span>
                       )}
                       <span className="text-xs text-muted-foreground truncate">
-                        Last login {u.last_login_at ? fmtDate(u.last_login_at) : "—"}
+                        {t("settings.users.lastLogin", { date: u.last_login_at ? fmtDate(u.last_login_at) : t("settings.users.never") })}
                       </span>
                     </div>
                     <div className="flex items-center gap-4 shrink-0">
@@ -349,14 +352,14 @@ export default function SettingsPage() {
                         size="sm"
                         onClick={() => openEditEmail({ id: u.id, email: u.email, is_admin: u.is_admin, is_active: u.is_active })}
                       >
-                        <Pencil className="size-3 mr-1" /> Edit
+                        <Pencil className="size-3 mr-1" /> {t("settings.users.edit")}
                       </Button>
                       <Button
                         variant="destructive"
                         size="sm"
                         onClick={() => setDeleteTarget({ id: u.id, username: u.username })}
                       >
-                        Delete
+                        {t("settings.users.delete")}
                       </Button>
                     </div>
                   </div>
@@ -369,8 +372,8 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>About</CardTitle>
-            <CardDescription>Stock Market Toolkit</CardDescription>
+            <CardTitle>{t("settings.about.title")}</CardTitle>
+            <CardDescription>{t("settings.about.subtitle")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             <a
@@ -382,12 +385,12 @@ export default function SettingsPage() {
               {APP_VERSION}
             </a>
             <p className="text-xs text-muted-foreground">
-              A comprehensive stock analysis and monitoring tool.
+              {t("settings.about.description")}
             </p>
             {releaseNotes ? (
               <details className="mt-2 text-xs">
                 <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                  Release notes
+                  {t("settings.about.releaseNotes")}
                 </summary>
                 <div className="mt-2 max-h-72 overflow-y-auto overflow-x-hidden border-t pt-2 text-xs leading-relaxed text-muted-foreground break-words [&_a]:break-all [&_a]:underline [&_a]:underline-offset-2 [&_h1]:mt-3 [&_h1]:mb-1 [&_h1]:text-sm [&_h1]:font-semibold [&_h1]:text-foreground [&_h2]:mt-3 [&_h2]:mb-1 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:text-foreground [&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:text-xs [&_h3]:font-semibold [&_h3]:text-foreground [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:my-0.5 [&_p]:my-1">
                   <ReactMarkdown
@@ -408,7 +411,7 @@ export default function SettingsPage() {
                 rel="noopener noreferrer"
                 className="text-xs text-muted-foreground hover:underline"
               >
-                View release notes on GitHub
+                {t("settings.about.viewReleaseNotes")}
               </a>
             )}
           </CardContent>
@@ -418,9 +421,9 @@ export default function SettingsPage() {
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete User</DialogTitle>
+            <DialogTitle>{t("settings.deleteDialog.title")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete user &ldquo;{deleteTarget?.username}&rdquo;? This action cannot be undone.
+              {t("settings.deleteDialog.description", { username: deleteTarget?.username })}
             </DialogDescription>
           </DialogHeader>
           {actionError && (
@@ -429,9 +432,9 @@ export default function SettingsPage() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>{t("settings.deleteDialog.cancel")}</Button>
             <Button variant="destructive" onClick={confirmDelete} disabled={deleting}>
-              {deleting ? "Deleting…" : "Delete"}
+              {deleting ? t("settings.deleteDialog.deleting") : t("settings.deleteDialog.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -440,8 +443,8 @@ export default function SettingsPage() {
       <Dialog open={addOpen} onOpenChange={(open) => { if (!open) { setAddOpen(false); setAddError(""); setAddEmail(""); setAddUsername(""); setAddPassword(""); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New User</DialogTitle>
-            <DialogDescription>Create a new user account.</DialogDescription>
+            <DialogTitle>{t("settings.addDialog.title")}</DialogTitle>
+            <DialogDescription>{t("settings.addDialog.description")}</DialogDescription>
           </DialogHeader>
           <form onSubmit={addUser} className="flex flex-col gap-3">
             {addError && (
@@ -450,41 +453,41 @@ export default function SettingsPage() {
               </div>
             )}
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="add-email">Email</Label>
+              <Label htmlFor="add-email">{t("settings.addDialog.email")}</Label>
               <Input
                 id="add-email"
                 type="email"
-                placeholder="user@example.com"
+                placeholder={t("settings.addDialog.emailPlaceholder")}
                 value={addEmail}
                 onChange={e => setAddEmail(e.target.value)}
                 required
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="add-username">Username</Label>
+              <Label htmlFor="add-username">{t("settings.addDialog.username")}</Label>
               <Input
                 id="add-username"
-                placeholder="username"
+                placeholder={t("settings.addDialog.usernamePlaceholder")}
                 value={addUsername}
                 onChange={e => setAddUsername(e.target.value)}
                 required
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="add-password">Password</Label>
+              <Label htmlFor="add-password">{t("settings.addDialog.password")}</Label>
               <Input
                 id="add-password"
                 type="password"
-                placeholder="Password"
+                placeholder={t("settings.addDialog.passwordPlaceholder")}
                 value={addPassword}
                 onChange={e => setAddPassword(e.target.value)}
                 required
               />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setAddOpen(false)} disabled={addLoading}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setAddOpen(false)} disabled={addLoading}>{t("settings.addDialog.cancel")}</Button>
               <Button type="submit" disabled={addLoading}>
-                {addLoading ? "Creating…" : "Create User"}
+                {addLoading ? t("settings.addDialog.creating") : t("settings.addDialog.create")}
               </Button>
             </DialogFooter>
           </form>
@@ -494,16 +497,16 @@ export default function SettingsPage() {
       <Dialog open={!!resetTarget} onOpenChange={(open) => { if (!open) { setResetTarget(null); setResetResult(null); setResetError(""); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reset Password</DialogTitle>
+            <DialogTitle>{t("settings.resetDialog.title")}</DialogTitle>
             <DialogDescription>
-              Reset password for user &ldquo;{resetTarget?.username}&rdquo;? A new random password will be generated.
+              {t("settings.resetDialog.description", { username: resetTarget?.username })}
             </DialogDescription>
           </DialogHeader>
           {resetResult ? (
             <div className="rounded-md border border-green-500/40 bg-green-500/10 px-3 py-3 text-sm">
-              <p className="font-medium text-green-600 dark:text-green-400 mb-1">New Password:</p>
+              <p className="font-medium text-green-600 dark:text-green-400 mb-1">{t("settings.resetDialog.newPassword")}</p>
               <code className="text-base font-mono font-bold break-all">{resetResult}</code>
-              <p className="text-xs text-muted-foreground mt-2">Copy this password — it cannot be recovered.</p>
+              <p className="text-xs text-muted-foreground mt-2">{t("settings.resetDialog.copyWarning")}</p>
             </div>
           ) : (
             <form onSubmit={(e) => { e.preventDefault(); resetUserPassword(); }} className="flex flex-col gap-3">
@@ -513,9 +516,9 @@ export default function SettingsPage() {
                 </div>
               )}
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setResetTarget(null)} disabled={resetLoading}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={() => setResetTarget(null)} disabled={resetLoading}>{t("settings.resetDialog.cancel")}</Button>
                 <Button type="submit" disabled={resetLoading}>
-                  {resetLoading ? "Resetting…" : "Reset Password"}
+                  {resetLoading ? t("settings.resetDialog.resetting") : t("settings.resetDialog.reset")}
                 </Button>
               </DialogFooter>
             </form>
@@ -526,9 +529,9 @@ export default function SettingsPage() {
       <Dialog open={editEmailOpen} onOpenChange={(open) => { if (!open) { setEditEmailOpen(false); setEditEmailTarget(null); setEditEmailError(""); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
+            <DialogTitle>{t("settings.editDialog.title")}</DialogTitle>
             <DialogDescription>
-              Update details for user &ldquo;{editEmailTarget?.email}&rdquo;.
+              {t("settings.editDialog.description", { email: editEmailTarget?.email })}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={editUserEmail} className="flex flex-col gap-3">
@@ -538,11 +541,11 @@ export default function SettingsPage() {
               </div>
             )}
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="edit-email">Email</Label>
+              <Label htmlFor="edit-email">{t("settings.editDialog.email")}</Label>
               <Input
                 id="edit-email"
                 type="email"
-                placeholder="user@example.com"
+                placeholder={t("settings.editDialog.emailPlaceholder")}
                 value={editEmail}
                 onChange={e => setEditEmail(e.target.value)}
                 required
@@ -550,8 +553,8 @@ export default function SettingsPage() {
             </div>
             <div className="flex items-center justify-between rounded-md border px-3 py-2">
               <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium">Admin</span>
-                <span className="text-xs text-muted-foreground">Can manage users and settings</span>
+                <span className="text-sm font-medium">{t("settings.editDialog.admin")}</span>
+                <span className="text-xs text-muted-foreground">{t("settings.editDialog.adminHint")}</span>
               </div>
               <Switch
                 checked={editEmailTarget?.is_admin ?? false}
@@ -560,8 +563,8 @@ export default function SettingsPage() {
             </div>
             <div className="flex items-center justify-between rounded-md border px-3 py-2">
               <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium">Active</span>
-                <span className="text-xs text-muted-foreground">Can log in and use the app</span>
+                <span className="text-sm font-medium">{t("settings.editDialog.active")}</span>
+                <span className="text-xs text-muted-foreground">{t("settings.editDialog.activeHint")}</span>
               </div>
               <Switch
                 checked={editEmailTarget?.is_active ?? false}
@@ -569,7 +572,7 @@ export default function SettingsPage() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label>Password</Label>
+              <Label>{t("settings.editDialog.password")}</Label>
               <div className="flex gap-2">
                 <Button
                   type="button"
@@ -582,14 +585,14 @@ export default function SettingsPage() {
                     setEditEmailOpen(false);
                   }}
                 >
-                  <Key className="size-3 mr-1" /> Reset Password
+                  <Key className="size-3 mr-1" /> {t("settings.editDialog.resetPassword")}
                 </Button>
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditEmailOpen(false)} disabled={editEmailLoading}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setEditEmailOpen(false)} disabled={editEmailLoading}>{t("settings.editDialog.cancel")}</Button>
               <Button type="submit" disabled={editEmailLoading}>
-                {editEmailLoading ? "Saving…" : "Save Changes"}
+                {editEmailLoading ? t("settings.editDialog.saving") : t("settings.editDialog.save")}
               </Button>
             </DialogFooter>
           </form>

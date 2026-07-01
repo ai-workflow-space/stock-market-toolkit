@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import GridLayout, { type LayoutItem, useContainerWidth } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -15,6 +16,7 @@ import NewsCard from "./NewsCard";
 import type { DashboardGridProps } from "./DashboardGrid";
 
 export default function EditableGrid({ stock, indicators, info, fundamentals, dividends, news, newsLoading, active }: DashboardGridProps) {
+  const { t } = useTranslation();
   const { containerRef, width } = useContainerWidth();
   const dates = stock.timestamp.map((t) =>
     new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
@@ -49,7 +51,7 @@ export default function EditableGrid({ stock, indicators, info, fundamentals, di
         onLayoutChange={handleChange}
       >
         <div key="price" className="h-full overflow-hidden">
-          <ChartCard className="h-full" title={`${stock.symbol} · ${stock.period.toUpperCase()}`} subtitle="Price">
+          <ChartCard className="h-full" title={`${stock.symbol} · ${stock.period.toUpperCase()}`} subtitle={t("common.charts.price")}>
             <PriceChart data={stock} indicators={indicators} showBB={active.has("bb")} active={active} />
           </ChartCard>
         </div>

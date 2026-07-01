@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -18,6 +19,7 @@ export default function SymbolSearch({
   onSelect?: (result: SearchResult) => void;
   loading?: boolean;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -59,19 +61,19 @@ export default function SymbolSearch({
       <PopoverTrigger asChild>
         <Button variant="outline" className="w-full max-w-md justify-start gap-2 font-normal text-muted-foreground">
           {loading ? <Loader2 className="animate-spin" /> : <Search />}
-          {value ? <span className="font-medium text-foreground">{value}</span> : "Search ticker… AAPL, TSLA"}
+          {value ? <span className="font-medium text-foreground">{value}</span> : t("common.search.tickerPromptExample")}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         <Command shouldFilter={false}>
-          <CommandInput placeholder="Search ticker…" value={query} onValueChange={handleQuery} />
+          <CommandInput placeholder={t("common.search.tickerPlaceholder")} value={query} onValueChange={handleQuery} />
           <CommandList>
-            {searching && <div className="px-3 py-2 text-sm text-muted-foreground">Searching…</div>}
+            {searching && <div className="px-3 py-2 text-sm text-muted-foreground">{t("common.search.searching")}</div>}
             {!searching && query.trim().length >= 2 && results.length === 0 && (
-              <CommandEmpty>No matches.</CommandEmpty>
+              <CommandEmpty>{t("common.search.noMatches")}</CommandEmpty>
             )}
             {results.length > 0 && (
-              <CommandGroup heading="Results">
+              <CommandGroup heading={t("common.search.results")}>
                 {results.map((r) => (
                   <CommandItem key={r.symbol} value={r.symbol} onSelect={() => select(r)}>
                     <span className="font-medium">{r.symbol}</span>
@@ -85,7 +87,7 @@ export default function SymbolSearch({
               <CommandGroup>
                 <CommandItem value={`__raw_${query}`} onSelect={() => select({ symbol: query.trim().toUpperCase(), name: query.trim().toUpperCase(), exchange: "" })}>
                   <Search />
-                  Search “{query.trim().toUpperCase()}”
+                  {t("common.search.searchFor", { query: query.trim().toUpperCase() })}
                 </CommandItem>
               </CommandGroup>
             )}

@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Plus, X, Download } from "lucide-react";
@@ -36,6 +37,7 @@ const SMA_META: Record<SmaKey, { color: string; label: string; dash?: string }> 
 };
 
 function TickerPicker({ onAdd, disabled }: { onAdd: (s: string) => void; disabled?: boolean }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -63,16 +65,16 @@ function TickerPicker({ onAdd, disabled }: { onAdd: (s: string) => void; disable
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2" disabled={disabled}>
-          <Plus /> Add ticker
+          <Plus /> {t("compare.addTicker")}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-72 p-0" align="start">
         <Command shouldFilter={false}>
-          <CommandInput placeholder="Search ticker…" value={query} onValueChange={handleQuery} />
+          <CommandInput placeholder={t("compare.searchTicker")} value={query} onValueChange={handleQuery} />
           <CommandList>
-            {query.trim().length >= 2 && results.length === 0 && <CommandEmpty>No matches.</CommandEmpty>}
+            {query.trim().length >= 2 && results.length === 0 && <CommandEmpty>{t("compare.noMatches")}</CommandEmpty>}
             {results.length > 0 && (
-              <CommandGroup heading="Results">
+              <CommandGroup heading={t("compare.results")}>
                 {results.map((r) => (
                   <CommandItem key={r.symbol} value={r.symbol} onSelect={() => add(r.symbol)}>
                     <span className="font-medium">{r.symbol}</span>
@@ -84,7 +86,7 @@ function TickerPicker({ onAdd, disabled }: { onAdd: (s: string) => void; disable
             {query.trim().length >= 1 && (
               <CommandGroup>
                 <CommandItem value={`__raw_${query}`} onSelect={() => add(query.trim().toUpperCase())}>
-                  <Plus /> Add “{query.trim().toUpperCase()}”
+                  <Plus /> {t("compare.addSymbol", { symbol: query.trim().toUpperCase() })}
                 </CommandItem>
               </CommandGroup>
             )}
@@ -96,6 +98,7 @@ function TickerPicker({ onAdd, disabled }: { onAdd: (s: string) => void; disable
 }
 
 export default function ComparePage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const [tickers, setTickers] = useState<string[]>(() => {
     const raw = searchParams.get("symbols");
@@ -118,7 +121,7 @@ export default function ComparePage() {
   const removeTicker = (sym: string) => setTickers((prev) => prev.filter((t) => t !== sym));
 
   const handleCompare = async () => {
-    if (tickers.length < 2) { setError("Add at least 2 tickers"); return; }
+    if (tickers.length < 2) { setError(t("compare.errAddTwo")); return; }
     setError("");
     setLoading(true);
     setActiveSMAs([]);
@@ -126,7 +129,7 @@ export default function ComparePage() {
       const result = await compareStocks(tickers, period);
       const stocks = result?.stocks ?? [];
       setData(stocks);
-      if (stocks.length === 0) setError("No data returned for those tickers");
+      if (stocks.length === 0) setError(t("compare.errNoData"));
       const indResults: Record<string, Indicators> = {};
       await Promise.all(
         tickers.map(async (sym) => {
@@ -135,7 +138,7 @@ export default function ComparePage() {
       );
       setIndicatorsData(indResults);
     } catch (e: unknown) {
-      setError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Compare failed");
+      setError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail || t("compare.errFailed"));
     } finally {
       setLoading(false);
     }
@@ -169,9 +172,10 @@ export default function ComparePage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-baseline gap-2">
-        <h1 className="text-2xl font-semibold">Compare</h1>
+        <h1 className="text-2xl font-semibold">{t("compare.title")}</h1>
         <span className="text-sm text-muted-foreground">
-          {tickers.length}/5 tickers{tickers.length < 2 ? " — add at least 2" : tickers.length >= 5 ? " — max" : ""}
+          {t("compare.tickerCount", { count: tickers.length })}
+          {tickers.length < 2 ? t("compare.tickerHintMin") : tickers.length >= 5 ? t("compare.tickerHintMax") : ""}
         </span>
       </div>
 
@@ -184,7 +188,7 @@ export default function ComparePage() {
               <button
                 type="button"
                 onClick={() => removeTicker(sym)}
-                aria-label={`Remove ${sym}`}
+                aria-label={t("compare.removeSymbol", { symbol: sym })}
                 className="rounded-sm text-muted-foreground hover:text-foreground"
               >
                 <X className="size-3" />
@@ -194,13 +198,13 @@ export default function ComparePage() {
           </Fragment>
         ))}
         <TickerPicker onAdd={addTicker} disabled={tickers.length >= 5} />
-        <ToggleBar ariaLabel="Timeframe" options={TIMEFRAME_OPTIONS} value={period} onChange={setPeriod} />
+        <ToggleBar ariaLabel={t("compare.timeframe")} options={TIMEFRAME_OPTIONS} value={period} onChange={setPeriod} />
         <Button size="sm" onClick={handleCompare} disabled={loading || tickers.length < 2}>
-          {loading ? "Loading…" : "Compare"}
+          {loading ? t("compare.loading") : t("compare.compare")}
         </Button>
         {data && (
           <Button size="sm" variant="ghost" onClick={() => { setData(null); setTickers([]); }}>
-            Reset
+            {t("compare.reset")}
           </Button>
         )}
       </div>
@@ -212,28 +216,28 @@ export default function ComparePage() {
       )}
 
       {!data && (
-        <p className="text-sm text-muted-foreground">Add 2–5 tickers, then press Compare.</p>
+        <p className="text-sm text-muted-foreground">{t("compare.emptyPrompt")}</p>
       )}
 
       {data && stats && (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <StatCard label={`Best · ${stats.best.symbol}`} value={pct(stats.best.pctChange)} tone={stats.best.pctChange >= 0 ? "up" : "down"} />
-            <StatCard label={`Worst · ${stats.worst.symbol}`} value={pct(stats.worst.pctChange)} tone={stats.worst.pctChange >= 0 ? "up" : "down"} />
-            <StatCard label="Average" value={pct(stats.avg)} tone={stats.avg >= 0 ? "up" : "down"} />
+            <StatCard label={t("compare.best", { symbol: stats.best.symbol })} value={pct(stats.best.pctChange)} tone={stats.best.pctChange >= 0 ? "up" : "down"} />
+            <StatCard label={t("compare.worst", { symbol: stats.worst.symbol })} value={pct(stats.worst.pctChange)} tone={stats.worst.pctChange >= 0 ? "up" : "down"} />
+            <StatCard label={t("compare.average")} value={pct(stats.avg)} tone={stats.avg >= 0 ? "up" : "down"} />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <MultiToggleBar ariaLabel="SMA overlays" options={SMA_OPTIONS} value={activeSMAs} onChange={setActiveSMAs} />
+            <MultiToggleBar ariaLabel={t("compare.smaOverlays")} options={SMA_OPTIONS} value={activeSMAs} onChange={setActiveSMAs} />
             <Button size="sm" variant={showNormalized ? "secondary" : "outline"} onClick={() => setShowNormalized((v) => !v)}>
-              Normalized
+              {t("compare.normalized")}
             </Button>
             <Button size="sm" variant="outline" className="ml-auto gap-2" onClick={exportCSV}>
-              <Download /> Export CSV
+              <Download /> {t("compare.exportCsv")}
             </Button>
           </div>
 
-          <ChartCard title={showNormalized ? "Normalized price (base 100)" : "Price comparison"}>
+          <ChartCard title={showNormalized ? t("compare.chartNormalized") : t("compare.chartPrice")}>
             <ResponsiveContainer width="100%" height={350}>
               <ComposedChart data={priceData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={c.grid} />
@@ -263,7 +267,7 @@ export default function ComparePage() {
           </ChartCard>
 
           {smaKeys.length > 0 && (
-            <ChartCard title="SMA overlay">
+            <ChartCard title={t("compare.chartSma")}>
               <ResponsiveContainer width="100%" height={300}>
                 <ComposedChart data={smaData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={c.grid} />

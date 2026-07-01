@@ -1,0 +1,546 @@
+{
+  "nav": {
+    "dashboard": "儀表板",
+    "signals": "信號",
+    "compare": "比較",
+    "alerts": "警報",
+    "settings": "設定",
+    "switchToChinese": "切換至中文",
+    "switchToEnglish": "切換至英文"
+  },
+  "adminInvite": {
+    "title": "邀請碼",
+    "subtitle": "為新使用者註冊產生並管理邀請碼",
+    "generateCode": "產生邀請碼",
+    "form": {
+      "dialogTitle": "產生邀請碼",
+      "dialogDescription": "為新使用者註冊建立新的邀請碼",
+      "expiresLabel": "到期天數（天）",
+      "expiresHint": "邀請碼將在這麼多天後到期（1-365）",
+      "cancel": "取消",
+      "generating": "產生中…",
+      "submit": "產生邀請碼",
+      "validationRange": "到期天數必須介於 1 到 365 天之間"
+    },
+    "copy": {
+      "ariaLabel": "複製邀請碼"
+    },
+    "newCodeLabel": "新邀請碼：",
+    "empty": {
+      "message": "尚無邀請碼",
+      "action": "產生您的第一個邀請碼"
+    },
+    "table": {
+      "used": "已使用",
+      "deactivated": "已停用",
+      "expired": "已到期",
+      "created": "建立於 {{date}}",
+      "expires": "到期於 {{date}}",
+      "usedBy": "由 {{user}} 使用",
+      "deactivateAriaLabel": "停用邀請碼"
+    },
+    "confirm": {
+      "deactivate": "要停用此邀請碼嗎？"
+    },
+    "errors": {
+      "create": "建立邀請碼失敗",
+      "load": "載入邀請碼失敗",
+      "deactivate": "停用邀請碼失敗"
+    }
+  },
+  "alerts": {
+    "title": "價格警報",
+    "newAlert": "新增警報",
+    "unread": "未讀",
+    "confirmDelete": "要刪除此警報嗎？",
+    "conditionsSummary": "{{combinator}}（{{count}} 個條件）",
+    "combinatorAll": "全部",
+    "combinatorAny": "任一",
+    "triggeredAt": "於 ${{price}} 觸發（門檻值：${{threshold}}）",
+    "tabs": {
+      "myAlerts": "我的警報（{{count}}）",
+      "triggered": "已觸發",
+      "settings": "設定"
+    },
+    "dialog": {
+      "title": "建立價格警報",
+      "description": "為任何股票代號設定多條件價格警報",
+      "symbol": "股票代號",
+      "combinator": "組合方式",
+      "combinatorAll": "且（所有條件）",
+      "combinatorAny": "或（任一條件）",
+      "conditions": "條件",
+      "period": "週期",
+      "currentPrice": "目前價格：${{price}}",
+      "cancel": "取消",
+      "create": "建立警報",
+      "creating": "建立中……"
+    },
+    "conditions": {
+      "add": "新增條件",
+      "valuePlaceholder": "數值"
+    },
+    "conditionTypes": {
+      "above": "價格高於",
+      "below": "價格低於",
+      "pct_change_up": "漲幅百分比",
+      "pct_change_down": "跌幅百分比"
+    },
+    "metrics": {
+      "price": "價格",
+      "rsi": "RSI",
+      "macd_hist": "MACD 柱狀圖",
+      "signal": "訊號",
+      "pct_change": "漲跌幅百分比"
+    },
+    "operators": {
+      "gt": ">",
+      "lt": "<",
+      "crosses_above": "向上突破",
+      "eq": "="
+    },
+    "periods": {
+      "5m": "5 分鐘",
+      "15m": "15 分鐘",
+      "30m": "30 分鐘",
+      "1h": "1 小時",
+      "4h": "4 小時",
+      "1d": "1 天"
+    },
+    "settings": {
+      "title": "通知設定",
+      "description": "設定接收警報通知的方式",
+      "enableDiscord": "啟用 Discord 通知",
+      "webhookUrl": "Discord Webhook 網址",
+      "webhookHint": "請至 Discord 頻道設定 → 整合 → Webhooks 取得您的 webhook 網址",
+      "save": "儲存設定",
+      "saving": "儲存中……",
+      "saved": "已儲存"
+    },
+    "aria": {
+      "enableAlert": "啟用 {{symbol}} 警報",
+      "disableAlert": "停用 {{symbol}} 警報",
+      "deleteAlert": "刪除 {{symbol}} 警報",
+      "markRead": "將 {{symbol}} 警報標示為已讀"
+    },
+    "empty": {
+      "noAlerts": "尚無警報",
+      "noTriggered": "尚無已觸發的警報"
+    },
+    "errors": {
+      "symbolRequired": "股票代號為必填",
+      "invalidConditionValue": "請為所有條件輸入有效的數值",
+      "atLeastOneCondition": "請至少新增一個條件",
+      "createFailed": "建立警報失敗",
+      "saveSettingsFailed": "儲存設定失敗",
+      "loadFailed": "載入警報失敗"
+    }
+  },
+  "bootstrap": {
+    "title": "初始設定",
+    "subtitle": "建立您的管理員帳號以開始使用",
+    "email": "電子郵件",
+    "username": "使用者名稱",
+    "password": "密碼",
+    "submit": "建立管理員帳號",
+    "submitting": "建立帳號中…",
+    "haveAccount": "已經有帳號了嗎？",
+    "signIn": "登入",
+    "errors": {
+      "failed": "初始設定失敗"
+    }
+  },
+  "common": {
+    "signals": {
+      "noSignal": "無訊號",
+      "viewOnDashboard": "在儀表板檢視",
+      "compareTicker": "比較股票代號",
+      "stopTracking": "停止追蹤股票代號",
+      "dismissSignal": "忽略訊號",
+      "signalStrength": "訊號強度"
+    },
+    "fields": {
+      "price": "價格",
+      "date": "日期",
+      "open": "開盤",
+      "high": "最高",
+      "low": "最低",
+      "close": "收盤",
+      "volume": "成交量",
+      "avgVolume": "平均成交量",
+      "currentPrice": "目前價格",
+      "dayChange": "當日漲跌幅",
+      "periodHigh": "期間最高",
+      "periodLow": "期間最低",
+      "marketCap": "市值",
+      "peRatio": "本益比",
+      "forwardPe": "預估本益比",
+      "dividendYield": "殖利率",
+      "beta": "Beta 值",
+      "week52High": "52週最高",
+      "week52Low": "52週最低",
+      "sector": "類股",
+      "industry": "產業",
+      "payoutRatio": "股利發放率",
+      "streak": "連續年數",
+      "streakYears": "{{count}} 年",
+      "grossMargin": "毛利率",
+      "operatingMargin": "營業利益率",
+      "netMargin": "淨利率",
+      "epsGrowth": "每股盈餘成長率",
+      "revenueGrowth": "營收成長率",
+      "consistent": "穩定性",
+      "growth": "成長率"
+    },
+    "values": {
+      "yes": "是",
+      "no": "否"
+    },
+    "cards": {
+      "dividends": "股利",
+      "dividendsSubtitle": "每股年度股利",
+      "noDividendData": "無股利資料",
+      "fundamentals": "基本面",
+      "piotroskiFScore": "皮爾托斯基 F 分數",
+      "dividendQuality": "股利品質",
+      "historicalData": "歷史資料",
+      "historicalDataSubtitle": "{{symbol}} · 近 {{count}} 天"
+    },
+    "charts": {
+      "price": "價格",
+      "histogram": "柱狀圖"
+    },
+    "search": {
+      "tickerPromptExample": "搜尋股票代號… AAPL、TSLA",
+      "tickerPlaceholder": "搜尋股票代號…",
+      "searching": "搜尋中…",
+      "noMatches": "無相符結果。",
+      "results": "搜尋結果",
+      "searchFor": "搜尋「{{query}}」"
+    },
+    "watchlist": {
+      "add": "加入觀察清單",
+      "remove": "從觀察清單移除",
+      "addSymbol": "將 {{symbol}} 加入觀察清單",
+      "removeSymbol": "將 {{symbol}} 從觀察清單移除"
+    },
+    "cache": {
+      "expired": "快取已過期",
+      "expiresInSeconds": "{{count}} 秒後過期",
+      "expiresInMinutes": "{{count}} 分鐘後過期"
+    },
+    "actions": {
+      "save": "儲存",
+      "saving": "儲存中…",
+      "cancel": "取消",
+      "logOut": "登出",
+      "changePassword": "變更密碼"
+    },
+    "menu": {
+      "logViewer": "日誌檢視器",
+      "invitationCodes": "邀請碼",
+      "openNavigation": "開啟導覽選單"
+    },
+    "theme": {
+      "toggle": "切換佈景主題",
+      "switchToLight": "切換至淺色模式",
+      "switchToDark": "切換至深色模式"
+    },
+    "password": {
+      "current": "目前密碼",
+      "new": "新密碼",
+      "confirm": "確認新密碼",
+      "currentPlaceholder": "請輸入目前密碼",
+      "newPlaceholder": "請輸入新密碼",
+      "confirmPlaceholder": "請再次輸入新密碼",
+      "dialogDescription": "更新您的帳號密碼。",
+      "changed": "密碼已變更",
+      "changedDescription": "您的密碼已成功更新。",
+      "errorMinLength": "新密碼長度至少須為 8 個字元",
+      "errorMismatch": "兩次輸入的新密碼不一致",
+      "errorFailed": "變更密碼失敗"
+    },
+    "states": {
+      "loading": "載入中…",
+      "noData": "無資料",
+      "error": "錯誤",
+      "retry": "重試"
+    },
+    "footer": {
+      "built": "建置於 {{time}}"
+    },
+    "errorBoundary": {
+      "title": "發生錯誤",
+      "description": "發生非預期的錯誤，您正在檢視的頁面可能已當機。",
+      "reload": "重新載入頁面"
+    }
+  },
+  "compare": {
+    "title": "比較",
+    "tickerCount": "{{count}}/5 檔股票代號",
+    "tickerHintMin": " — 至少新增 2 檔",
+    "tickerHintMax": " — 已達上限",
+    "addTicker": "新增股票代號",
+    "searchTicker": "搜尋股票代號…",
+    "noMatches": "沒有符合的結果。",
+    "results": "結果",
+    "addSymbol": "新增「{{symbol}}」",
+    "removeSymbol": "移除 {{symbol}}",
+    "timeframe": "時間範圍",
+    "compare": "比較",
+    "loading": "載入中…",
+    "reset": "重設",
+    "emptyPrompt": "新增 2–5 檔股票代號，然後按下比較。",
+    "errAddTwo": "至少新增 2 檔股票代號",
+    "errNoData": "這些股票代號沒有回傳資料",
+    "errFailed": "比較失敗",
+    "best": "最佳 · {{symbol}}",
+    "worst": "最差 · {{symbol}}",
+    "average": "平均",
+    "smaOverlays": "SMA 疊圖",
+    "normalized": "正規化",
+    "exportCsv": "匯出 CSV",
+    "chartNormalized": "正規化價格（基準 100）",
+    "chartPrice": "價格比較",
+    "chartSma": "SMA 疊圖"
+  },
+  "dashboard": {
+    "timeframe": "時間範圍",
+    "indicators": "技術指標",
+    "done": "完成",
+    "editLayout": "編輯版面",
+    "failedToLoad": "資料載入失敗",
+    "couldntLoadSymbol": "無法載入此股票代號。",
+    "noData": "沒有可顯示的資料。",
+    "retry": "重試"
+  },
+  "login": {
+    "welcome": "歡迎回來",
+    "subtitle": "登入您的帳號",
+    "newHere": {
+      "badge": "初次使用？",
+      "text": "您需要先",
+      "setupLink": "設定系統",
+      "suffix": "才能登入。"
+    },
+    "emailLabel": "電子郵件或使用者名稱",
+    "passwordLabel": "密碼",
+    "signingIn": "登入中…",
+    "signIn": "登入",
+    "noAccount": "還沒有帳號？",
+    "setupSystem": "設定系統",
+    "requestAccess": "申請存取權限",
+    "loginFailed": "登入失敗"
+  },
+  "logs": {
+    "title": "日誌",
+    "subtitle": "系統、稽核與存取日誌",
+    "autoRefresh": "自動重新整理",
+    "refresh": "重新整理",
+    "entries": "{{count}} 筆項目",
+    "copy": {
+      "toastTitle": "已複製",
+      "toastDescription": "日誌項目已複製到剪貼簿",
+      "buttonTitle": "以 JSON 格式複製項目"
+    },
+    "tabs": {
+      "system": "系統",
+      "audit": "稽核",
+      "access": "存取"
+    },
+    "filters": {
+      "level": "等級",
+      "allLevels": "所有等級",
+      "search": "搜尋",
+      "action": "動作",
+      "allActions": "所有動作",
+      "method": "方法",
+      "all": "全部",
+      "statusMin": "狀態下限",
+      "statusMax": "狀態上限",
+      "minPlaceholder": "下限",
+      "maxPlaceholder": "上限",
+      "searchSystemPlaceholder": "搜尋日誌項目…",
+      "searchAuditPlaceholder": "搜尋稽核項目…",
+      "searchAccessPlaceholder": "搜尋存取項目…"
+    },
+    "table": {
+      "timestamp": "時間戳記",
+      "level": "等級",
+      "logger": "記錄器",
+      "message": "訊息",
+      "actor": "操作者",
+      "action": "動作",
+      "target": "目標",
+      "ip": "IP",
+      "method": "方法",
+      "path": "路徑",
+      "status": "狀態",
+      "ms": "毫秒"
+    },
+    "empty": {
+      "system": "找不到系統日誌項目",
+      "audit": "找不到稽核日誌項目",
+      "access": "找不到存取日誌項目"
+    },
+    "errors": {
+      "loadSystem": "載入日誌失敗",
+      "loadAudit": "載入稽核日誌失敗",
+      "loadAccess": "載入存取日誌失敗"
+    }
+  },
+  "register": {
+    "title": "建立帳號",
+    "subtitle": "開始分析市場",
+    "email": "電子郵件",
+    "username": "使用者名稱",
+    "password": "密碼",
+    "passwordPlaceholder": "至少 8 個字元",
+    "submit": "建立帳號",
+    "submitting": "建立帳號中…",
+    "haveAccount": "已經有帳號了嗎？",
+    "signIn": "登入",
+    "errors": {
+      "passwordTooShort": "密碼長度至少須為 8 個字元",
+      "failed": "註冊失敗"
+    }
+  },
+  "settings": {
+    "title": "設定",
+    "appearance": {
+      "title": "外觀",
+      "description": "自訂您的檢視體驗",
+      "theme": "主題",
+      "darkActive": "目前為深色模式",
+      "lightActive": "目前為淺色模式",
+      "switchToLight": "切換至淺色",
+      "switchToDark": "切換至深色"
+    },
+    "timezone": {
+      "title": "時區",
+      "description": "設定您偏好的警示與時間戳記時區",
+      "current": "目前：{{timezone}}",
+      "ariaLabel": "時區"
+    },
+    "dataSource": {
+      "title": "資料來源健康狀態",
+      "description": "已連接資料供應商的狀態",
+      "checking": "正在檢查 Yahoo Finance…",
+      "operational": "Yahoo Finance 運作正常",
+      "error": "Yahoo Finance 錯誤",
+      "working": "yfinance 運作正常",
+      "checkFailed": "yfinance 檢查失敗",
+      "unreachable": "無法連接健康檢查端點"
+    },
+    "users": {
+      "title": "使用者管理",
+      "description": "管理使用者帳戶與權限",
+      "addUser": "＋ 新增使用者",
+      "none": "找不到使用者。",
+      "registered": "註冊於 {{date}}",
+      "lastLogin": "上次登入 {{date}}",
+      "never": "—",
+      "edit": "編輯",
+      "delete": "刪除"
+    },
+    "about": {
+      "title": "關於",
+      "subtitle": "股市工具組",
+      "description": "全方位的股票分析與監控工具。",
+      "releaseNotes": "版本說明",
+      "viewReleaseNotes": "在 GitHub 上檢視版本說明"
+    },
+    "deleteDialog": {
+      "title": "刪除使用者",
+      "description": "您確定要刪除使用者「{{username}}」嗎？此動作無法復原。",
+      "cancel": "取消",
+      "deleting": "刪除中…",
+      "delete": "刪除"
+    },
+    "addDialog": {
+      "title": "新增使用者",
+      "description": "建立新的使用者帳戶。",
+      "email": "電子郵件",
+      "emailPlaceholder": "user@example.com",
+      "username": "使用者名稱",
+      "usernamePlaceholder": "使用者名稱",
+      "password": "密碼",
+      "passwordPlaceholder": "密碼",
+      "cancel": "取消",
+      "creating": "建立中…",
+      "create": "建立使用者"
+    },
+    "resetDialog": {
+      "title": "重設密碼",
+      "description": "要重設使用者「{{username}}」的密碼嗎？系統將產生一組新的隨機密碼。",
+      "newPassword": "新密碼：",
+      "copyWarning": "請複製此密碼，此密碼無法復原。",
+      "cancel": "取消",
+      "resetting": "重設中…",
+      "reset": "重設密碼"
+    },
+    "editDialog": {
+      "title": "編輯使用者",
+      "description": "更新使用者「{{email}}」的詳細資料。",
+      "email": "電子郵件",
+      "emailPlaceholder": "user@example.com",
+      "admin": "管理員",
+      "adminHint": "可管理使用者與設定",
+      "active": "啟用",
+      "activeHint": "可登入並使用應用程式",
+      "password": "密碼",
+      "resetPassword": "重設密碼",
+      "cancel": "取消",
+      "saving": "儲存中…",
+      "save": "儲存變更"
+    },
+    "toasts": {
+      "emailUpdatedTitle": "電子郵件已更新",
+      "emailUpdatedDescription": "使用者電子郵件已成功更新。"
+    },
+    "errors": {
+      "addUser": "新增使用者失敗",
+      "resetFailed": "重設失敗",
+      "updateEmail": "更新電子郵件失敗",
+      "deleteFailed": "刪除失敗"
+    }
+  },
+  "signals": {
+    "title": "交易信號",
+    "subtitle": "根據技術指標產生的即時信號",
+    "refresh": "重新整理",
+    "noSignalData": "此股票代號目前尚無信號資料。",
+    "noSignalDataFor": "{{symbol}} 無信號資料",
+    "analysisUnavailable": "無法取得分析",
+    "addTicker": {
+      "button": "新增股票代號",
+      "title": "新增股票代號",
+      "description": "輸入股票代號以加入您的追蹤清單。",
+      "cancel": "取消",
+      "adding": "新增中…",
+      "errorRequired": "請選擇或輸入股票代號",
+      "errorInvalidFormat": "股票代號格式無效",
+      "errorAlreadyTracked": "{{symbol}} 已在追蹤中"
+    },
+    "stats": {
+      "bullish": "看漲信號",
+      "bearish": "看跌信號",
+      "neutral": "中立信號"
+    },
+    "empty": {
+      "title": "尚無追蹤的股票代號",
+      "description": "在此新增股票代號以追蹤其信號"
+    },
+    "disclaimer": {
+      "label": "免責聲明：",
+      "body": "這些信號由技術指標產生，不應視為投資建議。做出投資決策前，請務必自行研究。"
+    },
+    "toast": {
+      "loadFailed": "載入失敗：{{symbols}}",
+      "addFailed": "新增 {{symbol}} 失敗。請再試一次。",
+      "added": "{{symbol}} 已加入追蹤",
+      "addedNoData": "{{symbol}} 已新增 — 無信號資料",
+      "removed": "{{symbol}} 已從追蹤移除"
+    }
+  }
+}

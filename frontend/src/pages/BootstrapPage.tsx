@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ export default function BootstrapPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   useEffect(() => {
     // If users already exist, redirect to login
@@ -45,7 +47,7 @@ export default function BootstrapPage() {
       await axios.post(`${API}/api/auth/bootstrap`, { email, username, password });
       navigate("/login");
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Bootstrap failed";
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || t("bootstrap.errors.failed");
       setError(msg);
     } finally {
       setLoading(false);
@@ -59,8 +61,8 @@ export default function BootstrapPage() {
           <div className="flex items-center gap-2 font-semibold">
             <BrandMark /> Stock Toolkit
           </div>
-          <CardTitle className="text-xl">First-Time Setup</CardTitle>
-          <CardDescription>Create your admin account to get started</CardDescription>
+          <CardTitle className="text-xl">{t("bootstrap.title")}</CardTitle>
+          <CardDescription>{t("bootstrap.subtitle")}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {error && (
@@ -71,25 +73,25 @@ export default function BootstrapPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("bootstrap.email")}</Label>
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@example.com" required autoFocus />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">{t("bootstrap.username")}</Label>
               <Input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="admin" required minLength={3} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("bootstrap.password")}</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={8} />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating account…" : "Create Admin Account"}
+              {loading ? t("bootstrap.submitting") : t("bootstrap.submit")}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <a href="/login" className="text-primary underline-offset-4 hover:underline">Sign in</a>
+            {t("bootstrap.haveAccount")}{" "}
+            <a href="/login" className="text-primary underline-offset-4 hover:underline">{t("bootstrap.signIn")}</a>
           </p>
         </CardContent>
       </Card>

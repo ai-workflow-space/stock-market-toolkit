@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { StockData, StockInfo } from "@/types";
 import { fmt, pct, volFmt, compactUsd } from "@/lib/format";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -5,6 +6,7 @@ import StatCard, { type StatTone } from "@/components/common/StatCard";
 import { cn } from "@/lib/utils";
 
 export default function StockInfoCard({ info, stock }: { info: StockInfo; stock: StockData }) {
+  const { t } = useTranslation();
   const currentPrice = stock.close[stock.close.length - 1];
   const prevPrice = stock.close[stock.close.length - 2] || currentPrice;
   const priceChange = currentPrice - prevPrice;
@@ -15,21 +17,21 @@ export default function StockInfoCard({ info, stock }: { info: StockInfo; stock:
   const lows = stock.low.filter((v): v is number => v != null);
 
   const stats: { label: string; value: string; tone?: StatTone }[] = [
-    { label: "Current price", value: `$${fmt(currentPrice)}` },
-    { label: "Day change", value: pct(priceChangePct), tone },
-    { label: "Period high", value: highs.length ? `$${fmt(Math.max(...highs))}` : "—" },
-    { label: "Period low", value: lows.length ? `$${fmt(Math.min(...lows))}` : "—" },
-    { label: "Volume", value: volFmt(stock.volume[stock.volume.length - 1]) },
-    { label: "Avg volume", value: volFmt(info.avg_volume) },
-    { label: "Market cap", value: compactUsd(info.market_cap) },
-    { label: "P/E ratio", value: info.trailing_pe != null ? fmt(info.trailing_pe) : "—" },
-    { label: "Forward P/E", value: info.forward_pe != null ? fmt(info.forward_pe) : "—" },
-    { label: "Dividend yield", value: info.dividend_yield != null ? `${(info.dividend_yield * 100).toFixed(2)}%` : "—" },
-    { label: "Beta", value: info.beta != null ? fmt(info.beta) : "—" },
-    { label: "52W high", value: info.week_52_high != null ? `$${fmt(info.week_52_high)}` : "—" },
-    { label: "52W low", value: info.week_52_low != null ? `$${fmt(info.week_52_low)}` : "—" },
-    { label: "Sector", value: info.sector || "—" },
-    { label: "Industry", value: info.industry || "—" },
+    { label: t("common.fields.currentPrice"), value: `$${fmt(currentPrice)}` },
+    { label: t("common.fields.dayChange"), value: pct(priceChangePct), tone },
+    { label: t("common.fields.periodHigh"), value: highs.length ? `$${fmt(Math.max(...highs))}` : "—" },
+    { label: t("common.fields.periodLow"), value: lows.length ? `$${fmt(Math.min(...lows))}` : "—" },
+    { label: t("common.fields.volume"), value: volFmt(stock.volume[stock.volume.length - 1]) },
+    { label: t("common.fields.avgVolume"), value: volFmt(info.avg_volume) },
+    { label: t("common.fields.marketCap"), value: compactUsd(info.market_cap) },
+    { label: t("common.fields.peRatio"), value: info.trailing_pe != null ? fmt(info.trailing_pe) : "—" },
+    { label: t("common.fields.forwardPe"), value: info.forward_pe != null ? fmt(info.forward_pe) : "—" },
+    { label: t("common.fields.dividendYield"), value: info.dividend_yield != null ? `${(info.dividend_yield * 100).toFixed(2)}%` : "—" },
+    { label: t("common.fields.beta"), value: info.beta != null ? fmt(info.beta) : "—" },
+    { label: t("common.fields.week52High"), value: info.week_52_high != null ? `$${fmt(info.week_52_high)}` : "—" },
+    { label: t("common.fields.week52Low"), value: info.week_52_low != null ? `$${fmt(info.week_52_low)}` : "—" },
+    { label: t("common.fields.sector"), value: info.sector || "—" },
+    { label: t("common.fields.industry"), value: info.industry || "—" },
   ];
 
   return (
