@@ -60,6 +60,15 @@ export interface NotificationSettings {
   default_period: string;
   timezone: string;
   updated_at: string | null;
+  // Per-user SMTP fields
+  smtp_host?: string | null;
+  smtp_port?: number | null;
+  smtp_use_tls?: boolean | null;
+  smtp_username?: string | null;
+  smtp_password?: string | null; // write-only — never returned as plain text
+  smtp_from_address?: string | null;
+  smtp_reply_to?: string | null;
+  smtp_password_set?: boolean; // response-only — never sent to backend
 }
 
 export interface AlertConditionCreate {
@@ -147,6 +156,15 @@ export async function testDiscordWebhook(webhookUrl: string): Promise<{ ok: bool
   const res = await axios.post(
     `${API}/api/alerts/notifications/test-discord`,
     { webhook_url: webhookUrl },
+    { headers: authHeaders() }
+  );
+  return res.data;
+}
+
+export async function testSmtpSettings(to?: string): Promise<{ success: boolean; message: string }> {
+  const res = await axios.post(
+    `${API}/api/alerts/settings/smtp/test`,
+    to ? { to } : {},
     { headers: authHeaders() }
   );
   return res.data;

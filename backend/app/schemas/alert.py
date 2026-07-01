@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from datetime import datetime
 from typing import Optional
 
@@ -95,9 +95,31 @@ class NotificationSettingsResponse(BaseModel):
     updated_at: Optional[datetime] = None
     email_subject: Optional[str] = None
     email_body: Optional[str] = None
+    # Per-user SMTP fields
+    smtp_host: Optional[str] = None
+    smtp_port: Optional[int] = None
+    smtp_use_tls: Optional[bool] = None
+    smtp_username: Optional[str] = None
+    smtp_from_address: Optional[str] = None
+    smtp_reply_to: Optional[str] = None
+    smtp_password_set: bool = False  # never the actual password value
+
+    # Internal field used only for reading from ORM; never serialized
+    _smtp_password_encrypted: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+    @model_validator(mode="before")
+    @classmethod
+    def _read_smtp_password_set(cls, data):
+        if isinstance(data, dict):
+            # Set smtp_password_set from the encrypted field before validation
+            encrypted = data.get("smtp_password_encrypted")
+            data["smtp_password_set"] = bool(encrypted)
+            # Remove the encrypted field so it never leaks into the response
+            data.pop("smtp_password_encrypted", None)
+        return data
 
 
 class NotificationSettingsUpdate(BaseModel):
@@ -109,6 +131,14 @@ class NotificationSettingsUpdate(BaseModel):
     timezone: str = "UTC"
     email_subject: Optional[str] = Field(default=None, max_length=255)
     email_body: Optional[str] = None
+    # Per-user SMTP fields
+    smtp_host: Optional[str] = Field(default=None, max_length=255)
+    smtp_port: Optional[int] = Field(default=None, ge=1, le=65535)
+    smtp_use_tls: Optional[bool] = None
+    smtp_username: Optional[str] = Field(default=None, max_length=255)
+    smtp_password: Optional[str] = Field(default=None, max_length=500)  # null = keep existing
+    smtp_from_address: Optional[str] = Field(default=None, max_length=255)
+    smtp_reply_to: Optional[str] = Field(default=None, max_length=255)
 
 
 class NotificationDeliveryResponse(BaseModel):

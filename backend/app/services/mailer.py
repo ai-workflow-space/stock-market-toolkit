@@ -1,15 +1,27 @@
 import logging
 from email.mime.text import MIMEText
+from typing import Any
 
 import aiosmtplib
 
-from app.models import SmtpSettings
 from app.utils.crypto import decrypt
 
 log = logging.getLogger(__name__)
 
 
-async def send_email(cfg: SmtpSettings, to: str, subject: str, html_body: str) -> bool:
+class SMTPCredentials:
+    """Duck-typed SMTP config accepted by send_email / send_test_email."""
+
+    host: str
+    port: int
+    use_tls: bool
+    username: str | None
+    password_encrypted: str | None
+    from_address: str
+    reply_to: str | None
+
+
+async def send_email(cfg: Any, to: str, subject: str, html_body: str) -> bool:
     msg = MIMEText(html_body, "html")
     msg["Subject"] = subject
     msg["From"] = cfg.from_address
@@ -41,7 +53,7 @@ async def send_email(cfg: SmtpSettings, to: str, subject: str, html_body: str) -
         return False
 
 
-async def send_test_email(cfg: SmtpSettings, to: str) -> tuple[bool, str]:
+async def send_test_email(cfg: Any, to: str) -> tuple[bool, str]:
     try:
         success = await send_email(
             cfg,
