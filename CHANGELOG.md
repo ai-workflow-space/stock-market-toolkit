@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.12.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.11.0...v0.12.0) (2026-07-01)
+
+
+### Features
+
+* **alerts:** add email_subject/email_body template fields to NotificationSettings ([#235](https://github.com/ai-workflow-space/stock-market-toolkit/issues/235)) ([fd930df](https://github.com/ai-workflow-space/stock-market-toolkit/commit/fd930df44e6ee2062598dc7204c0c5d06e15ed53))
+* **alerts:** extend AlertUpdate + update_alert for full alert editing ([#242](https://github.com/ai-workflow-space/stock-market-toolkit/issues/242)) ([#245](https://github.com/ai-workflow-space/stock-market-toolkit/issues/245)) ([e548b4e](https://github.com/ai-workflow-space/stock-market-toolkit/commit/e548b4ec481feef743a9215b9a73958b6b2df133))
+* **alerts:** per-user SMTP settings ([#239](https://github.com/ai-workflow-space/stock-market-toolkit/issues/239)) ([db5bbaf](https://github.com/ai-workflow-space/stock-market-toolkit/commit/db5bbafd000550b5a181d6d0b71f3154b5fef7e6))
+* **i18n:** add full Traditional Chinese (zh-TW) localization ([903cfb9](https://github.com/ai-workflow-space/stock-market-toolkit/commit/903cfb93ca81717c0ce7fa3538cb211934a690bc))
+* language menu in navbar with 繁體中文 (i18n) ([#206](https://github.com/ai-workflow-space/stock-market-toolkit/issues/206)) ([903cfb9](https://github.com/ai-workflow-space/stock-market-toolkit/commit/903cfb93ca81717c0ce7fa3538cb211934a690bc))
+
+
+### Bug Fixes
+
+* **i18n:** address review findings and CI issues ([903cfb9](https://github.com/ai-workflow-space/stock-market-toolkit/commit/903cfb93ca81717c0ce7fa3538cb211934a690bc))
+
 ## [0.11.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.10.0...v0.11.0) (2026-07-01)
 
 
