@@ -18,24 +18,13 @@ const US_HOLIDAYS_2026: Record<number, string> = {
   1225: "Christmas Day",
 };
 
-/** Returns true if the given UTC ms timestamp falls on a US market holiday (America/New_York). */
-function isUsHoliday(utcMs: number): boolean {
-  const nyDate = new Date(utcDateUtcMs(utcMs, "America/New_York"));
-  const key = (nyDate.getMonth() + 1) * 100 + nyDate.getDate();
-  return key in US_HOLIDAYS_2026;
-}
-
 /**
- * Convert a UTC ms timestamp to a local-wallclock Date for the given IANA timezone.
- * This is needed because TS Date only works in local/OS timezone.
+ * Extract wallclock components (year, month, day, hour, minute, weekday)
+ * for a UTC ms timestamp in the given IANA timezone — directly from
+ * Intl.DateTimeFormat output, no intermediate Date.getHours() call
+ * that would inject the host machine's local timezone.
  */
-function utcDateUtcMs(utcMs: number, timezone: string): number {
-  // Format in UTC, parse in the target timezone — works because we control the IANA name.
-  // We use a helper that formats as YYYY-MM-DDTHH:mm in UTC then reads it as local in the tz.
-  // Fallback: manually compute by iterating offset.
-  const d = new Date(utcMs);
-  // Create a formatter for the target timezone and extract the local date components.
-  // Use Intl.DateTimeFormat for reliable wallclock conversion.
+function getMarketComponents(utcMs: number, timezone: string) {
   const fmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone,
     year: "numeric",
@@ -43,25 +32,34 @@ function utcDateUtcMs(utcMs: number, timezone: string): number {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-    second: "2-digit",
     hour12: false,
+    weekday: "short",
   });
-  const parts = fmt.formatToParts(d);
-  const get = (unit: string) => parseInt(parts.find(p => p.type === unit)?.value ?? "0", 10);
-  const year = get("year");
-  const month = get("month");
-  const day = get("day");
-  const hour = get("hour");
-  const minute = get("minute");
-  const second = get("second");
-  const local = Date.UTC(year, month - 1, day, hour, minute, second);
-  return local;
+  const parts = Object.fromEntries(
+    fmt.formatToParts(new Date(utcMs)).map(p => [p.type, p.value]),
+  );
+  return {
+    year: parseInt(parts.year, 10),
+    month: parseInt(parts.month, 10),
+    day: parseInt(parts.day, 10),
+    hour: parseInt(parts.hour, 10),
+    minute: parseInt(parts.minute, 10),
+    weekday: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"].indexOf(
+      (parts.weekday as string).toLowerCase(),
+    ),
+  };
+}
+
+/** Returns true if the given UTC ms timestamp falls on a US market holiday (America/New_York). */
+function isUsHoliday(utcMs: number): boolean {
+  const { month, day } = getMarketComponents(utcMs, "America/New_York");
+  const key = month * 100 + day;
+  return key in US_HOLIDAYS_2026;
 }
 
 /** Returns true if US equity markets (NYSE/NASDAQ) are open at the given UTC ms timestamp. */
 function usMarketOpen(utcMs: number): boolean {
-  const nyDate = new Date(utcDateUtcMs(utcMs, "America/New_York"));
-  const weekday = nyDate.getDay();
+  const { hour, minute, weekday } = getMarketComponents(utcMs, "America/New_York");
 
   // Weekend
   if (weekday === 0 || weekday === 6) return false;
@@ -70,8 +68,6 @@ function usMarketOpen(utcMs: number): boolean {
   if (isUsHoliday(utcMs)) return false;
 
   // Time check: 09:30–16:05 ET
-  const hour = nyDate.getHours();
-  const minute = nyDate.getMinutes();
   if (hour < 9 || hour > 16) return false;
   if (hour === 9 && minute < 30) return false;
   if (hour === 16 && minute > 5) return false;
@@ -81,15 +77,12 @@ function usMarketOpen(utcMs: number): boolean {
 
 /** Returns true if Taiwan equity markets (TWSE) are open at the given UTC ms timestamp. */
 function twMarketOpen(utcMs: number): boolean {
-  const twDate = new Date(utcDateUtcMs(utcMs, "Asia/Taipei"));
-  const weekday = twDate.getDay();
+  const { hour, minute, weekday } = getMarketComponents(utcMs, "Asia/Taipei");
 
   // Weekend
   if (weekday === 0 || weekday === 6) return false;
 
   // Time check: 09:00–13:35 TPE
-  const hour = twDate.getHours();
-  const minute = twDate.getMinutes();
   if (hour < 9 || hour > 13) return false;
   if (hour === 9 && minute < 0) return false;
   if (hour === 13 && minute > 35) return false;
