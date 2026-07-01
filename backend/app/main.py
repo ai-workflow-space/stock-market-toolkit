@@ -99,7 +99,7 @@ async def lifespan(app: FastAPI):
     backend_dir = Path(__file__).parent.parent
     alembic_cfg = Config(str(backend_dir / "alembic.ini"))
     try:
-        command.upgrade(alembic_cfg, "head")
+        command.upgrade(alembic_cfg, "heads")
     except Exception:
         log.exception("Alembic migration failed; aborting startup")
         raise
