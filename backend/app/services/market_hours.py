@@ -3,7 +3,7 @@ Market hours utility — timezone-aware open/closed checks for US and Taiwan equ
 Uses ZoneInfo (Python 3.9+ stdlib). No pytz, no pandas_market_calendars.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 # US federal holidays for 2026 — hard-coded as (month, day) tuples.

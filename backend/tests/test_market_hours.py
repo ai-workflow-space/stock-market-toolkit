@@ -2,9 +2,8 @@
 
 from datetime import datetime, timezone
 
-import pytest
 
-from app.services.market_hours import is_market_open, _us_market_open, _tw_market_open
+from app.services.market_hours import is_market_open
 
 
 # ---------------------------------------------------------------------------
