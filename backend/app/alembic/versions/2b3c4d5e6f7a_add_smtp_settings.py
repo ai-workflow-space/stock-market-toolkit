@@ -1,7 +1,7 @@
 """add_smtp_settings
 
-Revision ID: c3d4e5f6a1b2
-Revises: b2c3d4e5f6a1
+Revision ID: 2b3c4d5e6f7a
+Revises: c3d4e5f6a1b2
 Create Date: 2026-06-26 00:00:00.000000
 
 """

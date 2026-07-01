@@ -99,8 +99,13 @@ async def create_alert(
         db.add(alert)
 
     await db.commit()
-    await db.refresh(alert)
-    return alert
+    # Re-query with eager load so conditions are attached for AlertResponse serialization
+    result = await db.execute(
+        select(Alert)
+        .options(selectinload(Alert.conditions))
+        .where(Alert.id == alert.id)
+    )
+    return result.scalar_one()
 
 
 @router.get("", response_model=list[AlertResponse])
@@ -399,7 +404,6 @@ async def update_alert(
         .where(Alert.id == alert.id)
     )
     alert = result.scalar_one()
-    return alert
     return alert
 
 
