@@ -333,7 +333,8 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
         email_address: emailAddress || null,
         email_subject: emailSubject || null,
         email_body: emailBody || null,
-      });
+      };
+      const updated = await updateNotificationSettings(payload);
       onUpdate(updated);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
