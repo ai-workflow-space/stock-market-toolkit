@@ -134,6 +134,10 @@
       "createFailed": "建立警報失敗",
       "saveSettingsFailed": "儲存設定失敗",
       "loadFailed": "載入警報失敗"
+    },
+    "marketStatus": {
+      "open": "市場交易中",
+      "closed": "市場已收盤"
     }
   },
   "bootstrap": {
