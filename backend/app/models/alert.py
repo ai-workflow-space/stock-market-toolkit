@@ -59,6 +59,14 @@ class NotificationSettings(Base):
     discord_enabled = Column(Boolean, default=True)
     default_period = Column(String, default="1h")
     timezone = Column(String, default="UTC")
+    # Per-user SMTP configuration
+    smtp_host = Column(String(255), nullable=True)
+    smtp_port = Column(Integer, nullable=True, default=587)
+    smtp_use_tls = Column(Boolean, nullable=True, default=True)
+    smtp_username = Column(String(255), nullable=True)
+    smtp_password_encrypted = Column(Text, nullable=True)
+    smtp_from_address = Column(String(255), nullable=True)
+    smtp_reply_to = Column(String(255), nullable=True)
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

@@ -1,8 +1,11 @@
+from pydantic import BaseModel
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from datetime import datetime, timezone
+from typing import Optional
 
 from app.database import get_db
 from app.models import (
@@ -24,6 +27,7 @@ from app.schemas import (
     DiscordTestRequest,
 )
 from app.auth import get_current_user
+from app.utils.crypto import encrypt
 
 router = APIRouter(prefix="/api/alerts", tags=["alerts"])
 
@@ -262,6 +266,21 @@ async def update_notification_settings(
         settings.discord_enabled = data.discord_enabled
         settings.default_period = data.default_period
         settings.timezone = data.timezone
+        # Per-user SMTP fields
+        if data.smtp_host is not None:
+            settings.smtp_host = data.smtp_host
+        if data.smtp_port is not None:
+            settings.smtp_port = data.smtp_port
+        if data.smtp_use_tls is not None:
+            settings.smtp_use_tls = data.smtp_use_tls
+        if data.smtp_username is not None:
+            settings.smtp_username = data.smtp_username
+        if data.smtp_password is not None:
+            settings.smtp_password_encrypted = encrypt(data.smtp_password)
+        if data.smtp_from_address is not None:
+            settings.smtp_from_address = data.smtp_from_address
+        if data.smtp_reply_to is not None:
+            settings.smtp_reply_to = data.smtp_reply_to
         settings.updated_at = datetime.now(timezone.utc)
     else:
         settings = NotificationSettings(
@@ -274,12 +293,59 @@ async def update_notification_settings(
             discord_enabled=data.discord_enabled,
             default_period=data.default_period,
             timezone=data.timezone,
+            # Per-user SMTP fields
+            smtp_host=data.smtp_host,
+            smtp_port=data.smtp_port or 587,
+            smtp_use_tls=data.smtp_use_tls if data.smtp_use_tls is not None else True,
+            smtp_username=data.smtp_username,
+            smtp_password_encrypted=encrypt(data.smtp_password) if data.smtp_password else None,
+            smtp_from_address=data.smtp_from_address,
+            smtp_reply_to=data.smtp_reply_to,
         )
         db.add(settings)
 
     await db.commit()
     await db.refresh(settings)
     return settings
+
+
+class SmtpTestRequest(BaseModel):
+    to: Optional[str] = None
+
+
+@router.post("/settings/smtp/test")
+async def test_smtp_settings(
+    data: SmtpTestRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Send a test email using the current user's SMTP configuration."""
+    from app.services.mailer import send_test_email
+
+    result = await db.execute(
+        select(NotificationSettings).where(
+            NotificationSettings.user_id == current_user.id
+        )
+    )
+    settings = result.scalar_one_or_none()
+
+    if not settings or not settings.smtp_host:
+        raise HTTPException(
+            status_code=400,
+            detail="SMTP not configured. Please save SMTP settings first.",
+        )
+
+    to_address = data.to if data.to else settings.email_address
+    if not to_address:
+        raise HTTPException(
+            status_code=400,
+            detail="No recipient address available. Provide a 'to' address or set your notification email address.",
+        )
+
+    success, message = await send_test_email(settings, to_address)
+    if not success:
+        raise HTTPException(status_code=502, detail=message)
+    return {"success": True, "message": message}
 
 
 @router.get("/{alert_id}", response_model=AlertResponse)

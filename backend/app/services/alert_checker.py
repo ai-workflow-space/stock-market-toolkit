@@ -15,7 +15,6 @@ from app.models import (
     NotificationSettings,
     TriggeredAlert,
     NotificationDelivery,
-    SmtpSettings,
 )
 from app.providers import market_provider
 from app.services.cache import cached, cache_key
@@ -336,13 +335,23 @@ async def check_alerts():
                                 settings.email_enabled
                                 and settings.email_address
                             ):
-                                smtp_cfg = await db.get(SmtpSettings, 1)
-                                if smtp_cfg and smtp_cfg.host:
+                                if not settings.smtp_host:
+                                    # User has email enabled but no SMTP configured — record failure
+                                    delivery_records.append(
+                                        NotificationDelivery(
+                                            triggered_alert_id=None,
+                                            user_id=alert.user_id,
+                                            channel="email",
+                                            status="failed",
+                                            error="Email enabled but no SMTP configured",
+                                        )
+                                    )
+                                else:
                                     email_subject, email_body = render_alert_email(
                                         settings, symbol, alert, current_price, now
                                     )
                                     email_success = await send_email(
-                                        smtp_cfg,
+                                        settings,  # per-user SMTP config from NotificationSettings
                                         settings.email_address,
                                         email_subject,
                                         html_body=email_body,
