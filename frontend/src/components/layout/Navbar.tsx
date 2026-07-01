@@ -53,12 +53,12 @@ export default function Navbar() {
     setChangePasswordError("");
 
     if (newPassword.length < 8) {
-      setChangePasswordError("New password must be at least 8 characters");
+      setChangePasswordError(t("common.password.errorMinLength"));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setChangePasswordError("New passwords do not match");
+      setChangePasswordError(t("common.password.errorMismatch"));
       return;
     }
 
@@ -75,18 +75,18 @@ export default function Navbar() {
 
       if (!res.ok) {
         const d = await res.json();
-        throw new Error(typeof d.detail === "string" ? d.detail : "Failed to change password");
+        throw new Error(typeof d.detail === "string" ? d.detail : t("common.password.errorFailed"));
       }
 
-      toast("Password changed", { description: "Your password has been updated successfully." });
+      toast(t("common.password.changed"), { description: t("common.password.changedDescription") });
       setChangePasswordOpen(false);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to change password";
+      const msg = err instanceof Error ? err.message : t("common.password.errorFailed");
       setChangePasswordError(msg);
-      toast("Error", { description: msg });
+      toast(t("common.states.error"), { description: msg });
     } finally {
       setChangePasswordLoading(false);
     }
@@ -129,11 +129,11 @@ export default function Navbar() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
+                <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={t("common.theme.toggle")}>
                   {theme === "dark" ? <Sun /> : <Moon />}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Switch to {theme === "dark" ? "light" : "dark"} mode</TooltipContent>
+              <TooltipContent>{theme === "dark" ? t("common.theme.switchToLight") : t("common.theme.switchToDark")}</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -161,17 +161,17 @@ export default function Navbar() {
                 <DropdownMenuSeparator />
                 {user?.is_admin && (
                   <DropdownMenuItem onClick={() => navigate("/admin/logs")}>
-                    Log Viewer
+                    {t("common.menu.logViewer")}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => navigate("/admin/invites")}>
-                  Invitation Codes
+                  {t("common.menu.invitationCodes")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setChangePasswordOpen(true)}>
-                  Change Password
+                  {t("common.actions.changePassword")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { logout(); navigate("/login"); }}>
-                  Log out
+                  {t("common.actions.logOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -180,7 +180,7 @@ export default function Navbar() {
           <div className="md:hidden">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Open navigation menu">
+                <Button variant="ghost" size="icon" aria-label={t("common.menu.openNavigation")}>
                   <Menu />
                 </Button>
               </DropdownMenuTrigger>
@@ -200,9 +200,9 @@ export default function Navbar() {
     <Dialog open={changePasswordOpen} onOpenChange={(open) => { if (!open) { setChangePasswordOpen(false); setChangePasswordError(""); setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); } }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Change Password</DialogTitle>
+          <DialogTitle>{t("common.actions.changePassword")}</DialogTitle>
           <DialogDescription>
-            Update your account password.
+            {t("common.password.dialogDescription")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleChangePassword} className="flex flex-col gap-3">
@@ -212,42 +212,42 @@ export default function Navbar() {
             </div>
           )}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="current-password">Current Password</Label>
+            <Label htmlFor="current-password">{t("common.password.current")}</Label>
             <Input
               id="current-password"
               type="password"
-              placeholder="Enter current password"
+              placeholder={t("common.password.currentPlaceholder")}
               value={currentPassword}
               onChange={e => setCurrentPassword(e.target.value)}
               required
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="new-password">New Password</Label>
+            <Label htmlFor="new-password">{t("common.password.new")}</Label>
             <Input
               id="new-password"
               type="password"
-              placeholder="Enter new password"
+              placeholder={t("common.password.newPlaceholder")}
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
               required
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="confirm-password">Confirm New Password</Label>
+            <Label htmlFor="confirm-password">{t("common.password.confirm")}</Label>
             <Input
               id="confirm-password"
               type="password"
-              placeholder="Confirm new password"
+              placeholder={t("common.password.confirmPlaceholder")}
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
               required
             />
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setChangePasswordOpen(false)} disabled={changePasswordLoading}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => setChangePasswordOpen(false)} disabled={changePasswordLoading}>{t("common.actions.cancel")}</Button>
             <Button type="submit" disabled={changePasswordLoading}>
-              {changePasswordLoading ? "Saving…" : "Save"}
+              {changePasswordLoading ? t("common.actions.saving") : t("common.actions.save")}
             </Button>
           </DialogFooter>
         </form>

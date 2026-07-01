@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 interface CacheBadgeProps {
@@ -6,16 +7,17 @@ interface CacheBadgeProps {
 }
 
 export default function CacheBadge({ expiresAt, className }: CacheBadgeProps) {
+  const { t } = useTranslation();
   const expiry = new Date(expiresAt);
   const now = new Date();
   const isExpired = now >= expiry;
   const remainingSec = Math.max(0, Math.floor((expiry.getTime() - now.getTime()) / 1000));
 
   const label = isExpired
-    ? "Cache expired"
+    ? t("common.cache.expired")
     : remainingSec < 60
-    ? `Expires in ${remainingSec}s`
-    : `Expires in ${Math.floor(remainingSec / 60)}m`;
+    ? t("common.cache.expiresInSeconds", { count: remainingSec })
+    : t("common.cache.expiresInMinutes", { count: Math.floor(remainingSec / 60) });
 
   return (
     <span

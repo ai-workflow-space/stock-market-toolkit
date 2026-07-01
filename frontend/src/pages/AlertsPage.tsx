@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   createAlert,
   getAlerts,
@@ -41,50 +42,30 @@ import SymbolSearch from "@/components/common/SymbolSearch";
 import { fmt } from "../lib/format";
 import { toast } from "@/components/ui/sonner";
 
-const CONDITION_OPTIONS = [
-  { value: "above", label: "Price Above", description: "Trigger when price rises above threshold" },
-  { value: "below", label: "Price Below", description: "Trigger when price falls below threshold" },
-  { value: "pct_change_up", label: "% Up", description: "Trigger on percentage increase" },
-  { value: "pct_change_down", label: "% Down", description: "Trigger on percentage decrease" },
-];
+import type { TFunction } from "i18next";
 
-const PERIOD_OPTIONS = [
-  { value: "5m", label: "5 min" },
-  { value: "15m", label: "15 min" },
-  { value: "30m", label: "30 min" },
-  { value: "1h", label: "1 hour" },
-  { value: "4h", label: "4 hours" },
-  { value: "1d", label: "1 day" },
-];
+// Enum VALUES sent to backend are stable; only the visible labels are translated.
+const CONDITION_VALUES = ["above", "below", "pct_change_up", "pct_change_down"] as const;
+const PERIOD_VALUES = ["5m", "15m", "30m", "1h", "4h", "1d"] as const;
+const METRIC_VALUES = ["price", "rsi", "macd_hist", "signal", "pct_change"] as const;
+const OPERATOR_VALUES = ["gt", "lt", "crosses_above", "eq"] as const;
 
-const METRIC_OPTIONS = [
-  { value: "price", label: "Price" },
-  { value: "rsi", label: "RSI" },
-  { value: "macd_hist", label: "MACD Histogram" },
-  { value: "signal", label: "Signal" },
-  { value: "pct_change", label: "% Change" },
-];
-
-const OPERATOR_OPTIONS = [
-  { value: "gt", label: ">" },
-  { value: "lt", label: "<" },
-  { value: "crosses_above", label: "Crosses Above" },
-  { value: "eq", label: "=" },
-];
-
-function conditionLabel(ct: string): string {
-  const opt = CONDITION_OPTIONS.find(o => o.value === ct);
-  return opt?.label || ct;
+function conditionLabel(t: TFunction, ct: string): string {
+  return CONDITION_VALUES.includes(ct as typeof CONDITION_VALUES[number])
+    ? t(`alerts.conditionTypes.${ct}`)
+    : ct;
 }
 
-function metricLabel(m: string): string {
-  const opt = METRIC_OPTIONS.find(o => o.value === m);
-  return opt?.label || m;
+function metricLabel(t: TFunction, m: string): string {
+  return METRIC_VALUES.includes(m as typeof METRIC_VALUES[number])
+    ? t(`alerts.metrics.${m}`)
+    : m;
 }
 
-function operatorLabel(o: string): string {
-  const opt = OPERATOR_OPTIONS.find(x => x.value === o);
-  return opt?.label || o;
+function operatorLabel(t: TFunction, o: string): string {
+  return OPERATOR_VALUES.includes(o as typeof OPERATOR_VALUES[number])
+    ? t(`alerts.operators.${o}`)
+    : o;
 }
 
 // Local form type for conditions: value stored as a string so the field can be empty
@@ -104,6 +85,7 @@ function CreateAlertDialog({
   onClose: () => void;
   onCreated: (alert: Alert) => void;
 }) {
+  const { t } = useTranslation();
   const [symbol, setSymbol] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState("");
   const [symbolName, setSymbolName] = useState("");
@@ -143,16 +125,16 @@ function CreateAlertDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!symbol.trim()) { setError("Symbol is required"); return; }
+    if (!symbol.trim()) { setError(t("alerts.errors.symbolRequired")); return; }
 
     // Validate conditions: value must be a non-empty, parseable number
     for (const c of conditions) {
       if (c.value.trim() === "" || isNaN(Number(c.value))) {
-        setError("Enter a valid value for all conditions");
+        setError(t("alerts.errors.invalidConditionValue"));
         return;
       }
     }
-    if (conditions.length === 0) { setError("Add at least one condition"); return; }
+    if (conditions.length === 0) { setError(t("alerts.errors.atLeastOneCondition")); return; }
 
     setLoading(true);
     setError("");
@@ -167,7 +149,7 @@ function CreateAlertDialog({
       onCreated(alert);
       onClose();
     } catch (err: unknown) {
-      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to create alert");
+      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || t("alerts.errors.createFailed"));
     } finally {
       setLoading(false);
     }
@@ -177,15 +159,15 @@ function CreateAlertDialog({
     <Dialog open={open} onOpenChange={o => !o && onClose()}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Create Price Alert</DialogTitle>
+          <DialogTitle>{t("alerts.dialog.title")}</DialogTitle>
           <DialogDescription>
-            Set up multi-condition price alerts for any stock symbol
+            {t("alerts.dialog.description")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="symbol">Symbol</Label>
+              <Label htmlFor="symbol">{t("alerts.dialog.symbol")}</Label>
               <SymbolSearch
                 value={selectedSymbol}
                 onSearch={(sym) => {
@@ -197,7 +179,7 @@ function CreateAlertDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label>Combinator</Label>
+              <Label>{t("alerts.dialog.combinator")}</Label>
               <div className="flex gap-2">
                 <Button
                   type="button"
@@ -205,7 +187,7 @@ function CreateAlertDialog({
                   size="sm"
                   onClick={() => setCombinator("all")}
                 >
-                  AND (all conditions)
+                  {t("alerts.dialog.combinatorAll")}
                 </Button>
                 <Button
                   type="button"
@@ -213,16 +195,16 @@ function CreateAlertDialog({
                   size="sm"
                   onClick={() => setCombinator("any")}
                 >
-                  OR (any condition)
+                  {t("alerts.dialog.combinatorAny")}
                 </Button>
               </div>
             </div>
 
             <div className="grid gap-3">
               <div className="flex items-center justify-between">
-                <Label>Conditions</Label>
+                <Label>{t("alerts.dialog.conditions")}</Label>
                 <Button type="button" variant="outline" size="sm" onClick={addCondition}>
-                  <Plus className="size-3.5 mr-1" /> Add
+                  <Plus className="size-3.5 mr-1" /> {t("alerts.conditions.add")}
                 </Button>
               </div>
               {conditions.map((c, idx) => (
@@ -233,8 +215,8 @@ function CreateAlertDialog({
                       value={c.metric}
                       onChange={e => updateCondition(idx, "metric", e.target.value)}
                     >
-                      {METRIC_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      {METRIC_VALUES.map(v => (
+                        <option key={v} value={v}>{t(`alerts.metrics.${v}`)}</option>
                       ))}
                     </select>
                   </div>
@@ -244,8 +226,8 @@ function CreateAlertDialog({
                       value={c.operator}
                       onChange={e => updateCondition(idx, "operator", e.target.value)}
                     >
-                      {OPERATOR_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      {OPERATOR_VALUES.map(v => (
+                        <option key={v} value={v}>{t(`alerts.operators.${v}`)}</option>
                       ))}
                     </select>
                   </div>
@@ -254,7 +236,7 @@ function CreateAlertDialog({
                       type="number"
                       step="0.01"
                       inputMode="decimal"
-                      placeholder="Value"
+                      placeholder={t("alerts.conditions.valuePlaceholder")}
                       value={c.value}
                       onChange={e => updateCondition(idx, "value", e.target.value)}
                     />
@@ -269,22 +251,22 @@ function CreateAlertDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="period">Period</Label>
+              <Label htmlFor="period">{t("alerts.dialog.period")}</Label>
               <select
                 id="period"
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
                 value={period}
                 onChange={e => setPeriod(e.target.value)}
               >
-                {PERIOD_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                {PERIOD_VALUES.map(v => (
+                  <option key={v} value={v}>{t(`alerts.periods.${v}`)}</option>
                 ))}
               </select>
             </div>
 
             {currentPrice != null && (
               <p className="text-xs text-muted-foreground">
-                Current price: ${currentPrice.toFixed(2)}
+                {t("alerts.dialog.currentPrice", { price: currentPrice.toFixed(2) })}
               </p>
             )}
 
@@ -293,9 +275,9 @@ function CreateAlertDialog({
             )}
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={onClose}>{t("alerts.dialog.cancel")}</Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Creating..." : "Create Alert"}
+              {loading ? t("alerts.dialog.creating") : t("alerts.dialog.create")}
             </Button>
           </DialogFooter>
         </form>
@@ -309,6 +291,7 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
   settings: NotificationSettings;
   onUpdate: (s: NotificationSettings) => void;
 }) {
+  const { t } = useTranslation();
   const [discordWebhook, setDiscordWebhook] = useState(settings.discord_webhook_url || "");
   const [discordEnabled, setDiscordEnabled] = useState(settings.discord_enabled);
   const [emailEnabled, setEmailEnabled] = useState(settings.email_enabled);
@@ -357,7 +340,7 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err: unknown) {
-      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to save settings");
+      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || t("alerts.errors.saveSettingsFailed"));
     } finally {
       setLoading(false);
     }
@@ -394,8 +377,8 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
   return (
     <Card className="mt-6">
       <CardHeader>
-        <CardTitle>Notification Settings</CardTitle>
-        <CardDescription>Configure how you receive alert notifications</CardDescription>
+        <CardTitle>{t("alerts.settings.title")}</CardTitle>
+        <CardDescription>{t("alerts.settings.description")}</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
 
@@ -406,9 +389,9 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
             checked={discordEnabled}
             onCheckedChange={setDiscordEnabled}
           />
-          <Label htmlFor="discord-toggle">Enable Discord Notifications</Label>
+          <Label htmlFor="discord-toggle">{t("alerts.settings.enableDiscord")}</Label>
         </div>
-        {discordEnabled && (
+{discordEnabled && (
           <>
             <div className="grid gap-2">
               <Label htmlFor="webhook">Discord Webhook URL</Label>
@@ -565,7 +548,7 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
         )}
 
         <Button onClick={handleSave} disabled={loading} className="w-fit">
-          {loading ? "Saving…" : saved ? "Saved" : "Save settings"}
+          {loading ? t("alerts.settings.saving") : saved ? t("alerts.settings.saved") : t("alerts.settings.save")}
         </Button>
         {error && <p className="text-sm text-destructive">{error}</p>}
       </CardContent>
@@ -575,6 +558,7 @@ function NotificationSettingsPanel({ settings, onUpdate }: {
 
 /* ─── Main Alerts Page ─── */
 export default function AlertsPage() {
+  const { t } = useTranslation();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [triggered, setTriggered] = useState<TriggeredAlert[]>([]);
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
@@ -596,11 +580,11 @@ export default function AlertsPage() {
       setTriggered(triggeredData);
       setSettings(settingsData);
     } catch (err: unknown) {
-      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to load alerts");
+      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || t("alerts.errors.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -615,7 +599,7 @@ export default function AlertsPage() {
   };
 
   const handleDelete = async (alertId: number) => {
-    if (!confirm("Delete this alert?")) return;
+    if (!confirm(t("alerts.confirmDelete"))) return;
     try {
       await deleteAlert(alertId);
       setAlerts(prev => prev.filter(a => a.id !== alertId));
@@ -646,20 +630,20 @@ export default function AlertsPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Price alerts</h1>
-        <Button onClick={() => setShowCreate(true)}>New alert</Button>
+        <h1 className="text-2xl font-semibold">{t("alerts.title")}</h1>
+        <Button onClick={() => setShowCreate(true)}>{t("alerts.newAlert")}</Button>
       </div>
 
         {error && <p className="text-sm text-destructive mb-4">{error}</p>}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="alerts">My Alerts ({alerts.length})</TabsTrigger>
+            <TabsTrigger value="alerts">{t("alerts.tabs.myAlerts", { count: alerts.length })}</TabsTrigger>
             <TabsTrigger value="triggered">
-              Triggered
+              {t("alerts.tabs.triggered")}
               {unreadCount > 0 && <Badge variant="destructive" className="ml-1.5">{unreadCount}</Badge>}
             </TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="settings">{t("alerts.tabs.settings")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="alerts">
@@ -667,8 +651,8 @@ export default function AlertsPage() {
               <Card>
                 <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
                   <Bell className="size-8 text-muted-foreground" />
-                  <p className="text-muted-foreground">No alerts yet</p>
-                  <Button onClick={() => setShowCreate(true)}>New alert</Button>
+                  <p className="text-muted-foreground">{t("alerts.empty.noAlerts")}</p>
+                  <Button onClick={() => setShowCreate(true)}>{t("alerts.newAlert")}</Button>
                 </CardContent>
               </Card>
             ) : (
@@ -681,8 +665,11 @@ export default function AlertsPage() {
                         <span className="text-sm text-muted-foreground truncate flex-1">
                           {alert.symbol_name ? `${alert.symbol_name} · ` : ""}
                           {alert.conditions?.length > 0
-                            ? `${alert.combinator === "any" ? "ANY" : "ALL"} (${alert.conditions.length} conditions)`
-                            : conditionLabel(alert.condition_type)
+                            ? t("alerts.conditionsSummary", {
+                                combinator: alert.combinator === "any" ? t("alerts.combinatorAny") : t("alerts.combinatorAll"),
+                                count: alert.conditions.length,
+                              })
+                            : conditionLabel(t, alert.condition_type)
                           }
                         </span>
                         <span className="font-semibold text-sm">
@@ -693,7 +680,9 @@ export default function AlertsPage() {
                         </span>
                         <span className="text-xs text-muted-foreground uppercase">{alert.period}</span>
                         <Switch
-                          aria-label={`${alert.enabled ? "Disable" : "Enable"} ${alert.symbol} alert`}
+                          aria-label={alert.enabled
+                            ? t("alerts.aria.disableAlert", { symbol: alert.symbol })
+                            : t("alerts.aria.enableAlert", { symbol: alert.symbol })}
                           checked={alert.enabled}
                           onCheckedChange={() => handleToggle(alert)}
                         />
@@ -702,7 +691,7 @@ export default function AlertsPage() {
                           size="icon"
                           onClick={() => handleDelete(alert.id)}
                           className="text-muted-foreground hover:text-destructive"
-                          aria-label={`Delete ${alert.symbol} alert`}
+                          aria-label={t("alerts.aria.deleteAlert", { symbol: alert.symbol })}
                         >
                           <X />
                         </Button>
@@ -711,7 +700,7 @@ export default function AlertsPage() {
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {alert.conditions.map((c, i) => (
                             <Badge key={c.id || i} variant="secondary" className="text-xs">
-                              {metricLabel(c.metric)} {operatorLabel(c.operator)} {c.value}
+                              {metricLabel(t, c.metric)} {operatorLabel(t, c.operator)} {c.value}
                             </Badge>
                           ))}
                         </div>
@@ -728,7 +717,7 @@ export default function AlertsPage() {
               <Card>
                 <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
                   <CheckCircle2 className="size-8 text-muted-foreground" />
-                  <p className="text-muted-foreground">No triggered alerts</p>
+                  <p className="text-muted-foreground">{t("alerts.empty.noTriggered")}</p>
                 </CardContent>
               </Card>
             ) : (
@@ -738,7 +727,7 @@ export default function AlertsPage() {
                     key={alert.id}
                     role={alert.read ? undefined : "button"}
                     tabIndex={alert.read ? -1 : 0}
-                    aria-label={alert.read ? undefined : `Mark ${alert.symbol} alert as read`}
+                    aria-label={alert.read ? undefined : t("alerts.aria.markRead", { symbol: alert.symbol })}
                     className={`transition-colors ${alert.read ? "opacity-70" : "cursor-pointer border-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"}`}
                     onClick={() => !alert.read && handleMarkRead(alert.id)}
                     onKeyDown={(e) => {
@@ -754,16 +743,19 @@ export default function AlertsPage() {
                         {alert.symbol_name && (
                           <span className="text-sm text-muted-foreground truncate">{alert.symbol_name}</span>
                         )}
-                        <span className="text-sm text-muted-foreground">{conditionLabel(alert.condition_type)}</span>
+                        <span className="text-sm text-muted-foreground">{conditionLabel(t, alert.condition_type)}</span>
                         {!alert.read && (
                           <span className="ml-auto flex items-center">
                             <span className="inline-block size-2 rounded-full bg-primary" aria-hidden="true" />
-                            <span className="sr-only">Unread</span>
+                            <span className="sr-only">{t("alerts.unread")}</span>
                           </span>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        Triggered at ${fmt(alert.trigger_price)} (threshold: ${fmt(alert.threshold_value)})
+                        {t("alerts.triggeredAt", {
+                          price: fmt(alert.trigger_price),
+                          threshold: fmt(alert.threshold_value),
+                        })}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
                         {new Date(alert.triggered_at).toLocaleString()}

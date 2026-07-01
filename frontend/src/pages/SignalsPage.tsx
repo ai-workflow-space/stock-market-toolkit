@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Activity, Plus, Loader2 } from "lucide-react";
 import SignalCard from "@/components/SignalCard";
 import StatCard from "@/components/common/StatCard";
@@ -72,6 +73,7 @@ function pendingSignal(symbol: string, reason?: string): Signal {
 
 /* ─── Signals Page ─── */
 export default function SignalsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const {
     symbols: watchedSymbols,
@@ -120,7 +122,7 @@ export default function SignalsPage() {
         setSignalErrors(Object.fromEntries(errs.map((e) => [e.symbol, e.error])));
         if (errs.length > 0) {
           const failedSymbols = errs.map((e) => e.symbol).join(", ");
-          toast.error(`Failed to load: ${failedSymbols}`);
+          toast.error(t("signals.toast.loadFailed", { symbols: failedSymbols }));
         }
       } catch {
         setSignals([]);
@@ -131,7 +133,7 @@ export default function SignalsPage() {
     }
 
     fetchSignals();
-  }, [watchedSymbols]);
+  }, [watchedSymbols, t]);
 
   const fetchSignalForTicker = useCallback(async (symbol: string): Promise<Signal> => {
     const token = localStorage.getItem("access_token");
@@ -140,7 +142,7 @@ export default function SignalsPage() {
       { headers: { Authorization: `Bearer ${token}` } },
     );
     if (!res.ok) {
-      let detail = `No signal data for ${symbol}`;
+      let detail = t("signals.noSignalDataFor", { symbol });
       try {
         detail = (await res.json())?.detail ?? detail;
       } catch {
@@ -153,20 +155,20 @@ export default function SignalsPage() {
       ...mapAnalysisToSignal(data, symbol),
       id: `sig-${symbol}-${Date.now()}`,
     };
-  }, []);
+  }, [t]);
 
   const handleAddTicker = async () => {
     const trimmed = (selectedSymbol || newTicker).trim().toUpperCase();
     if (!trimmed) {
-      setTickerError("Select or enter a ticker symbol");
+      setTickerError(t("signals.addTicker.errorRequired"));
       return;
     }
     if (!/^[A-Z0-9]{1,10}(\.[A-Z]{1,2})?$/.test(trimmed)) {
-      setTickerError("Invalid ticker symbol format");
+      setTickerError(t("signals.addTicker.errorInvalidFormat"));
       return;
     }
     if (isWatched(trimmed)) {
-      setTickerError(`${trimmed} is already being tracked`);
+      setTickerError(t("signals.addTicker.errorAlreadyTracked", { symbol: trimmed }));
       return;
     }
 
@@ -176,7 +178,7 @@ export default function SignalsPage() {
     try {
       await addToWatchlist(trimmed);
     } catch {
-      toast.error(`Failed to add ${trimmed}. Please try again.`);
+      toast.error(t("signals.toast.addFailed", { symbol: trimmed }));
       setAddingTicker(false);
       return;
     }
@@ -196,11 +198,11 @@ export default function SignalsPage() {
         delete next[trimmed];
         return next;
       });
-      toast.success(`${trimmed} added to tracking`);
+      toast.success(t("signals.toast.added", { symbol: trimmed }));
     } catch (err) {
-      const reason = err instanceof Error ? err.message : "Analysis unavailable";
+      const reason = err instanceof Error ? err.message : t("signals.analysisUnavailable");
       setSignalErrors((prev) => ({ ...prev, [trimmed]: reason }));
-      toast(`${trimmed} added — no signal data available`);
+      toast(t("signals.toast.addedNoData", { symbol: trimmed }));
     } finally {
       setAddingTicker(false);
     }
@@ -215,8 +217,8 @@ export default function SignalsPage() {
       delete next[symbol];
       return next;
     });
-    toast(`${symbol} removed from tracking`);
-  }, [removeFromWatchlist]);
+    toast(t("signals.toast.removed", { symbol }));
+  }, [removeFromWatchlist, t]);
 
   const handleView = useCallback((symbol: string) => navigate(`/?symbol=${symbol}`), [navigate]);
   const handleCompare = useCallback(
@@ -235,10 +237,10 @@ export default function SignalsPage() {
       items.map((item) => ({
         signal:
           signalBySymbol.get(item.symbol) ??
-          pendingSignal(item.symbol, signalErrors[item.symbol]),
+          pendingSignal(item.symbol, signalErrors[item.symbol] ?? t("signals.noSignalData")),
         pending: !signalBySymbol.has(item.symbol),
       })),
-    [items, signalBySymbol, signalErrors],
+    [items, signalBySymbol, signalErrors, t],
   );
 
   const bullish = signals.filter((s) => s.direction === "bullish");
@@ -251,17 +253,17 @@ export default function SignalsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Trading signals</h1>
-          <p className="text-sm text-muted-foreground">Real-time signals based on technical indicators</p>
+          <h1 className="text-2xl font-semibold">{t("signals.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("signals.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={refreshWatchlist} disabled={watchlistLoading}>
             {watchlistLoading ? <Loader2 className="mr-1 size-4 animate-spin" /> : null}
-            Refresh
+            {t("signals.refresh")}
           </Button>
           <Button onClick={() => setAddTickerOpen(true)} variant="outline" size="sm">
             <Plus className="size-4" />
-            Add Ticker
+            {t("signals.addTicker.button")}
           </Button>
         </div>
       </div>
@@ -271,9 +273,9 @@ export default function SignalsPage() {
       <Dialog open={addTickerOpen} onOpenChange={setAddTickerOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Ticker</DialogTitle>
+            <DialogTitle>{t("signals.addTicker.title")}</DialogTitle>
             <DialogDescription>
-              Enter a stock symbol to add to your tracking list.
+              {t("signals.addTicker.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="py-2">
@@ -291,10 +293,10 @@ export default function SignalsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddTickerOpen(false)}>
-              Cancel
+              {t("signals.addTicker.cancel")}
             </Button>
             <Button onClick={handleAddTicker} disabled={addingTicker}>
-              {addingTicker ? "Adding..." : "Add Ticker"}
+              {addingTicker ? t("signals.addTicker.adding") : t("signals.addTicker.button")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -316,22 +318,22 @@ export default function SignalsPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <StatCard label="Bullish signals" value={String(bullish.length)} tone="up" />
-            <StatCard label="Bearish signals" value={String(bearish.length)} tone="down" />
-            <StatCard label="Neutral signals" value={String(neutral.length)} tone="neutral" />
+            <StatCard label={t("signals.stats.bullish")} value={String(bullish.length)} tone="up" />
+            <StatCard label={t("signals.stats.bearish")} value={String(bearish.length)} tone="down" />
+            <StatCard label={t("signals.stats.neutral")} value={String(neutral.length)} tone="neutral" />
           </div>
 
           {items.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
                 <Activity className="size-8 text-muted-foreground" />
-                <p className="text-muted-foreground">No tracked symbols</p>
+                <p className="text-muted-foreground">{t("signals.empty.title")}</p>
                 <p className="text-sm text-muted-foreground">
-                  Add tickers to track their signals here
+                  {t("signals.empty.description")}
                 </p>
                 <Button variant="outline" size="sm" onClick={() => setAddTickerOpen(true)}>
                   <Plus className="mr-1 size-4" />
-                  Add Ticker
+                  {t("signals.addTicker.button")}
                 </Button>
               </CardContent>
             </Card>
@@ -352,8 +354,7 @@ export default function SignalsPage() {
 
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
             <p className="m-0 text-xs text-muted-foreground">
-              <strong>Disclaimer:</strong> These signals are generated by technical indicators and should not be
-              considered financial advice. Always do your own research before making investment decisions.
+              <strong>{t("signals.disclaimer.label")}</strong> {t("signals.disclaimer.body")}
             </p>
           </div>
         </>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { RefreshCw, ChevronDown, ChevronRight, Search, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,17 +100,18 @@ function StatusBadge({ status }: { status: number }) {
 /* ── Copy helper ───────────────────────────────────────────── */
 
 function CopyButton({ data }: { data: unknown }) {
+  const { t } = useTranslation();
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
     navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-    toast("Copied", { description: "Log entry copied to clipboard" });
+    toast(t("logs.copy.toastTitle"), { description: t("logs.copy.toastDescription") });
   };
 
   return (
     <button
       onClick={handleCopy}
       className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
-      title="Copy entry as JSON"
+      title={t("logs.copy.buttonTitle")}
     >
       <Copy className="size-3.5" />
     </button>
@@ -119,6 +121,7 @@ function CopyButton({ data }: { data: unknown }) {
 /* ── System Logs Tab ───────────────────────────────────────── */
 
 function SystemLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -138,7 +141,7 @@ function SystemLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
       setLogs(data.logs);
       setTotal(data.total);
     } catch (err: unknown) {
-      setError((err as Error).message || "Failed to load logs");
+      setError((err as Error).message || t("logs.errors.loadSystem"));
     } finally {
       setLoading(false);
     }
@@ -171,25 +174,25 @@ function SystemLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
       <Card className="mb-4">
         <CardContent className="flex flex-wrap items-end gap-3 py-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="sys-level" className="text-xs text-muted-foreground">Level</Label>
+            <Label htmlFor="sys-level" className="text-xs text-muted-foreground">{t("logs.filters.level")}</Label>
             <Select value={level} onValueChange={setLevel}>
               <SelectTrigger id="sys-level" className="w-32">
-                <SelectValue placeholder="All levels" />
+                <SelectValue placeholder={t("logs.filters.allLevels")} />
               </SelectTrigger>
               <SelectContent>
                 {LEVELS.map((l) => (
-                  <SelectItem key={l} value={l}>{l || "All levels"}</SelectItem>
+                  <SelectItem key={l} value={l}>{l || t("logs.filters.allLevels")}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
-            <Label htmlFor="sys-search" className="text-xs text-muted-foreground">Search</Label>
+            <Label htmlFor="sys-search" className="text-xs text-muted-foreground">{t("logs.filters.search")}</Label>
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
               <Input
                 id="sys-search"
-                placeholder="Search log entries..."
+                placeholder={t("logs.filters.searchSystemPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-8"
@@ -198,7 +201,7 @@ function SystemLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
           </div>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
             <RefreshCw className={`size-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
+            {t("logs.refresh")}
           </Button>
         </CardContent>
       </Card>
@@ -218,20 +221,20 @@ function SystemLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
       ) : logs.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-            <p className="text-muted-foreground">No system log entries found</p>
+            <p className="text-muted-foreground">{t("logs.empty.system")}</p>
           </CardContent>
         </Card>
       ) : (
         <div>
-          <p className="text-xs text-muted-foreground mb-2">{total} entries</p>
+          <p className="text-xs text-muted-foreground mb-2">{t("logs.entries", { count: total })}</p>
           <div className="overflow-x-auto rounded-md border border-border">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-muted/50 text-left text-xs font-medium text-muted-foreground">
-                  <th className="py-2.5 px-3 w-[170px]">Timestamp</th>
-                  <th className="py-2.5 px-3 w-[90px]">Level</th>
-                  <th className="py-2.5 px-3">Logger</th>
-                  <th className="py-2.5 px-3">Message</th>
+                  <th className="py-2.5 px-3 w-[170px]">{t("logs.table.timestamp")}</th>
+                  <th className="py-2.5 px-3 w-[90px]">{t("logs.table.level")}</th>
+                  <th className="py-2.5 px-3">{t("logs.table.logger")}</th>
+                  <th className="py-2.5 px-3">{t("logs.table.message")}</th>
                   <th className="py-2.5 px-3 w-14" />
                 </tr>
               </thead>
@@ -288,6 +291,7 @@ function SystemLogRow({ entry }: { entry: LogEntry }) {
 /* ── Audit Logs Tab ────────────────────────────────────────── */
 
 function AuditLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -307,7 +311,7 @@ function AuditLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
       setLogs(data.logs);
       setTotal(data.total);
     } catch (err: unknown) {
-      setError((err as Error).message || "Failed to load audit logs");
+      setError((err as Error).message || t("logs.errors.loadAudit"));
     } finally {
       setLoading(false);
     }
@@ -340,13 +344,13 @@ function AuditLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
       <Card className="mb-4">
         <CardContent className="flex flex-wrap items-end gap-3 py-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="audit-action" className="text-xs text-muted-foreground">Action</Label>
+            <Label htmlFor="audit-action" className="text-xs text-muted-foreground">{t("logs.filters.action")}</Label>
             <Select value={actionFilter} onValueChange={setActionFilter}>
               <SelectTrigger id="audit-action" className="w-36">
-                <SelectValue placeholder="All actions" />
+                <SelectValue placeholder={t("logs.filters.allActions")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All actions</SelectItem>
+                <SelectItem value="">{t("logs.filters.allActions")}</SelectItem>
                 <SelectItem value="create">create</SelectItem>
                 <SelectItem value="update">update</SelectItem>
                 <SelectItem value="delete">delete</SelectItem>
@@ -356,12 +360,12 @@ function AuditLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
             </Select>
           </div>
           <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
-            <Label htmlFor="audit-search" className="text-xs text-muted-foreground">Search</Label>
+            <Label htmlFor="audit-search" className="text-xs text-muted-foreground">{t("logs.filters.search")}</Label>
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
               <Input
                 id="audit-search"
-                placeholder="Search audit entries..."
+                placeholder={t("logs.filters.searchAuditPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-8"
@@ -370,7 +374,7 @@ function AuditLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
           </div>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
             <RefreshCw className={`size-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
+            {t("logs.refresh")}
           </Button>
         </CardContent>
       </Card>
@@ -390,21 +394,21 @@ function AuditLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
       ) : logs.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-            <p className="text-muted-foreground">No audit log entries found</p>
+            <p className="text-muted-foreground">{t("logs.empty.audit")}</p>
           </CardContent>
         </Card>
       ) : (
         <div>
-          <p className="text-xs text-muted-foreground mb-2">{total} entries</p>
+          <p className="text-xs text-muted-foreground mb-2">{t("logs.entries", { count: total })}</p>
           <div className="overflow-x-auto rounded-md border border-border">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-muted/50 text-left text-xs font-medium text-muted-foreground">
-                  <th className="py-2.5 px-3 w-[170px]">Timestamp</th>
-                  <th className="py-2.5 px-3 w-[80px]">Actor</th>
-                  <th className="py-2.5 px-3 w-[90px]">Action</th>
-                  <th className="py-2.5 px-3">Target</th>
-                  <th className="py-2.5 px-3 w-[130px]">IP</th>
+                  <th className="py-2.5 px-3 w-[170px]">{t("logs.table.timestamp")}</th>
+                  <th className="py-2.5 px-3 w-[80px]">{t("logs.table.actor")}</th>
+                  <th className="py-2.5 px-3 w-[90px]">{t("logs.table.action")}</th>
+                  <th className="py-2.5 px-3">{t("logs.table.target")}</th>
+                  <th className="py-2.5 px-3 w-[130px]">{t("logs.table.ip")}</th>
                   <th className="py-2.5 px-3 w-14" />
                 </tr>
               </thead>
@@ -462,6 +466,7 @@ function AuditLogRow({ entry }: { entry: AuditLogEntry }) {
 const HTTP_METHODS = ["", "GET", "POST", "PUT", "PATCH", "DELETE"];
 
 function AccessLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<AccessLogEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -485,7 +490,7 @@ function AccessLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
       setLogs(data.logs);
       setTotal(data.total);
     } catch (err: unknown) {
-      setError((err as Error).message || "Failed to load access logs");
+      setError((err as Error).message || t("logs.errors.loadAccess"));
     } finally {
       setLoading(false);
     }
@@ -518,24 +523,24 @@ function AccessLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
       <Card className="mb-4">
         <CardContent className="flex flex-wrap items-end gap-3 py-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="acc-method" className="text-xs text-muted-foreground">Method</Label>
+            <Label htmlFor="acc-method" className="text-xs text-muted-foreground">{t("logs.filters.method")}</Label>
             <Select value={method} onValueChange={setMethod}>
               <SelectTrigger id="acc-method" className="w-28">
-                <SelectValue placeholder="All" />
+                <SelectValue placeholder={t("logs.filters.all")} />
               </SelectTrigger>
               <SelectContent>
                 {HTTP_METHODS.map((m) => (
-                  <SelectItem key={m} value={m}>{m || "All"}</SelectItem>
+                  <SelectItem key={m} value={m}>{m || t("logs.filters.all")}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="acc-status-min" className="text-xs text-muted-foreground">Status min</Label>
+            <Label htmlFor="acc-status-min" className="text-xs text-muted-foreground">{t("logs.filters.statusMin")}</Label>
             <Input
               id="acc-status-min"
               type="number"
-              placeholder="Min"
+              placeholder={t("logs.filters.minPlaceholder")}
               value={statusMin}
               onChange={(e) => setStatusMin(e.target.value)}
               className="w-20"
@@ -544,11 +549,11 @@ function AccessLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="acc-status-max" className="text-xs text-muted-foreground">Status max</Label>
+            <Label htmlFor="acc-status-max" className="text-xs text-muted-foreground">{t("logs.filters.statusMax")}</Label>
             <Input
               id="acc-status-max"
               type="number"
-              placeholder="Max"
+              placeholder={t("logs.filters.maxPlaceholder")}
               value={statusMax}
               onChange={(e) => setStatusMax(e.target.value)}
               className="w-20"
@@ -557,12 +562,12 @@ function AccessLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
             />
           </div>
           <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
-            <Label htmlFor="acc-search" className="text-xs text-muted-foreground">Search</Label>
+            <Label htmlFor="acc-search" className="text-xs text-muted-foreground">{t("logs.filters.search")}</Label>
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
               <Input
                 id="acc-search"
-                placeholder="Search access entries..."
+                placeholder={t("logs.filters.searchAccessPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-8"
@@ -571,7 +576,7 @@ function AccessLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
           </div>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
             <RefreshCw className={`size-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
+            {t("logs.refresh")}
           </Button>
         </CardContent>
       </Card>
@@ -591,22 +596,22 @@ function AccessLogsTab({ autoRefresh }: { autoRefresh: boolean }) {
       ) : logs.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-            <p className="text-muted-foreground">No access log entries found</p>
+            <p className="text-muted-foreground">{t("logs.empty.access")}</p>
           </CardContent>
         </Card>
       ) : (
         <div>
-          <p className="text-xs text-muted-foreground mb-2">{total} entries</p>
+          <p className="text-xs text-muted-foreground mb-2">{t("logs.entries", { count: total })}</p>
           <div className="overflow-x-auto rounded-md border border-border">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-muted/50 text-left text-xs font-medium text-muted-foreground">
-                  <th className="py-2.5 px-3 w-[170px]">Timestamp</th>
-                  <th className="py-2.5 px-3 w-[130px]">IP</th>
-                  <th className="py-2.5 px-3 w-[80px]">Method</th>
-                  <th className="py-2.5 px-3">Path</th>
-                  <th className="py-2.5 px-3 w-[70px]">Status</th>
-                  <th className="py-2.5 px-3 w-[60px]">ms</th>
+                  <th className="py-2.5 px-3 w-[170px]">{t("logs.table.timestamp")}</th>
+                  <th className="py-2.5 px-3 w-[130px]">{t("logs.table.ip")}</th>
+                  <th className="py-2.5 px-3 w-[80px]">{t("logs.table.method")}</th>
+                  <th className="py-2.5 px-3">{t("logs.table.path")}</th>
+                  <th className="py-2.5 px-3 w-[70px]">{t("logs.table.status")}</th>
+                  <th className="py-2.5 px-3 w-[60px]">{t("logs.table.ms")}</th>
                   <th className="py-2.5 px-3 w-14" />
                 </tr>
               </thead>
@@ -665,21 +670,22 @@ function AccessLogRow({ entry }: { entry: AccessLogEntry }) {
 /* ── Unified Logs Page ─────────────────────────────────────── */
 
 export default function LogsPage() {
+  const { t } = useTranslation();
   const [autoRefresh, setAutoRefresh] = useState(false);
 
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Logs</h1>
+          <h1 className="text-2xl font-semibold">{t("logs.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            System, audit, and access logs
+            {t("logs.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Label htmlFor="logs-auto-refresh" className="text-sm text-muted-foreground">
-              Auto-refresh
+              {t("logs.autoRefresh")}
             </Label>
             <Switch
               id="logs-auto-refresh"
@@ -692,9 +698,9 @@ export default function LogsPage() {
 
       <Tabs defaultValue="system">
         <TabsList>
-          <TabsTrigger value="system">System</TabsTrigger>
-          <TabsTrigger value="audit">Audit</TabsTrigger>
-          <TabsTrigger value="access">Access</TabsTrigger>
+          <TabsTrigger value="system">{t("logs.tabs.system")}</TabsTrigger>
+          <TabsTrigger value="audit">{t("logs.tabs.audit")}</TabsTrigger>
+          <TabsTrigger value="access">{t("logs.tabs.access")}</TabsTrigger>
         </TabsList>
         <TabsContent value="system">
           <SystemLogsTab autoRefresh={autoRefresh} />

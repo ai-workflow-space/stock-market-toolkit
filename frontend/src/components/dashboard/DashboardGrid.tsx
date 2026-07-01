@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { StockData, Indicators, StockInfo, Fundamentals, DividendData, NewsData } from "@/types";
 import ChartCard from "@/components/common/ChartCard";
 import PriceChart from "./PriceChart";
@@ -22,8 +23,9 @@ export interface DashboardGridProps {
 }
 
 export default function DashboardGrid({ stock, indicators, info, fundamentals, dividends, news, newsLoading, active }: DashboardGridProps) {
-  const dates = stock.timestamp.map((t) =>
-    new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+  const { t } = useTranslation();
+  const dates = stock.timestamp.map((ts) =>
+    new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
   );
   const showRsi = active.has("rsi");
   const showMacd = active.has("macd");
@@ -31,7 +33,7 @@ export default function DashboardGrid({ stock, indicators, info, fundamentals, d
   return (
     <div className="grid grid-cols-12 gap-4">
       <div className="col-span-12">
-        <ChartCard title={`${stock.symbol} · ${stock.period.toUpperCase()}`} subtitle="Price" toolbar={<WatchlistButton symbol={stock.symbol} />}>
+        <ChartCard title={`${stock.symbol} · ${stock.period.toUpperCase()}`} subtitle={t("common.charts.price")} toolbar={<WatchlistButton symbol={stock.symbol} />}>
           <PriceChart data={stock} indicators={indicators} showBB={active.has("bb")} active={active} />
         </ChartCard>
       </div>

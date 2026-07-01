@@ -7,5 +7,540 @@
     "settings": "Settings",
     "switchToChinese": "Switch to 中文",
     "switchToEnglish": "Switch to English"
+  },
+  "adminInvite": {
+    "title": "Invitation Codes",
+    "subtitle": "Generate and manage invitation codes for new user registration",
+    "generateCode": "Generate Code",
+    "form": {
+      "dialogTitle": "Generate Invitation Code",
+      "dialogDescription": "Create a new invitation code for new user registration",
+      "expiresLabel": "Expires in (days)",
+      "expiresHint": "The code will expire after this many days (1-365)",
+      "cancel": "Cancel",
+      "generating": "Generating...",
+      "submit": "Generate Code",
+      "validationRange": "Expiration must be between 1 and 365 days"
+    },
+    "copy": {
+      "ariaLabel": "Copy code"
+    },
+    "newCodeLabel": "New invitation code:",
+    "empty": {
+      "message": "No invitation codes yet",
+      "action": "Generate your first code"
+    },
+    "table": {
+      "used": "Used",
+      "deactivated": "Deactivated",
+      "expired": "Expired",
+      "created": "Created {{date}}",
+      "expires": "Expires {{date}}",
+      "usedBy": "Used by {{user}}",
+      "deactivateAriaLabel": "Deactivate code"
+    },
+    "confirm": {
+      "deactivate": "Deactivate this invitation code?"
+    },
+    "errors": {
+      "create": "Failed to create invite code",
+      "load": "Failed to load invite codes",
+      "deactivate": "Failed to deactivate code"
+    }
+  },
+  "alerts": {
+    "title": "Price alerts",
+    "newAlert": "New alert",
+    "unread": "Unread",
+    "confirmDelete": "Delete this alert?",
+    "conditionsSummary": "{{combinator}} ({{count}} conditions)",
+    "combinatorAll": "ALL",
+    "combinatorAny": "ANY",
+    "triggeredAt": "Triggered at ${{price}} (threshold: ${{threshold}})",
+    "tabs": {
+      "myAlerts": "My Alerts ({{count}})",
+      "triggered": "Triggered",
+      "settings": "Settings"
+    },
+    "dialog": {
+      "title": "Create Price Alert",
+      "description": "Set up multi-condition price alerts for any stock symbol",
+      "symbol": "Symbol",
+      "combinator": "Combinator",
+      "combinatorAll": "AND (all conditions)",
+      "combinatorAny": "OR (any condition)",
+      "conditions": "Conditions",
+      "period": "Period",
+      "currentPrice": "Current price: ${{price}}",
+      "cancel": "Cancel",
+      "create": "Create Alert",
+      "creating": "Creating..."
+    },
+    "conditions": {
+      "add": "Add",
+      "valuePlaceholder": "Value"
+    },
+    "conditionTypes": {
+      "above": "Price Above",
+      "below": "Price Below",
+      "pct_change_up": "% Up",
+      "pct_change_down": "% Down"
+    },
+    "metrics": {
+      "price": "Price",
+      "rsi": "RSI",
+      "macd_hist": "MACD Histogram",
+      "signal": "Signal",
+      "pct_change": "% Change"
+    },
+    "operators": {
+      "gt": ">",
+      "lt": "<",
+      "crosses_above": "Crosses Above",
+      "eq": "="
+    },
+    "periods": {
+      "5m": "5 min",
+      "15m": "15 min",
+      "30m": "30 min",
+      "1h": "1 hour",
+      "4h": "4 hours",
+      "1d": "1 day"
+    },
+    "settings": {
+      "title": "Notification Settings",
+      "description": "Configure how you receive alert notifications",
+      "enableDiscord": "Enable Discord Notifications",
+      "webhookUrl": "Discord Webhook URL",
+      "webhookHint": "Get your webhook URL from Discord channel settings → Integrations → Webhooks",
+      "save": "Save settings",
+      "saving": "Saving…",
+      "saved": "Saved"
+    },
+    "aria": {
+      "enableAlert": "Enable {{symbol}} alert",
+      "disableAlert": "Disable {{symbol}} alert",
+      "deleteAlert": "Delete {{symbol}} alert",
+      "markRead": "Mark {{symbol}} alert as read"
+    },
+    "empty": {
+      "noAlerts": "No alerts yet",
+      "noTriggered": "No triggered alerts"
+    },
+    "errors": {
+      "symbolRequired": "Symbol is required",
+      "invalidConditionValue": "Enter a valid value for all conditions",
+      "atLeastOneCondition": "Add at least one condition",
+      "createFailed": "Failed to create alert",
+      "saveSettingsFailed": "Failed to save settings",
+      "loadFailed": "Failed to load alerts"
+    }
+  },
+  "bootstrap": {
+    "title": "First-Time Setup",
+    "subtitle": "Create your admin account to get started",
+    "email": "Email",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Create Admin Account",
+    "submitting": "Creating account…",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "errors": {
+      "failed": "Bootstrap failed"
+    }
+  },
+  "common": {
+    "signals": {
+      "noSignal": "No signal",
+      "viewOnDashboard": "View on dashboard",
+      "compareTicker": "Compare ticker",
+      "stopTracking": "Stop tracking ticker",
+      "dismissSignal": "Dismiss signal",
+      "signalStrength": "Signal strength"
+    },
+    "fields": {
+      "price": "Price",
+      "date": "Date",
+      "open": "Open",
+      "high": "High",
+      "low": "Low",
+      "close": "Close",
+      "volume": "Volume",
+      "avgVolume": "Avg volume",
+      "currentPrice": "Current price",
+      "dayChange": "Day change",
+      "periodHigh": "Period high",
+      "periodLow": "Period low",
+      "marketCap": "Market cap",
+      "peRatio": "P/E ratio",
+      "forwardPe": "Forward P/E",
+      "dividendYield": "Dividend yield",
+      "beta": "Beta",
+      "week52High": "52W high",
+      "week52Low": "52W low",
+      "sector": "Sector",
+      "industry": "Industry",
+      "payoutRatio": "Payout ratio",
+      "streak": "Streak",
+      "streakYears": "{{count}} yr",
+      "grossMargin": "Gross margin",
+      "operatingMargin": "Operating margin",
+      "netMargin": "Net margin",
+      "epsGrowth": "EPS growth",
+      "revenueGrowth": "Revenue growth",
+      "consistent": "Consistent",
+      "growth": "Growth"
+    },
+    "values": {
+      "yes": "Yes",
+      "no": "No"
+    },
+    "cards": {
+      "dividends": "Dividends",
+      "dividendsSubtitle": "Yearly per share",
+      "noDividendData": "No dividend data available",
+      "fundamentals": "Fundamentals",
+      "piotroskiFScore": "Piotroski F-Score",
+      "dividendQuality": "Dividend Quality",
+      "historicalData": "Historical data",
+      "historicalDataSubtitle": "{{symbol}} · last {{count}} days"
+    },
+    "charts": {
+      "price": "Price",
+      "histogram": "Histogram"
+    },
+    "search": {
+      "tickerPromptExample": "Search ticker… AAPL, TSLA",
+      "tickerPlaceholder": "Search ticker…",
+      "searching": "Searching…",
+      "noMatches": "No matches.",
+      "results": "Results",
+      "searchFor": "Search “{{query}}”"
+    },
+    "watchlist": {
+      "add": "Add to watchlist",
+      "remove": "Remove from watchlist",
+      "addSymbol": "Add {{symbol}} to watchlist",
+      "removeSymbol": "Remove {{symbol}} from watchlist"
+    },
+    "cache": {
+      "expired": "Cache expired",
+      "expiresInSeconds": "Expires in {{count}}s",
+      "expiresInMinutes": "Expires in {{count}}m"
+    },
+    "actions": {
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "logOut": "Log out",
+      "changePassword": "Change password"
+    },
+    "menu": {
+      "logViewer": "Log Viewer",
+      "invitationCodes": "Invitation Codes",
+      "openNavigation": "Open navigation menu"
+    },
+    "theme": {
+      "toggle": "Toggle theme",
+      "switchToLight": "Switch to light mode",
+      "switchToDark": "Switch to dark mode"
+    },
+    "password": {
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "currentPlaceholder": "Enter current password",
+      "newPlaceholder": "Enter new password",
+      "confirmPlaceholder": "Confirm new password",
+      "dialogDescription": "Update your account password.",
+      "changed": "Password changed",
+      "changedDescription": "Your password has been updated successfully.",
+      "errorMinLength": "New password must be at least 8 characters",
+      "errorMismatch": "New passwords do not match",
+      "errorFailed": "Failed to change password"
+    },
+    "states": {
+      "loading": "Loading…",
+      "noData": "No data",
+      "error": "Error",
+      "retry": "Retry"
+    },
+    "footer": {
+      "built": "built {{time}}"
+    },
+    "errorBoundary": {
+      "title": "Something went wrong",
+      "description": "An unexpected error occurred. The page you were viewing may have crashed.",
+      "reload": "Reload page"
+    }
+  },
+  "compare": {
+    "title": "Compare",
+    "tickerCount": "{{count}}/5 tickers",
+    "tickerHintMin": " — add at least 2",
+    "tickerHintMax": " — max",
+    "addTicker": "Add ticker",
+    "searchTicker": "Search ticker…",
+    "noMatches": "No matches.",
+    "results": "Results",
+    "addSymbol": "Add “{{symbol}}”",
+    "removeSymbol": "Remove {{symbol}}",
+    "timeframe": "Timeframe",
+    "compare": "Compare",
+    "loading": "Loading…",
+    "reset": "Reset",
+    "emptyPrompt": "Add 2–5 tickers, then press Compare.",
+    "errAddTwo": "Add at least 2 tickers",
+    "errNoData": "No data returned for those tickers",
+    "errFailed": "Compare failed",
+    "best": "Best · {{symbol}}",
+    "worst": "Worst · {{symbol}}",
+    "average": "Average",
+    "smaOverlays": "SMA overlays",
+    "normalized": "Normalized",
+    "exportCsv": "Export CSV",
+    "chartNormalized": "Normalized price (base 100)",
+    "chartPrice": "Price comparison",
+    "chartSma": "SMA overlay"
+  },
+  "dashboard": {
+    "timeframe": "Timeframe",
+    "indicators": "Indicators",
+    "done": "Done",
+    "editLayout": "Edit layout",
+    "failedToLoad": "Failed to load data",
+    "couldntLoadSymbol": "Couldn't load this symbol.",
+    "noData": "No data to display.",
+    "retry": "Retry"
+  },
+  "login": {
+    "welcome": "Welcome back",
+    "subtitle": "Sign in to your account",
+    "newHere": {
+      "badge": "New here?",
+      "text": "You need to",
+      "setupLink": "set up the system",
+      "suffix": "first before signing in."
+    },
+    "emailLabel": "Email or username",
+    "passwordLabel": "Password",
+    "signingIn": "Signing in…",
+    "signIn": "Sign in",
+    "noAccount": "Don't have an account?",
+    "setupSystem": "Set up the system",
+    "requestAccess": "Request access",
+    "loginFailed": "Login failed"
+  },
+  "logs": {
+    "title": "Logs",
+    "subtitle": "System, audit, and access logs",
+    "autoRefresh": "Auto-refresh",
+    "refresh": "Refresh",
+    "entries": "{{count}} entries",
+    "copy": {
+      "toastTitle": "Copied",
+      "toastDescription": "Log entry copied to clipboard",
+      "buttonTitle": "Copy entry as JSON"
+    },
+    "tabs": {
+      "system": "System",
+      "audit": "Audit",
+      "access": "Access"
+    },
+    "filters": {
+      "level": "Level",
+      "allLevels": "All levels",
+      "search": "Search",
+      "action": "Action",
+      "allActions": "All actions",
+      "method": "Method",
+      "all": "All",
+      "statusMin": "Status min",
+      "statusMax": "Status max",
+      "minPlaceholder": "Min",
+      "maxPlaceholder": "Max",
+      "searchSystemPlaceholder": "Search log entries...",
+      "searchAuditPlaceholder": "Search audit entries...",
+      "searchAccessPlaceholder": "Search access entries..."
+    },
+    "table": {
+      "timestamp": "Timestamp",
+      "level": "Level",
+      "logger": "Logger",
+      "message": "Message",
+      "actor": "Actor",
+      "action": "Action",
+      "target": "Target",
+      "ip": "IP",
+      "method": "Method",
+      "path": "Path",
+      "status": "Status",
+      "ms": "ms"
+    },
+    "empty": {
+      "system": "No system log entries found",
+      "audit": "No audit log entries found",
+      "access": "No access log entries found"
+    },
+    "errors": {
+      "loadSystem": "Failed to load logs",
+      "loadAudit": "Failed to load audit logs",
+      "loadAccess": "Failed to load access logs"
+    }
+  },
+  "register": {
+    "title": "Create account",
+    "subtitle": "Start analyzing the market",
+    "email": "Email",
+    "username": "Username",
+    "password": "Password",
+    "passwordPlaceholder": "At least 8 characters",
+    "submit": "Create account",
+    "submitting": "Creating account…",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "errors": {
+      "passwordTooShort": "Password must be at least 8 characters",
+      "failed": "Registration failed"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "appearance": {
+      "title": "Appearance",
+      "description": "Customize your viewing experience",
+      "theme": "Theme",
+      "darkActive": "Dark mode is active",
+      "lightActive": "Light mode is active",
+      "switchToLight": "Switch to Light",
+      "switchToDark": "Switch to Dark"
+    },
+    "timezone": {
+      "title": "Timezone",
+      "description": "Set your preferred timezone for alerts and timestamps",
+      "current": "Current: {{timezone}}",
+      "ariaLabel": "Timezone"
+    },
+    "dataSource": {
+      "title": "Data Source Health",
+      "description": "Status of connected data providers",
+      "checking": "Checking Yahoo Finance...",
+      "operational": "Yahoo Finance operational",
+      "error": "Yahoo Finance error",
+      "working": "yfinance is working",
+      "checkFailed": "yfinance check failed",
+      "unreachable": "Could not reach the health endpoint"
+    },
+    "users": {
+      "title": "User Management",
+      "description": "Manage user accounts and permissions",
+      "addUser": "+ Add User",
+      "none": "No users found.",
+      "registered": "Registered {{date}}",
+      "lastLogin": "Last login {{date}}",
+      "never": "—",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "about": {
+      "title": "About",
+      "subtitle": "Stock Market Toolkit",
+      "description": "A comprehensive stock analysis and monitoring tool.",
+      "releaseNotes": "Release notes",
+      "viewReleaseNotes": "View release notes on GitHub"
+    },
+    "deleteDialog": {
+      "title": "Delete User",
+      "description": "Are you sure you want to delete user “{{username}}”? This action cannot be undone.",
+      "cancel": "Cancel",
+      "deleting": "Deleting…",
+      "delete": "Delete"
+    },
+    "addDialog": {
+      "title": "Add New User",
+      "description": "Create a new user account.",
+      "email": "Email",
+      "emailPlaceholder": "user@example.com",
+      "username": "Username",
+      "usernamePlaceholder": "username",
+      "password": "Password",
+      "passwordPlaceholder": "Password",
+      "cancel": "Cancel",
+      "creating": "Creating…",
+      "create": "Create User"
+    },
+    "resetDialog": {
+      "title": "Reset Password",
+      "description": "Reset password for user “{{username}}”? A new random password will be generated.",
+      "newPassword": "New Password:",
+      "copyWarning": "Copy this password — it cannot be recovered.",
+      "cancel": "Cancel",
+      "resetting": "Resetting…",
+      "reset": "Reset Password"
+    },
+    "editDialog": {
+      "title": "Edit User",
+      "description": "Update details for user “{{email}}”.",
+      "email": "Email",
+      "emailPlaceholder": "user@example.com",
+      "admin": "Admin",
+      "adminHint": "Can manage users and settings",
+      "active": "Active",
+      "activeHint": "Can log in and use the app",
+      "password": "Password",
+      "resetPassword": "Reset Password",
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "save": "Save Changes"
+    },
+    "toasts": {
+      "emailUpdatedTitle": "Email updated",
+      "emailUpdatedDescription": "User email has been updated successfully."
+    },
+    "errors": {
+      "addUser": "Failed to add user",
+      "resetFailed": "Reset failed",
+      "updateEmail": "Failed to update email",
+      "deleteFailed": "Delete failed"
+    }
+  },
+  "signals": {
+    "title": "Trading signals",
+    "subtitle": "Real-time signals based on technical indicators",
+    "refresh": "Refresh",
+    "noSignalData": "No signal data available for this symbol yet.",
+    "noSignalDataFor": "No signal data for {{symbol}}",
+    "analysisUnavailable": "Analysis unavailable",
+    "addTicker": {
+      "button": "Add Ticker",
+      "title": "Add Ticker",
+      "description": "Enter a stock symbol to add to your tracking list.",
+      "cancel": "Cancel",
+      "adding": "Adding...",
+      "errorRequired": "Select or enter a ticker symbol",
+      "errorInvalidFormat": "Invalid ticker symbol format",
+      "errorAlreadyTracked": "{{symbol}} is already being tracked"
+    },
+    "stats": {
+      "bullish": "Bullish signals",
+      "bearish": "Bearish signals",
+      "neutral": "Neutral signals"
+    },
+    "empty": {
+      "title": "No tracked symbols",
+      "description": "Add tickers to track their signals here"
+    },
+    "disclaimer": {
+      "label": "Disclaimer:",
+      "body": "These signals are generated by technical indicators and should not be considered financial advice. Always do your own research before making investment decisions."
+    },
+    "toast": {
+      "loadFailed": "Failed to load: {{symbols}}",
+      "addFailed": "Failed to add {{symbol}}. Please try again.",
+      "added": "{{symbol}} added to tracking",
+      "addedNoData": "{{symbol}} added — no signal data available",
+      "removed": "{{symbol}} removed from tracking"
+    }
   }
 }

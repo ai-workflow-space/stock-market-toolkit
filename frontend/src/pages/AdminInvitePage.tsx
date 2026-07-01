@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Copy, Check, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,6 +47,7 @@ function CreateInviteCodeDialog({
   onClose: () => void;
   onCreated: (code: string) => void;
 }) {
+  const { t } = useTranslation();
   const [expiresInDays, setExpiresInDays] = useState("7");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -54,7 +56,7 @@ function CreateInviteCodeDialog({
     e.preventDefault();
     const days = parseInt(expiresInDays, 10);
     if (isNaN(days) || days < 1 || days > 365) {
-      setError("Expiration must be between 1 and 365 days");
+      setError(t("adminInvite.form.validationRange"));
       return;
     }
     setLoading(true);
@@ -67,13 +69,13 @@ function CreateInviteCodeDialog({
       });
       if (!res.ok) {
         const data = await res.json() as { detail?: string };
-        throw new Error(data.detail || "Failed to create invite code");
+        throw new Error(data.detail || t("adminInvite.errors.create"));
       }
       const data = await res.json() as InviteCode;
       onCreated(data.code);
       onClose();
     } catch (err: unknown) {
-      setError((err as Error).message || "Failed to create invite code");
+      setError((err as Error).message || t("adminInvite.errors.create"));
     } finally {
       setLoading(false);
     }
@@ -83,15 +85,15 @@ function CreateInviteCodeDialog({
     <Dialog open={open} onOpenChange={o => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Generate Invitation Code</DialogTitle>
+          <DialogTitle>{t("adminInvite.form.dialogTitle")}</DialogTitle>
           <DialogDescription>
-            Create a new invitation code for new user registration
+            {t("adminInvite.form.dialogDescription")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="expires">Expires in (days)</Label>
+              <Label htmlFor="expires">{t("adminInvite.form.expiresLabel")}</Label>
               <Input
                 id="expires"
                 type="number"
@@ -102,7 +104,7 @@ function CreateInviteCodeDialog({
                 autoFocus
               />
               <p className="text-xs text-muted-foreground">
-                The code will expire after this many days (1-365)
+                {t("adminInvite.form.expiresHint")}
               </p>
             </div>
             {error && (
@@ -110,9 +112,9 @@ function CreateInviteCodeDialog({
             )}
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={onClose}>{t("adminInvite.form.cancel")}</Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Generating..." : "Generate Code"}
+              {loading ? t("adminInvite.form.generating") : t("adminInvite.form.submit")}
             </Button>
           </DialogFooter>
         </form>
@@ -123,6 +125,7 @@ function CreateInviteCodeDialog({
 
 /* ─── Copy Button ─── */
 function CopyButton({ value }: { value: string }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
     await navigator.clipboard.writeText(value);
@@ -130,7 +133,7 @@ function CopyButton({ value }: { value: string }) {
     setTimeout(() => setCopied(false), 1500);
   };
   return (
-    <Button variant="ghost" size="icon" onClick={handleCopy} aria-label="Copy code">
+    <Button variant="ghost" size="icon" onClick={handleCopy} aria-label={t("adminInvite.copy.ariaLabel")}>
       {copied ? <Check className="size-4 text-up" /> : <Copy className="size-4" />}
     </Button>
   );
@@ -138,6 +141,7 @@ function CopyButton({ value }: { value: string }) {
 
 /* ─── Main Admin Invite Page ─── */
 export default function AdminInvitePage() {
+  const { t } = useTranslation();
   const [codes, setCodes] = useState<InviteCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -153,16 +157,16 @@ export default function AdminInvitePage() {
       });
       if (!res.ok) {
         const data = await res.json() as { detail?: string };
-        throw new Error(data.detail || "Failed to load invite codes");
+        throw new Error(data.detail || t("adminInvite.errors.load"));
       }
       const data = await res.json() as InviteCodeListResponse;
       setCodes(data.codes);
     } catch (err: unknown) {
-      setError((err as Error).message || "Failed to load invite codes");
+      setError((err as Error).message || t("adminInvite.errors.load"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     (async () => {
@@ -171,7 +175,7 @@ export default function AdminInvitePage() {
   }, [loadCodes]);
 
   const handleDeactivate = async (codeId: number) => {
-    if (!confirm("Deactivate this invitation code?")) return;
+    if (!confirm(t("adminInvite.confirm.deactivate"))) return;
     try {
       const res = await fetch(API + "/api/admin/invite-codes/" + codeId, {
         method: "DELETE",
@@ -179,11 +183,11 @@ export default function AdminInvitePage() {
       });
       if (!res.ok) {
         const data = await res.json() as { detail?: string };
-        throw new Error(data.detail || "Failed to deactivate code");
+        throw new Error(data.detail || t("adminInvite.errors.deactivate"));
       }
       setCodes(prev => prev.map(c => c.id === codeId ? { ...c, is_active: false } : c));
     } catch (err: unknown) {
-      alert((err as Error).message || "Failed to deactivate code");
+      alert((err as Error).message || t("adminInvite.errors.deactivate"));
     }
   };
 
@@ -210,14 +214,14 @@ export default function AdminInvitePage() {
     <div className="mx-auto max-w-3xl">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Invitation Codes</h1>
+          <h1 className="text-2xl font-semibold">{t("adminInvite.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Generate and manage invitation codes for new user registration
+            {t("adminInvite.subtitle")}
           </p>
         </div>
         <Button onClick={() => setShowCreate(true)}>
           <Plus className="size-4 mr-1.5" />
-          Generate Code
+          {t("adminInvite.generateCode")}
         </Button>
       </div>
 
@@ -232,7 +236,7 @@ export default function AdminInvitePage() {
           <CardContent className="flex items-center justify-between py-3">
             <div className="flex items-center gap-2">
               <Check className="size-4 text-up" />
-              <span className="text-sm font-medium">New invitation code:</span>
+              <span className="text-sm font-medium">{t("adminInvite.newCodeLabel")}</span>
               <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-mono">{newCode}</code>
             </div>
             <CopyButton value={newCode} />
@@ -243,8 +247,8 @@ export default function AdminInvitePage() {
       {codes.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-            <p className="text-muted-foreground">No invitation codes yet</p>
-            <Button onClick={() => setShowCreate(true)}>Generate your first code</Button>
+            <p className="text-muted-foreground">{t("adminInvite.empty.message")}</p>
+            <Button onClick={() => setShowCreate(true)}>{t("adminInvite.empty.action")}</Button>
           </CardContent>
         </Card>
       ) : (
@@ -263,29 +267,29 @@ export default function AdminInvitePage() {
                     <CopyButton value={code.code} />
                     {code.used_by && (
                       <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
-                        Used
+                        {t("adminInvite.table.used")}
                       </span>
                     )}
                     {!code.is_active && (
                       <span className="rounded-full bg-destructive/20 px-2 py-0.5 text-xs text-destructive">
-                        Deactivated
+                        {t("adminInvite.table.deactivated")}
                       </span>
                     )}
                     {isExpired(code.expires_at) && (
                       <span className="rounded-full bg-destructive/20 px-2 py-0.5 text-xs text-destructive">
-                        Expired
+                        {t("adminInvite.table.expired")}
                       </span>
                     )}
                   </div>
                   <div className="flex gap-4 text-xs text-muted-foreground">
                     <span>
-                      Created {new Date(code.created_at).toLocaleDateString()}
+                      {t("adminInvite.table.created", { date: new Date(code.created_at).toLocaleDateString() })}
                     </span>
                     <span>
-                      Expires {new Date(code.expires_at).toLocaleDateString()}
+                      {t("adminInvite.table.expires", { date: new Date(code.expires_at).toLocaleDateString() })}
                     </span>
                     {code.used_by && (
-                      <span>Used by {code.used_by}</span>
+                      <span>{t("adminInvite.table.usedBy", { user: code.used_by })}</span>
                     )}
                   </div>
                 </div>
@@ -295,7 +299,7 @@ export default function AdminInvitePage() {
                     size="icon"
                     onClick={() => handleDeactivate(code.id)}
                     className="text-muted-foreground hover:text-destructive shrink-0"
-                    aria-label="Deactivate code"
+                    aria-label={t("adminInvite.table.deactivateAriaLabel")}
                   >
                     <X className="size-4" />
                   </Button>

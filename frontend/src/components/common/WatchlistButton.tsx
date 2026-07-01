@@ -1,4 +1,5 @@
 import { Star } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useWatchlist } from "@/hooks/useWatchlist";
@@ -14,6 +15,7 @@ export default function WatchlistButton({
   size?: "default" | "sm" | "icon";
   className?: string;
 }) {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { isWatched, add, remove } = useWatchlist();
   const watched = isWatched(symbol);
@@ -42,7 +44,7 @@ export default function WatchlistButton({
           size={size || "icon"}
           onClick={handleClick}
           className={cn("text-muted-foreground hover:text-yellow-500", className)}
-          aria-label={watched ? `Remove ${symbol} from tracked` : `Add ${symbol} to tracked`}
+          aria-label={watched ? t("common.watchlist.removeSymbol", { symbol }) : t("common.watchlist.addSymbol", { symbol })}
         >
           <Star
             className={cn("size-4", watched && "fill-yellow-500 text-yellow-500")}
@@ -50,7 +52,7 @@ export default function WatchlistButton({
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        {watched ? "Remove from tracked" : "Add to tracked"}
+        {watched ? t("common.watchlist.remove") : t("common.watchlist.add")}
       </TooltipContent>
     </Tooltip>
   );

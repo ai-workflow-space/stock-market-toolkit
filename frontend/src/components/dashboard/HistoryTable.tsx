@@ -1,8 +1,10 @@
+import { useTranslation } from "react-i18next";
 import type { StockData } from "@/types";
 import { fmt, volFmt } from "@/lib/format";
 import ChartCard from "@/components/common/ChartCard";
 
 export default function HistoryTable({ stock }: { stock: StockData }) {
+  const { t } = useTranslation();
   const rows = stock.close
     .map((_, i) => ({
       ts: stock.timestamp[i],
@@ -17,17 +19,17 @@ export default function HistoryTable({ stock }: { stock: StockData }) {
     .slice(0, 30);
 
   return (
-    <ChartCard title="Historical data" subtitle={`${stock.symbol} · last ${rows.length} days`} bodyClassName="px-0">
+    <ChartCard title={t("common.cards.historicalData")} subtitle={t("common.cards.historicalDataSubtitle", { symbol: stock.symbol, count: rows.length })} bodyClassName="px-0">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <th className="px-4 py-2 font-medium">Date</th>
-              <th className="px-4 py-2 text-right font-medium">Open</th>
-              <th className="px-4 py-2 text-right font-medium">High</th>
-              <th className="px-4 py-2 text-right font-medium">Low</th>
-              <th className="px-4 py-2 text-right font-medium">Close</th>
-              <th className="px-4 py-2 text-right font-medium">Volume</th>
+              <th className="px-4 py-2 font-medium">{t("common.fields.date")}</th>
+              <th className="px-4 py-2 text-right font-medium">{t("common.fields.open")}</th>
+              <th className="px-4 py-2 text-right font-medium">{t("common.fields.high")}</th>
+              <th className="px-4 py-2 text-right font-medium">{t("common.fields.low")}</th>
+              <th className="px-4 py-2 text-right font-medium">{t("common.fields.close")}</th>
+              <th className="px-4 py-2 text-right font-medium">{t("common.fields.volume")}</th>
             </tr>
           </thead>
           <tbody className="font-mono tabular-nums">

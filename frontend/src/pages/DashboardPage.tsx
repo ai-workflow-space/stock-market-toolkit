@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, startTransition, lazy, Suspense } from "react";
+import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { LayoutGrid, List } from "lucide-react";
 import { getStock, getIndicators, getStockInfo, getFundamentals, getDividends, getNews } from "@/api/stockApi";
@@ -37,6 +38,7 @@ function DashboardSkeleton() {
 }
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const [symbol, setSymbol] = useState(() => searchParams.get("symbol")?.toUpperCase() || "AAPL");
   const [period, setPeriod] = useState("1mo");
@@ -90,7 +92,7 @@ export default function DashboardPage() {
         });
       } catch (e: unknown) {
         if (cancelled) return;
-        setError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to load data");
+        setError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail || t("dashboard.failedToLoad"));
         setStock(null);
         setIndicators(null);
         setInfo(null);
@@ -105,7 +107,7 @@ export default function DashboardPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [symbol, period, reloadKey]);
+  }, [symbol, period, reloadKey, t]);
 
   const onSymbol = (s: string) => { if (s !== symbol) { setLoading(true); setSymbol(s); } };
   const onPeriod = (p: string) => { if (p !== period) { setLoading(true); setPeriod(p); } };
@@ -118,7 +120,7 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <SymbolSearch value={symbol} onSearch={onSymbol} loading={loading} />
-        <ToggleBar ariaLabel="Timeframe" options={TIMEFRAME_OPTIONS} value={period} onChange={onPeriod} />
+        <ToggleBar ariaLabel={t("dashboard.timeframe")} options={TIMEFRAME_OPTIONS} value={period} onChange={onPeriod} />
         <Button
           variant={editMode ? "secondary" : "outline"}
           size="sm"
@@ -126,11 +128,11 @@ export default function DashboardPage() {
           onClick={() => setEditMode((v) => !v)}
         >
           {editMode ? <List /> : <LayoutGrid />}
-          {editMode ? "Done" : "Edit layout"}
+          {editMode ? t("dashboard.done") : t("dashboard.editLayout")}
         </Button>
       </div>
 
-      <MultiToggleBar ariaLabel="Indicators" options={INDICATOR_OPTIONS} value={active} onChange={setActive} />
+      <MultiToggleBar ariaLabel={t("dashboard.indicators")} options={INDICATOR_OPTIONS} value={active} onChange={setActive} />
 
       {error && (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -150,8 +152,8 @@ export default function DashboardPage() {
         )
       ) : (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-16 text-center text-sm text-muted-foreground">
-          <p>{error ? "Couldn't load this symbol." : "No data to display."}</p>
-          <Button variant="outline" size="sm" onClick={retry}>Retry</Button>
+          <p>{error ? t("dashboard.couldntLoadSymbol") : t("dashboard.noData")}</p>
+          <Button variant="outline" size="sm" onClick={retry}>{t("dashboard.retry")}</Button>
         </div>
       )}
     </div>

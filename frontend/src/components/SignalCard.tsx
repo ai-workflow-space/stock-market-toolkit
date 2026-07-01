@@ -1,4 +1,5 @@
 import { TrendingUp, TrendingDown, Minus, X, LineChart, BarChart3 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { Signal, SignalDirection, SignalType } from "@/types";
 import { fmt } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +61,7 @@ export default function SignalCard({
   onView,
   onCompare,
 }: SignalCardProps) {
+  const { t } = useTranslation();
   const Icon = DIRECTION_ICON[signal.direction];
 
   return (
@@ -80,7 +82,7 @@ export default function SignalCard({
               <span className="text-base font-semibold">{signal.symbol}</span>
             )}
             {pending ? (
-              <Badge variant="outline">No signal</Badge>
+              <Badge variant="outline">{t("common.signals.noSignal")}</Badge>
             ) : (
               <Badge variant="secondary">{SIGNAL_TYPE_LABELS[signal.signal_type]}</Badge>
             )}
@@ -92,7 +94,7 @@ export default function SignalCard({
                 size="icon"
                 className="size-6 text-muted-foreground"
                 onClick={() => onView(signal.symbol)}
-                aria-label="View on dashboard"
+                aria-label={t("common.signals.viewOnDashboard")}
               >
                 <LineChart />
               </Button>
@@ -103,7 +105,7 @@ export default function SignalCard({
                 size="icon"
                 className="size-6 text-muted-foreground"
                 onClick={() => onCompare(signal.symbol)}
-                aria-label="Compare ticker"
+                aria-label={t("common.signals.compareTicker")}
               >
                 <BarChart3 />
               </Button>
@@ -114,7 +116,7 @@ export default function SignalCard({
                 size="icon"
                 className="size-6 text-muted-foreground hover:text-destructive"
                 onClick={() => onRemoveTicker(signal.symbol)}
-                aria-label="Stop tracking ticker"
+                aria-label={t("common.signals.stopTracking")}
               >
                 <X />
               </Button>
@@ -124,7 +126,7 @@ export default function SignalCard({
                 size="icon"
                 className="size-6 text-muted-foreground"
                 onClick={() => onDismiss(signal.id)}
-                aria-label="Dismiss signal"
+                aria-label={t("common.signals.dismissSignal")}
               >
                 <X />
               </Button>
@@ -138,11 +140,11 @@ export default function SignalCard({
           <>
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <p className="mb-0.5 text-xs uppercase text-muted-foreground">Price</p>
+                <p className="mb-0.5 text-xs uppercase text-muted-foreground">{t("common.fields.price")}</p>
                 <p className="font-mono font-semibold tabular-nums">${fmt(signal.price)}</p>
               </div>
               <div className="text-right">
-                <p className="mb-0.5 text-xs uppercase text-muted-foreground">Signal strength</p>
+                <p className="mb-0.5 text-xs uppercase text-muted-foreground">{t("common.signals.signalStrength")}</p>
                 <StrengthBar strength={signal.strength} />
               </div>
             </div>

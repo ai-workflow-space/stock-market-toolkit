@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ export default function LoginPage() {
   const [usersExist, setUsersExist] = useState<boolean | null>(null);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   useEffect(() => {
     axios.get(`${import.meta.env.VITE_API_URL || ""}/api/auth/users/count`)
@@ -41,7 +43,7 @@ export default function LoginPage() {
       await login(email, password);
       navigate("/");
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Login failed";
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || t("login.loginFailed");
       setError(msg);
     } finally {
       setLoading(false);
@@ -55,15 +57,15 @@ export default function LoginPage() {
           <div className="flex items-center gap-2 font-semibold">
             <BrandMark /> Stock Toolkit
           </div>
-          <CardTitle className="text-xl">Welcome back</CardTitle>
-          <CardDescription>Sign in to your account</CardDescription>
+          <CardTitle className="text-xl">{t("login.welcome")}</CardTitle>
+          <CardDescription>{t("login.subtitle")}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {usersExist === false && (
             <div className="rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
-              <strong className="text-foreground">New here?</strong> You need to{" "}
-              <Link to="/bootstrap" className="text-primary underline-offset-4 hover:underline">set up the system</Link>{" "}
-              first before signing in.
+              <strong className="text-foreground">{t("login.newHere.badge")}</strong> {t("login.newHere.text")}{" "}
+              <Link to="/bootstrap" className="text-primary underline-offset-4 hover:underline">{t("login.newHere.setupLink")}</Link>{" "}
+              {t("login.newHere.suffix")}
             </div>
           )}
 
@@ -75,22 +77,22 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email">Email or username</Label>
+              <Label htmlFor="email">{t("login.emailLabel")}</Label>
               <Input id="email" type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required autoFocus />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("login.passwordLabel")}</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? t("login.signingIn") : t("login.signIn")}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
+            {t("login.noAccount")}{" "}
             <Link to={usersExist === false ? "/bootstrap" : "/register"} className="text-primary underline-offset-4 hover:underline">
-              {usersExist === false ? "Set up the system" : "Request access"}
+              {usersExist === false ? t("login.setupSystem") : t("login.requestAccess")}
             </Link>
           </p>
 
