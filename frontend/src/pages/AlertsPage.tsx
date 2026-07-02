@@ -907,7 +907,7 @@ export default function AlertsPage() {
                               className="text-xs shrink-0"
                               title={t(`alerts.marketStatus.${status}`)}
                             >
-{status === "open" ? "●" : "○"} {t(`alerts.marketStatus.${status}`)}
+                            {status === "open" ? "●" : "○"} {t(`alerts.marketStatus.${status}`)}
                             </Badge>
                           );
                         })()}
