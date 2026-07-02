@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.13.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.12.0...v0.13.0) (2026-07-02)
+
+
+### Features
+
+* market-hours-aware global gate in check_alerts() ([#243](https://github.com/ai-workflow-space/stock-market-toolkit/issues/243)) ([738b92d](https://github.com/ai-workflow-space/stock-market-toolkit/commit/738b92d00e85d3ad22a427a7ca0c06f40d074749))
+* market-hours-aware global gate in check_alerts() ([#243](https://github.com/ai-workflow-space/stock-market-toolkit/issues/243)) ([738b92d](https://github.com/ai-workflow-space/stock-market-toolkit/commit/738b92d00e85d3ad22a427a7ca0c06f40d074749))
+
+
+### Bug Fixes
+
+* surface batch-fetch errors with error banner and toast ([09c82cf](https://github.com/ai-workflow-space/stock-market-toolkit/commit/09c82cf5b5fd31fb58fc47965a9ce8a4d9464f29))
+
 ## [0.12.0](https://github.com/ai-workflow-space/stock-market-toolkit/compare/v0.11.0...v0.12.0) (2026-07-01)
 
 
