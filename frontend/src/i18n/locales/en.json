@@ -139,6 +139,10 @@
       "createFailed": "Failed to create alert",
       "saveSettingsFailed": "Failed to save settings",
       "loadFailed": "Failed to load alerts"
+    },
+    "marketStatus": {
+      "open": "Market open",
+      "closed": "Market closed"
     }
   },
   "bootstrap": {

@@ -16,6 +16,7 @@ import {
   type NotificationSettings,
 } from "../api/alertsApi";
 import { getStockInfo } from "../api/stockApi";
+import { getMarketStatus } from "../lib/marketHours";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Input } from "../components/ui/input";
@@ -40,7 +41,6 @@ import { Skeleton } from "../components/ui/skeleton";
 import { Bell, CheckCircle2, X, Plus, Trash2, Pencil } from "lucide-react";
 import SymbolSearch from "@/components/common/SymbolSearch";
 import { fmt } from "../lib/format";
-import { getMarketStatus } from "../lib/marketHours";
 import { toast } from "@/components/ui/sonner";
 
 import type { TFunction } from "i18next";
@@ -907,7 +907,7 @@ export default function AlertsPage() {
                               className="text-xs shrink-0"
                               title={t(`alerts.marketStatus.${status}`)}
                             >
-                              {status === "open" ? "●" : "○"} {t(`alerts.marketStatus.${status}`)}
+{status === "open" ? "●" : "○"} {t(`alerts.marketStatus.${status}`)}
                             </Badge>
                           );
                         })()}
