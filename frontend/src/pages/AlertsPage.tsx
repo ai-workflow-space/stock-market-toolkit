@@ -40,6 +40,7 @@ import { Skeleton } from "../components/ui/skeleton";
 import { Bell, CheckCircle2, X, Plus, Trash2, Pencil } from "lucide-react";
 import SymbolSearch from "@/components/common/SymbolSearch";
 import { fmt } from "../lib/format";
+import { getMarketStatus } from "../lib/marketHours";
 import { toast } from "@/components/ui/sonner";
 
 import type { TFunction } from "i18next";
@@ -898,6 +899,18 @@ export default function AlertsPage() {
                           }
                         </span>
                         <span className="text-xs text-muted-foreground uppercase">{alert.period}</span>
+                        {(() => {
+                          const status = getMarketStatus(alert.symbol);
+                          return (
+                            <Badge
+                              variant={status === "open" ? "default" : "secondary"}
+                              className="text-xs shrink-0"
+                              title={t(`alerts.marketStatus.${status}`)}
+                            >
+                              {status === "open" ? "●" : "○"} {t(`alerts.marketStatus.${status}`)}
+                            </Badge>
+                          );
+                        })()}
                         <Switch
                           aria-label={alert.enabled
                             ? t("alerts.aria.disableAlert", { symbol: alert.symbol })
