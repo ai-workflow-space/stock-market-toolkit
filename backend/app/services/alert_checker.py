@@ -223,7 +223,12 @@ async def check_alerts():
 
         # Process each symbol's alerts
         now = datetime.now(timezone.utc)
+        from app.services.market_hours import is_market_open
+
         for symbol, alert_settings_list in symbol_alerts.items():
+            if not is_market_open(symbol, now):
+                log.info(f"Skipping {symbol}: market closed")
+                continue
             current_price = await _get_current_price(symbol, "1h")
             if current_price is None:
                 log.warning(f"Could not fetch price for {symbol}, skipping")

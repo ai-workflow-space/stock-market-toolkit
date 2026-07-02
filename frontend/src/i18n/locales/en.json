@@ -546,6 +546,7 @@
     },
     "toast": {
       "loadFailed": "Failed to load: {{symbols}}",
+      "batchLoadFailed": "Failed to load signals. Please try again.",
       "addFailed": "Failed to add {{symbol}}. Please try again.",
       "added": "{{symbol}} added to tracking",
       "addedNoData": "{{symbol}} added — no signal data available",

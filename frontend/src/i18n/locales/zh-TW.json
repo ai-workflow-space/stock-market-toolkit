@@ -546,6 +546,7 @@
     },
     "toast": {
       "loadFailed": "載入失敗：{{symbols}}",
+      "batchLoadFailed": "載入信號失敗。請再試一次。",
       "addFailed": "新增 {{symbol}} 失敗。請再試一次。",
       "added": "{{symbol}} 已加入追蹤",
       "addedNoData": "{{symbol}} 已新增 — 無信號資料",
