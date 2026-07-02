@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Activity, Plus, Loader2 } from "lucide-react";
+import { Activity, Plus, Loader2, X } from "lucide-react";
 import SignalCard from "@/components/SignalCard";
 import StatCard from "@/components/common/StatCard";
 import SymbolSearch from "@/components/common/SymbolSearch";
@@ -88,30 +88,27 @@ export default function SignalsPage() {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [signalErrors, setSignalErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [addTickerOpen, setAddTickerOpen] = useState(false);
   const [newTicker, setNewTicker] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState("");
   const [tickerError, setTickerError] = useState("");
   const [addingTicker, setAddingTicker] = useState(false);
 
-  useEffect(() => {
-    const symbols = watchedSymbols;
-    if (symbols.length === 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- false positive: early-return guard
-      setSignals((prev) => (prev.length === 0 ? prev : []));
-      setSignalErrors({});
-      setLoading(false);
-      return;
-    }
-    const token = localStorage.getItem("access_token");
-
-    async function fetchSignals() {
+  const fetchSignals = useCallback(async () => {
+      setLoading(true);
+      setFetchError(null);
+      const token = localStorage.getItem("access_token");
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL || ""}/api/analysis/signals?symbols=${symbols.join(",")}&period=1mo`,
+          `${import.meta.env.VITE_API_URL || ""}/api/analysis/signals?symbols=${watchedSymbols.join(",")}&period=3mo`,
           { headers: { Authorization: `Bearer ${token}` } },
         );
-        if (!res.ok) throw new Error("Failed to fetch signals");
+        if (res.status === 401) {
+          navigate("/login");
+          return;
+        }
+        if (!res.ok) throw new Error(`Failed to fetch signals (HTTP ${res.status})`);
         const raw = await res.json();
         const data = Array.isArray(raw)
           ? { signals: raw as AnalysisResponse[], errors: [] as { symbol: string; error: string }[] }
@@ -124,16 +121,28 @@ export default function SignalsPage() {
           const failedSymbols = errs.map((e) => e.symbol).join(", ");
           toast.error(t("signals.toast.loadFailed", { symbols: failedSymbols }));
         }
-      } catch {
+      } catch (err) {
         setSignals([]);
         setSignalErrors({});
+        const msg = err instanceof Error ? err.message : "Failed to fetch signals";
+        setFetchError(msg);
+        toast.error(t("signals.toast.batchLoadFailed"));
       } finally {
         setLoading(false);
       }
-    }
+    }, [watchedSymbols, t, navigate]);
 
+  useEffect(() => {
+    if (watchedSymbols.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- false positive: early-return guard
+      setSignals((prev) => (prev.length === 0 ? prev : []));
+      setSignalErrors({});
+      setFetchError(null);
+      setLoading(false);
+      return;
+    }
     fetchSignals();
-  }, [watchedSymbols, t]);
+  }, [watchedSymbols, fetchSignals]);
 
   const fetchSignalForTicker = useCallback(async (symbol: string): Promise<Signal> => {
     const token = localStorage.getItem("access_token");
@@ -257,7 +266,7 @@ export default function SignalsPage() {
           <p className="text-sm text-muted-foreground">{t("signals.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={refreshWatchlist} disabled={watchlistLoading}>
+          <Button variant="outline" size="sm" onClick={() => { refreshWatchlist(); fetchSignals(); }} disabled={watchlistLoading}>
             {watchlistLoading ? <Loader2 className="mr-1 size-4 animate-spin" /> : null}
             {t("signals.refresh")}
           </Button>
@@ -269,6 +278,18 @@ export default function SignalsPage() {
       </div>
 
       {watchlistError && <p className="text-sm text-destructive">{watchlistError}</p>}
+      {fetchError && (
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <span>{fetchError}</span>
+          <button
+            onClick={() => setFetchError(null)}
+            className="shrink-0 rounded p-1 hover:bg-destructive/20"
+            aria-label="Dismiss error"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      )}
 
       <Dialog open={addTickerOpen} onOpenChange={setAddTickerOpen}>
         <DialogContent>
